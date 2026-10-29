@@ -16,19 +16,19 @@ export const GAME_CONFIG = Object.freeze({
 });
 
 export const SOUNDTRACKS = Object.freeze([
-  { id: 1, title: 'I. Obsidian Nave Vespers', src: 'music/track1.mp3' },
-  { id: 2, title: 'II. Chisel & Alabaster', src: 'music/track2.mp3' },
-  { id: 3, title: 'III. Blood Reliquary Procession', src: 'music/track3.mp3' },
-  { id: 4, title: 'IV. The Ossuary Weaver', src: 'music/track4.mp3' },
-  { id: 5, title: 'V. Gargoyle Belfry Vigil', src: 'music/track5.mp3' },
-  { id: 6, title: 'VI. Warhammer of Penance', src: 'music/track6.mp3' },
-  { id: 7, title: 'VII. Rose-Window Requiem', src: 'music/track7.mp3' },
-  { id: 8, title: 'VIII. Inquisitor Automaton', src: 'music/track8.mp3' },
-  { id: 9, title: 'IX. Brimstone Cataclysm', src: 'music/track9.mp3' },
-  { id: 10, title: 'X. Cursed Censer Choir', src: 'music/track10.mp3' },
-  { id: 11, title: 'XI. Sanctuary of Iron', src: 'music/track11.mp3' },
-  { id: 12, title: 'XII. Dies Irae Chime', src: 'music/track12.mp3' },
-  { id: 13, title: 'XIII. The Hollow Seraph', src: 'music/track13.mp3' },
+  { id: 1, title: 'I. Obsidian Nave Vespers', src: 'music/menu_theme.mp3' },
+  { id: 2, title: 'II. Chisel & Alabaster', src: 'music/battle/level_1.mp3' },
+  { id: 3, title: 'III. Blood Reliquary Procession', src: 'music/battle/level_2.mp3' },
+  { id: 4, title: 'IV. The Ossuary Weaver', src: 'music/battle/level_3.mp3' },
+  { id: 5, title: 'V. Gargoyle Belfry Vigil', src: 'music/battle/level_4.mp3' },
+  { id: 6, title: 'VI. Warhammer of Penance', src: 'music/battle/level_5.mp3' },
+  { id: 7, title: 'VII. Rose-Window Requiem', src: 'music/battle/level_6.mp3' },
+  { id: 8, title: 'VIII. Inquisitor Automaton', src: 'music/battle/level_7.mp3' },
+  { id: 9, title: 'IX. Brimstone Cataclysm', src: 'music/battle/level_8.mp3' },
+  { id: 10, title: 'X. Cursed Censer Choir', src: 'music/battle/level_9.mp3' },
+  { id: 11, title: 'XI. Sanctuary of Iron', src: 'music/boss/boss_1.mp3' },
+  { id: 12, title: 'XII. Dies Irae Chime', src: 'music/boss/boss_5.mp3' },
+  { id: 13, title: 'XIII. The Hollow Seraph', src: 'music/credits.mp3' },
 ]);
 
 export const CATHEDRAL_HALLS = Object.freeze([
