@@ -37,10 +37,10 @@ export function renderTarotArtSVG(card) {
 
     case 'cruciform_lance':
       motif = `
-        <path d="M60,10 L60,86 M22,48 L98,48" stroke="${pal.secondary}" stroke-width="3.6" stroke-linecap="round"/>
-        <polygon points="60,18 72,48 60,78 48,48" fill="${pal.primary}" fill-opacity="0.55" stroke="${pal.secondary}" stroke-width="1.8"/>
-        <polygon points="30,48 60,36 90,48 60,60" fill="${pal.primary}" fill-opacity="0.4" stroke="${pal.secondary}" stroke-width="1.5"/>
-        <circle cx="60" cy="48" r="6" fill="#ffffff"/>
+        <circle cx="60" cy="48" r="24" fill="none" stroke="${pal.secondary}" stroke-width="2" stroke-dasharray="5 3"/>
+        <polygon points="60,10 74,44 60,36 46,44" fill="${pal.primary}" stroke="#ffffff" stroke-width="2"/>
+        <polygon points="60,34 67,84 53,84" fill="${pal.secondary}" fill-opacity="0.75"/>
+        <circle cx="60" cy="48" r="7" fill="#ffffff"/>
       `;
       break;
 
@@ -120,7 +120,7 @@ export function renderTarotArtSVG(card) {
       motif = `
         <circle cx="60" cy="48" r="24" fill="${pal.primary}" fill-opacity="0.42" stroke="${pal.secondary}" stroke-width="2.2"/>
         <path d="M60,22 C72,38 76,48 76,56 A16,16 0 0,1 44,56 C44,48 48,38 60,22 Z" fill="${pal.secondary}" fill-opacity="0.65" stroke="#ffffff" stroke-width="1.8"/>
-        <path d="M52,52 L68,52 M60,44 L60,60" stroke="#22050d" stroke-width="2.6" stroke-linecap="round"/>
+        <polygon points="60,44 66,52 60,60 54,52" fill="#22050d" stroke="#ffffff" stroke-width="1.4"/>
       `;
       break;
 
@@ -160,8 +160,8 @@ export function renderTarotArtSVG(card) {
     case 'stained_glass_blessing':
       motif = `
         <circle cx="60" cy="48" r="28" fill="${pal.primary}" fill-opacity="0.45" stroke="${pal.secondary}" stroke-width="2.4"/>
-        <path d="M60,20 L60,76 M32,48 L88,48 M40,28 L80,68 M80,28 L40,68" stroke="${pal.secondary}" stroke-width="1.8"/>
-        <circle cx="60" cy="48" r="10" fill="#38bdf8" stroke="#ffffff" stroke-width="2"/>
+        <circle cx="60" cy="48" r="19" fill="none" stroke="${pal.secondary}" stroke-width="1.8" stroke-dasharray="4 3"/>
+        <polygon points="60,26 68,42 84,48 68,54 60,70 52,54 36,48 52,42" fill="#38bdf8" fill-opacity="0.7" stroke="#ffffff" stroke-width="1.6"/>
       `;
       break;
 
@@ -323,23 +323,25 @@ export function renderFantasyHeroPortraitSVG(heroId = 'hero_paladin', color = '#
 
     case 'hero_paladin':
     default:
-      // High Paladin Aurelius: Sunforged Winged Great-Helm, Lion Pauldrons & Dawnbreaker Greatsword
+      // High King Aurelius: Sunforged Winged Crown-Helm, Lion Pauldrons & Dawn-Spear (No Crosses)
       bust = `
-        <!-- Radiant Halo Ring -->
+        <!-- Radiant Solar Aura Ring -->
         <circle cx="50" cy="40" r="34" fill="none" stroke="#fbbf24" stroke-width="1.6" stroke-dasharray="5 3" opacity="0.8"/>
         <!-- Sunforged Pauldrons & Cuirass -->
         <path d="M8,86 Q14,58 38,64 L34,92 Z M92,86 Q86,58 62,64 L66,92 Z" fill="#451a03" stroke="#fbbf24" stroke-width="2.4"/>
         <polygon points="34,64 66,64 60,92 40,92" fill="#78350f" stroke="#fde68a" stroke-width="2.2"/>
         <polygon points="50,68 56,78 50,88 44,78" fill="#fde68a"/>
-        <!-- Golden Helm Wings -->
+        <!-- Golden Helm Wings & Solar Crown -->
         <path d="M16,22 L32,38 L28,50 L12,34 Z M84,22 L68,38 L72,50 L88,34 Z" fill="#fbbf24" stroke="#fef08a" stroke-width="1.6"/>
-        <!-- Great-Helm & Cruciform Visor -->
-        <path d="M33,26 L50,14 L67,26 L64,58 L50,65 L36,58 Z" fill="#292524" stroke="#fde68a" stroke-width="2.4"/>
-        <line x1="50" y1="20" x2="50" y2="62" stroke="#fbbf24" stroke-width="3"/>
-        <rect x="37" y="38" width="26" height="5" rx="1.5" fill="#fde68a"/>
-        <!-- Upright Greatsword -->
-        <line x1="84" y1="10" x2="84" y2="90" stroke="#fef08a" stroke-width="3.5"/>
-        <line x1="74" y1="28" x2="94" y2="28" stroke="#f59e0b" stroke-width="3"/>
+        <polygon points="34,26 40,12 50,20 60,12 66,26" fill="#fbbf24" stroke="#fef08a" stroke-width="1.5"/>
+        <!-- Royal Great-Helm & Angled V-Visor -->
+        <path d="M33,26 L50,18 L67,26 L64,58 L50,65 L36,58 Z" fill="#292524" stroke="#fde68a" stroke-width="2.4"/>
+        <polygon points="38,38 48,42 38,45" fill="#fde68a"/>
+        <polygon points="62,38 52,42 62,45" fill="#fde68a"/>
+        <polygon points="50,26 54,33 50,40 46,33" fill="#fbbf24"/>
+        <!-- Upright Sun-Spear -->
+        <line x1="84" y1="18" x2="80" y2="90" stroke="#fef08a" stroke-width="3.2"/>
+        <polygon points="85,6 91,20 84,16 78,20" fill="#fbbf24" stroke="#ffffff" stroke-width="1.2"/>
       `;
       break;
   }
@@ -360,18 +362,17 @@ export function renderBossCrestSVG(bossId, color = '#e11d48') {
   let inner = '';
   switch (bossId) {
     case 'boss_malakor':
-      // Warlord Malakor the Ironclad: Spiked Black-Iron Juggernaut Bust & Visor
+      // Warlord Malakor the Ironclad: Spiked Black-Iron Juggernaut Bust & Angled Visor
       inner = `
         <path d="M10,72 Q16,50 32,54 L28,74 Z M70,72 Q64,50 48,54 L52,74 Z" fill="#1f1629" stroke="${color}" stroke-width="2"/>
         <path d="M22,24 L40,12 L58,24 L56,58 L40,66 L24,58 Z" fill="#181224" stroke="${color}" stroke-width="2.4"/>
         <polygon points="14,16 24,28 20,34" fill="#fde68a"/>
         <polygon points="66,16 56,28 60,34" fill="#fde68a"/>
-        <line x1="32" y1="24" x2="32" y2="60" stroke="#fde68a" stroke-width="2"/>
-        <line x1="40" y1="18" x2="40" y2="64" stroke="#fde68a" stroke-width="2.2"/>
-        <line x1="48" y1="24" x2="48" y2="60" stroke="#fde68a" stroke-width="2"/>
-        <rect x="24" y="36" width="32" height="6" fill="${color}"/>
+        <polygon points="27,36 38,40 27,43" fill="${color}"/>
+        <polygon points="53,36 42,40 53,43" fill="${color}"/>
         <circle cx="33" cy="39" r="2.2" fill="#ffffff"/>
         <circle cx="47" cy="39" r="2.2" fill="#ffffff"/>
+        <polygon points="40,22 44,30 40,34 36,30" fill="#fde68a"/>
       `;
       break;
 

@@ -262,12 +262,15 @@ runSuite('10. AppController Screen Navigation, 6 Fantasy Hero Portraits & V1 Bat
     soundEngine: null,
   });
 
-  // Brand title is XCARDO without "III"
+  // Brand title is XCARDO without "III", and Main Menu uses the calm Story Sanctuary layout
   assert.ok(mockRoot.innerHTML.includes('XCARDO'));
   assert.equal(mockRoot.innerHTML.includes('XCARDO III'), false, 'UI must not render XCARDO III');
+  assert.ok(mockRoot.innerHTML.includes('hub-comfort-layout'), 'Main Menu must use the calm comfort layout');
+  assert.ok(mockRoot.innerHTML.includes('story-chronicle-card'), 'Main Menu must show the Story Chronicle card');
 
   app.navigate('campaign');
-  assert.ok(mockRoot.innerHTML.includes('Cathedral Acts'));
+  assert.ok(mockRoot.innerHTML.includes('Story Chapters & Strongholds'));
+  assert.ok(mockRoot.innerHTML.includes('The Story So Far'));
   app.navigate('reliquary');
   assert.ok(mockRoot.innerHTML.includes('Playable Fantasy War Heroes'));
 

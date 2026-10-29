@@ -40,7 +40,7 @@ export const SACRED_GEOMETRY_SHAPES = [
   },
   {
     id: 'crux_fidelis',
-    name: 'Crux Fidelis (+)',
+    name: 'Solar Starburst (5-Stone)',
     points: 3,
     tier: 'major',
     color: '#f59e0b',
@@ -50,7 +50,7 @@ export const SACRED_GEOMETRY_SHAPES = [
   },
   {
     id: 't_altar',
-    name: 'Altar T-Cross',
+    name: 'Royal T-Vanguard',
     points: 3,
     tier: 'major',
     color: '#c084fc',
@@ -63,7 +63,7 @@ export const SACRED_GEOMETRY_SHAPES = [
   },
   {
     id: 'st_andrew_cross',
-    name: "St. Andrew's Saltire (X)",
+    name: 'Twin-Blade X-Formation',
     points: 4,
     tier: 'grand',
     color: '#e11d48',
@@ -73,7 +73,7 @@ export const SACRED_GEOMETRY_SHAPES = [
   },
   {
     id: 'cathedral_cross',
-    name: 'Grand Cathedral Cross',
+    name: 'Grand Sovereign Spire',
     points: 4,
     tier: 'grand',
     color: '#fbbf24',

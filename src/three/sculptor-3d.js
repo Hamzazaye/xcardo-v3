@@ -151,14 +151,16 @@ export function createPieceSculpture3D(symbol, sculptId, materialId, options = {
     helmCrown.castShadow = !isGhost;
     group.add(helmCrown);
 
-    // Glowing Visor Cross
-    const visorH = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.035, 0.06), glowMat);
-    visorH.position.set(0, 0.68, 0.16);
-    group.add(visorH);
-
-    const visorV = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.2, 0.06), trimMat);
-    visorV.position.set(0, 0.66, 0.16);
-    group.add(visorV);
+    // Glowing Royal V-Visor & Forehead Star Gem (No Crosses)
+    for (const dir of [-1, 1]) {
+      const eyeSlit = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.03, 0.06), glowMat);
+      eyeSlit.position.set(dir * 0.06, 0.69, 0.16);
+      eyeSlit.rotation.z = dir * -0.22;
+      group.add(eyeSlit);
+    }
+    const browGem = new THREE.Mesh(new THREE.OctahedronGeometry(0.045, 0), glowMat);
+    browGem.position.set(0, 0.76, 0.17);
+    group.add(browGem);
 
     // Upright Sky-Lance at right side
     const lanceShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.028, 0.78, 6), trimMat);
@@ -292,35 +294,47 @@ export function createPieceSculpture3D(symbol, sculptId, materialId, options = {
     eyeCore.userData.spinSpeed = 2.0;
     group.add(eyeCore);
   } else {
-    // Player Hero 'X' (`seraph_cross`): Paladin Runeblade Champion with Twin Crossed Greatswords & Halo
-    const altarBlock = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, 0.24, 8), primaryMat);
-    altarBlock.position.y = 0.3;
-    altarBlock.castShadow = !isGhost;
-    group.add(altarBlock);
+    // Player Hero 'X' (`seraph_cross`): Solar Paladin Champion with Armored Cuirass, Crown, Star-Shield & Upright Sun-Spear
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.29, 0.34, 8), primaryMat);
+    torso.position.y = 0.36;
+    torso.castShadow = !isGhost;
+    group.add(torso);
 
-    const bladeGeo = new THREE.BoxGeometry(0.68, 0.13, 0.15);
-    const blade1 = new THREE.Mesh(bladeGeo, primaryMat);
-    blade1.position.y = 0.6;
-    blade1.rotation.z = Math.PI / 4;
-    blade1.castShadow = !isGhost;
-    group.add(blade1);
+    // Royal Pauldrons
+    for (const dir of [-1, 1]) {
+      const pauldron = new THREE.Mesh(new THREE.DodecahedronGeometry(0.13, 0), trimMat);
+      pauldron.position.set(dir * 0.24, 0.48, 0);
+      pauldron.castShadow = !isGhost;
+      group.add(pauldron);
+    }
 
-    const blade2 = new THREE.Mesh(bladeGeo, primaryMat);
-    blade2.position.y = 0.6;
-    blade2.rotation.z = -Math.PI / 4;
-    blade2.castShadow = !isGhost;
-    group.add(blade2);
+    // Crowned Solar Helm
+    const helm = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.17, 0.24, 8), primaryMat);
+    helm.position.y = 0.64;
+    helm.castShadow = !isGhost;
+    group.add(helm);
 
-    // Sunforged Gold Halo around the Runeblade intersection
-    const halo = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.028, 8, 24), trimMat);
-    halo.position.y = 0.6;
+    const crown = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.15, 6), trimMat);
+    crown.position.y = 0.83;
+    group.add(crown);
+
+    // Sunforged Gold Halo Ring & Star-Crest Gem
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.028, 8, 24), trimMat);
+    halo.position.set(0, 0.64, -0.06);
     group.add(halo);
 
-    // Radiant Sun-Heart Gem
     const heart = new THREE.Mesh(new THREE.OctahedronGeometry(0.11, 0), glowMat);
-    heart.position.y = 0.6;
+    heart.position.set(0, 0.45, 0.22);
     heart.userData.spinSpeed = 1.6;
     group.add(heart);
+
+    // Upright Sun-Spear at Right Hand
+    const spearShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.028, 0.76, 6), trimMat);
+    spearShaft.position.set(0.27, 0.56, 0.08);
+    group.add(spearShaft);
+    const spearTip = new THREE.Mesh(new THREE.OctahedronGeometry(0.075, 0), glowMat);
+    spearTip.position.set(0.27, 0.98, 0.08);
+    group.add(spearTip);
   }
 
   // 3. Optional Gargoyle Aegis Shield Dome
