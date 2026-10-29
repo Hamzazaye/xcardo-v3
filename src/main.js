@@ -1,0 +1,42 @@
+/**
+ * XcardO III: Obsidian Sanctum
+ * Application Bootstrapper (3D WebGL Gothic Scene + Single-Player AI + Audio + HUD)
+ */
+
+import { EventBus } from './core/event-bus.js';
+import { SaveManager } from './core/save-manager.js';
+import { GothicScene3D } from './three/gothic-scene.js';
+import { GothicSoundEngine } from './audio/sound-engine.js';
+import { AppController } from './ui/app-controller.js';
+
+export function bootstrapXcardoV3() {
+  const eventBus = new EventBus();
+  const saveManager = new SaveManager();
+  const soundEngine = new GothicSoundEngine(saveManager);
+
+  const canvasEl = document.getElementById('gothic-3d-canvas');
+  const rootEl = document.getElementById('app-root');
+
+  const scene3d = new GothicScene3D(canvasEl, eventBus, saveManager);
+  const app = new AppController({
+    rootEl,
+    eventBus,
+    saveManager,
+    scene3d,
+    soundEngine,
+  });
+
+  if (typeof window !== 'undefined') {
+    window.__XCARDO_V3__ = { eventBus, saveManager, scene3d, soundEngine, app };
+  }
+
+  return { eventBus, saveManager, scene3d, soundEngine, app };
+}
+
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootstrapXcardoV3);
+  } else {
+    bootstrapXcardoV3();
+  }
+}

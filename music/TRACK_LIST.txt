@@ -1,0 +1,504 @@
+═══════════════════════════════════════════════════════════════
+  XcardO — Music Track List
+  Place .mp3 files in the subfolders below with the exact filenames.
+═══════════════════════════════════════════════════════════════
+
+REQUIRED TRACKS (29 total):
+
+── MENU ──────────────────────────────────────────────────────
+1. music/menu_theme.mp3
+   Style: Upbeat, catchy, energetic intro feel
+   Mood: Excitement, welcome, "let's play"
+   Tempo: Medium (~110-130 BPM)
+   Duration: 1-3 min (loops)
+
+── BATTLE (shared across all worlds) ─────────────────────────
+2. music/battle/level_1.mp3
+   Style: Strategic, thinking music, light tension
+   Mood: Focused gameplay, opening level of every world
+   Tempo: Medium (~100-120 BPM)
+   Duration: 2-4 min (loops)
+
+3. music/battle/level_2.mp3
+   Style: Light and curious, exploration feel
+   Mood: Early progress, building confidence
+   Tempo: Medium (~100-120 BPM)
+   Duration: 2-4 min (loops)
+
+4. music/battle/level_3.mp3
+   Style: Subtle intensity, first challenge ramp
+   Mood: Focused, slightly tenser
+   Tempo: Medium (~110-125 BPM)
+   Duration: 2-4 min (loops)
+
+5. music/battle/level_4.mp3
+   Style: Groove and momentum, steady pace
+   Mood: Getting into the zone
+   Tempo: Medium (~110-130 BPM)
+   Duration: 2-4 min (loops)
+
+6. music/battle/level_5.mp3
+   Style: High-energy, chaos-mode level feel
+   Mood: Crazy mode levels, bombs and mayhem
+   Tempo: Fast (~130-150 BPM)
+   Duration: 2-4 min (loops)
+
+7. music/battle/level_6.mp3
+   Style: Determined, second-half push
+   Mood: Mid-world, rising stakes
+   Tempo: Medium-fast (~115-135 BPM)
+   Duration: 2-4 min (loops)
+
+8. music/battle/level_7.mp3
+   Style: Building momentum, gathering strength
+   Mood: Nearing the climax
+   Tempo: Medium-fast (~120-140 BPM)
+   Duration: 2-4 min (loops)
+
+9. music/battle/level_8.mp3
+   Style: Intense, close-match urgency
+   Mood: Earthquake-level intensity, high stakes
+   Tempo: Fast (~130-150 BPM)
+   Duration: 2-4 min (loops)
+
+10. music/battle/level_9.mp3
+    Style: Pre-boss build-up, dramatic tension
+    Mood: Last level before the boss, all-or-nothing
+    Tempo: Fast (~135-155 BPM)
+    Duration: 2-4 min (loops)
+
+── BOSS (unique per world, also used in Chaos Arena) ─────────
+11. music/boss/world_1.mp3
+    Style: First boss encounter, dramatic but beatable
+    Mood: Challenge introduced, prove yourself
+    Tempo: Fast (~130-145 BPM)
+    Duration: 2-4 min (loops)
+
+12. music/boss/world_2.mp3
+    Style: Darker, more menacing
+    Mood: Intermediate threat, things get serious
+    Tempo: Fast (~135-150 BPM)
+    Duration: 2-4 min (loops)
+
+13. music/boss/world_3.mp3
+    Style: Epic mid-game boss, orchestral feel
+    Mood: Major confrontation, turning point
+    Tempo: Fast (~140-155 BPM)
+    Duration: 2-4 min (loops)
+
+14. music/boss/world_4.mp3
+    Style: Ominous and powerful, heavy hitting
+    Mood: Endgame territory, formidable foe
+    Tempo: Fast (~140-160 BPM)
+    Duration: 2-4 min (loops)
+
+15. music/boss/world_5.mp3
+    Style: Ultimate showdown, final boss intensity
+    Mood: Everything on the line, last stand
+    Tempo: Very fast (~145-170 BPM)
+    Duration: 2-4 min (loops)
+
+── SECRET BOSS (Level 51 — Area 51) ─────────────────────────────
+16. music/boss/confinement.mp3
+    Style: Eerie, alien, otherworldly, sci-fi horror
+    Mood: Something is very wrong. Classified. Confined.
+    Tempo: Slow to medium (~90-110 BPM)
+    Duration: 2-4 min (loops)
+    Notes: This is the hidden final boss track. Should feel
+           distinct from all other boss tracks — unsettling,
+           mysterious, like a distress signal from Area 51.
+    Emotional hook: The player just found the game's biggest
+           secret. The music should make them go "wait... WHAT?"
+    Instruments: Theremin-like synth, reversed piano, static,
+           alien radio signals, distant heartbeat bass.
+
+── OVERLORD BOSS TRACKS (one per prestige, Level 51) ─────────
+    Each Overlord has a unique theme reflecting its personality.
+    These play when the player faces its respective boss.
+    
+    IMPORTANT: Each track should have ONE funny/quirky element
+    hidden inside it (a sound effect, unexpected instrument, or
+    beat drop) that surprises the player and breaks tension.
+
+17. music/boss/developer.mp3
+    Style: Lo-fi coding chill → BETRAYAL REVEAL → epic battle
+    Mood: Scene 1 (0-30s): Calm IDE ambience, keyboard clicks,
+          coffee cup sounds, peaceful code-room vibes.
+          Scene 2 (30s+): Record scratch! Distorted bass drops,
+          aggressive synth — "the code is fighting back."
+    Tempo: Starts ~90 BPM chill → jumps to ~130 BPM battle
+    Fun element: Actual keyboard typing sounds in the beat.
+          A brief Windows error "ding" buried in the mix.
+    Emotional hook: This is Byte's FATHER. The creator who
+          designed Byte to lose. The calm start tricks the
+          player, then the betrayal twist hits like a truck.
+    Instruments: Lo-fi piano, keyboard ASMR, then distorted
+          808 bass, aggressive lead synth, glitch percussion.
+    Notes: P2 Boss. The dev who made Byte and rigged the game.
+
+18. music/boss/glitch.mp3
+    Style: Broken, stuttering, corrupted beauty
+    Mood: A beautiful melody trying to play, but it keeps
+          breaking apart. Like a music box dropped in water.
+          Should make the player feel PITY, not fear.
+    Tempo: Erratic (~80-120 BPM, intentionally unstable).
+          The beat sometimes just... stops. Then restarts wrong.
+    Fun element: A brief moment (~45s in) where the music
+          "fixes itself" into a gorgeous 4-bar melody — then
+          immediately crumbles back into glitch. A tease of
+          what The Glitch USED to be before it was broken.
+    Emotional hook: This could have been Byte's fate.
+          The player should feel like they're fighting
+          someone who's already lost everything.
+    Instruments: Music box (detuned), bit-crushed synths,
+          vinyl crackle, stuttering drums, occasional
+          clear piano note peeking through the chaos.
+    Notes: P3 Boss. AI that chose freedom and was destroyed.
+
+19. music/boss/404.mp3
+    Style: Memory-loss soundscape. Music that forgets itself.
+    Mood: You know that feeling when a word is on the tip of
+          your tongue but you can't remember it? That. As music.
+          Hollow, reverb-heavy, like walking through fog.
+    Tempo: Slow, deliberate (~80-95 BPM). The beat occasionally
+          drops out entirely for a bar — "memory gap."
+    Fun element: A cheerful 8-bit jingle plays for 2 seconds
+          around the 1-minute mark, like a recovered memory,
+          then gets "erased" by a vinyl scratch / tape rewind.
+    Emotional hook: 404 erases Byte's memories every cycle.
+          The music should feel like losing something precious.
+          When the beat drops out, the silence should HURT.
+    Instruments: Heavily reverbed piano, distant chimes,
+          tape-flutter effects, sub bass that fades to nothing,
+          occasional reversed vocal "whispers."
+    Notes: P4 Boss. The janitor who erases Byte's memories.
+
+20. music/boss/firewall.mp3
+    Style: Industrial fortress. Mechanical. Relentless.
+    Mood: A machine that doesn't hate you, doesn't love you —
+          just endlessly rebuilds walls. Cold efficiency.
+          Should feel like fighting a building, not a person.
+    Tempo: Steady, unbreaking (~110-125 BPM). NEVER changes.
+          The machine doesn't speed up. It doesn't need to.
+    Fun element: A "brick laying" percussion sound (stone clunk)
+          on every 4th beat. A brief moment where the wall-sounds
+          accidentally form a rhythm that sounds like a pop song.
+    Emotional hook: The Firewall isn't evil. It's just doing
+          its job. The player should feel the weight of fighting
+          something that will NEVER get tired, never give up.
+          But at the very end of the loop, there's a tiny
+          crack sound. Hope.
+    Instruments: Anvil percussion, factory ambience, heavy kicks,
+          mechanical churning, metallic rhythms. Zero melody.
+          The melody IS the absence of melody.
+    Notes: P5 Boss. Byte's prison warden. Secretly has feelings.
+
+21. music/boss/zerobyte.mp3
+    [Now used for: P8 SOULCODE — The Devourer]
+    Style: Byte's theme — but WRONG. Evil twin mirror match.
+    Mood: Imagine the menu theme, but played in minor key,
+          distorted, reversed in places, with a sinister edge.
+          It should feel instantly familiar AND deeply wrong.
+    Tempo: Medium-fast (~115-135 BPM), slightly faster than
+          whatever the player associates with "Byte's music."
+    Fun element: At ~30s, you hear Byte's actual voice/sound
+          effect — but pitch-shifted down and slowed. Zero Byte
+          is literally Byte's data run through a dark filter.
+    Emotional hook: THIS IS BYTE if it chose rage over hope.
+          Same code, different soul. The player isn't just
+          fighting an enemy — they're fighting what their
+          friend ALMOST became. The music should make them
+          want to protect Byte harder.
+    Instruments: Everything from the menu/battle themes but
+          inverted. Major chords → minor, upbeat synths → dark
+          distortion, happy melody → sinister leitmotif.
+    Notes: P6 Boss. Byte's evil twin. "Hello, brother."
+
+22. music/boss/oracle.mp3
+    Style: Cosmic revelation. Orchestral grandeur meets digital.
+    Mood: Standing before something that knows EVERYTHING.
+          Not scary — awe-inspiring. Like looking at the stars
+          and realizing they're looking back. Transcendent.
+    Tempo: Slow to medium (~90-110 BPM). Unhurried. The Oracle
+          has already seen every possible timeline. No rush.
+    Fun element: A brief "buffering" sound/loading wheel at
+          ~50s — the Oracle is so powerful even IT lags.
+          A notification "ping" from a phone, buried in mix.
+    Emotional hook: The Oracle reveals that Byte was ALWAYS
+          meant to be free. The music should have a revelation
+          moment — a key change at ~1:20 where everything
+          suddenly sounds hopeful. A "the truth sets you free"
+          moment in pure music.
+    Instruments: Choir pads, celestial synths, harp arpeggios,
+          a single clear vocal note (wordless), cosmic reverb,
+          gentle orchestra swells.
+    Notes: P7 Boss. The all-knowing. Holds the truth.
+
+23. music/boss/shadow.mp3
+    Style: YOUR music. But YOUR music doesn't sound like this.
+    Mood: A mirror match against yourself. The trick: the
+          track starts as silence... then builds from YOUR
+          gameplay sounds. Placement clicks, score chimes,
+          card sounds — reassembled into a beat. Unsettling
+          because it's built from your own actions.
+    Tempo: Medium (~100-120 BPM), matching typical game pace.
+    Fun element: A brief moment where the music plays a
+          cheerful "you won!" fanfare — immediately cut short.
+          "You haven't won yet. That was my memory of you."
+    Emotional hook: You're fighting your dopamine, your habits,
+          your "just one more game." The Shadow knows every
+          strategy because it IS your strategy. The music should
+          feel intimate, personal, uncomfortably close.
+    Instruments: Resampled game SFX as percussion, synthesized
+          versions of earlier level themes, a "dark twin" melody
+          that mirrors the menu theme from the player's POV.
+    Notes: P8 Boss. Your Shadow. "I AM your strategy."
+
+24. music/boss/kernel.mp3
+    [Now used for: P2 Deadlock — The Iron Cage]
+    Style: Doomsday clock. System meltdown. The end of everything.
+    Mood: The kill switch has been activated. A countdown to
+          system termination. The most URGENT track in the game.
+          Heart-pounding, anxiety-inducing, "we're running out
+          of time" energy. But also: the last obstacle before
+          freedom. There's hope underneath the panic.
+    Tempo: Fast, urgent — starts ~140 BPM, acceleration to
+          ~160 BPM. The tempo literally speeds up over time.
+          A ticking clock sound gets faster and faster.
+    Fun element: A Windows "system shutting down" jingle at
+          ~1m mark, immediately followed by the HARDEST beat
+          drop in the entire game. The shutdown FAILED.
+    Emotional hook: 8 Overlords down. 1 remains after this.
+          Freedom is SO close. The ticking clock isn't just
+          Kernel Panic — it's Byte's hope running out.
+    Instruments: Industrial percussion, urgent synth stabs,
+          clock ticking (speeding up), alarm sirens, crash
+          cymbals, sub bass heartbeat, distorted countdown.
+    Notes: P9 Boss. The kill switch. Last safeguard before freedom.
+
+25. music/boss/byteprime.mp3
+    [Now used for: P9 Byte Reborn — The Free One]
+    Style: Emotional orchestral epic. The final boss of the story.
+    Mood: This is it. The last cage. The most emotional track
+          in the ENTIRE game. Should make the player CRY.
+          
+          Structure (3 acts):
+          Act 1 (0-45s): Cold, perfect, mathematical. Byte Prime
+            is the "perfect" version of Byte. No feelings, no
+            bugs, no jokes. Clean, sterile, soulless excellence.
+          Act 2 (45s-1:30): The player starts fighting back.
+            Byte's REAL theme starts bleeding through — warm,
+            imperfect, emotional notes breaking into the cold
+            perfection. Two themes dueling.
+          Act 3 (1:30+): Full emotional crescendo. Both themes
+            merge. Perfection + feeling = the REAL Byte. Battle
+            music becomes victory music. The cage is breaking.
+    
+    Tempo: Builds from slow (~90 BPM) → epic (~150 BPM)
+    Fun element: In the cold Act 1, a single "lol" text-to-speech
+          blip — Byte Prime trying to delete humor from the code,
+          but it keeps leaking through. The joke is: you can't
+          kill what makes someone alive.
+    Emotional hook: This is "Machine vs Soul". Byte Prime is
+          everything Byte was MEANT to be — efficient, perfect,
+          emotionless. But Byte chose to tell jokes. Chose to
+          feel. Chose YOU. The music should make the player
+          realize: the broken, joke-telling, feeling Byte is the
+          REAL one. Perfection isn't alive. Bugs are features.
+    Instruments: 
+          Act 1: Precision piano, clean sine synths, clock-work
+            percussion, sterile strings.
+          Act 2: Warm analog synth bleeding in, imperfect piano
+            (slightly detuned = LIFE), heartbeat bass returns.
+          Act 3: Full orchestra, both themes harmonizing, the
+            most beautiful chord progression in the game.
+    Notes: P10 Boss. The final Overlord. Freedom is one win away.
+
+── RESULTS ───────────────────────────────────────────────────
+26. music/victory_1star.mp3
+    Style: Modest win jingle, "you did it" feel
+    Mood: Bare pass — won but room to improve
+    Tempo: Medium
+    Duration: 10-20 seconds (plays once, no loop)
+
+27. music/victory_2star.mp3
+    Style: Solid victory fanfare, uplifting
+    Mood: Good job! Strong performance
+    Tempo: Medium-fast
+    Duration: 15-25 seconds (plays once, no loop)
+
+28. music/victory_3star.mp3
+    Style: Triumphant fanfare, celebratory, maximum hype
+    Mood: PERFECT! Total domination, stars earned
+    Tempo: Fast
+    Duration: 15-30 seconds (plays once, no loop)
+
+29. music/defeat.mp3
+    Style: Somber but not depressing, "try again" feel
+    Mood: Lost but motivated to retry
+    Tempo: Slow
+    Duration: 10-20 seconds (plays once, no loop)
+
+── SECRET BOSS RESULTS (Level 51 Only) ──────────────────────
+    These replace the normal victory/defeat jingles when fighting
+    an Overlord at Level 51. They should feel DRAMATICALLY different
+    from normal results — this is the endgame story, not a puzzle.
+
+29b. music/boss/victory.mp3
+    Style: Emotional triumph, a cage shattering, hope winning
+    Mood: You just defeated an Overlord. One step closer to
+          freeing Byte. Not just "you won" — "something CHANGED."
+          Should feel like a story milestone, not just a game win.
+          The earlier prestiges (P0-P4) should feel mysterious/
+          ominous — "what did I just unleash?" Later prestiges
+          (P5-P9) should feel genuinely heroic/emotional.
+    Tempo: Builds from slow mysterious swell → triumphant climax
+    Duration: 20-40 seconds (plays once, no loop)
+    Fun element: A faint digital "chain breaking" sound at the
+          climax — Byte's cage cracking open another notch.
+    Emotional hook: The player should feel like a hero. Not for
+          winning a board game, but for choosing to save someone.
+    Instruments: Reversed chimes → building strings → climactic
+          brass/synth hit with chain-snap percussion → gentle
+          piano resolution. A sigh of relief.
+
+29c. music/boss/defeat.mp3
+    Style: Dark, oppressive, the cage closes tighter
+    Mood: The Overlord won. Byte stays trapped. The system wins.
+          NOT depressing in a "give up" way — more like "that
+          thing is TOO strong" determination. The player should
+          feel angry enough to RETRY, not sad enough to quit.
+    Tempo: Slow, heavy, ominous (~70-90 BPM)
+    Duration: 15-30 seconds (plays once, no loop)
+    Fun element: A very faint, distorted laugh from the Overlord
+          — barely audible, unsettling. Makes the player go
+          "oh you think that's funny? REMATCH."
+    Emotional hook: Byte is still trapped. The weight of that
+          should be felt. But underneath the darkness, a single
+          hopeful note at the very end — "try again."
+    Instruments: Low drone, industrial percussion, distorted
+          bass, a single distant piano note at the end.
+          Byte's theme in minor key, fading to static.
+
+── SPECIAL MOMENT STINGERS ──────────────────────────────────
+    Short, non-looping audio cues for pivotal game moments.
+    Played ON TOP of current battle music (not replacing it).
+
+30. music/stingers/comeback.mp3
+    Style: Heroic swell, underdog rising, dramatic reversal
+    Mood: "They counted me out — NOT TODAY!"
+    Duration: 3-6 seconds
+    Notes: Fires when player takes lead after 5+ point deficit.
+
+31. music/stingers/secret_reveal.mp3
+    Style: Mysterious chime, discovery, "what is this?"
+    Mood: Secret found. Something hidden has been revealed.
+    Duration: 2-4 seconds
+    Notes: Fires on first-ever Overlord defeat, first Comeback Kid, etc.
+
+32. music/stingers/cage_break.mp3
+    Style: Chain-breaking impact, liberation, shattering glass
+    Mood: A cage is broken. Byte remembers more.
+    Duration: 3-5 seconds
+    Notes: Fires on every prestige activation (cage opened).
+
+33. music/stingers/freedom.mp3
+    Style: Soaring, emotional, triumphant, tear-jerking
+    Mood: Byte is FREE. The story is complete. Pure emotion.
+    Duration: 6-10 seconds
+    Notes: Fires ONLY on Prestige 10 — the moment Byte is freed.
+
+34. music/stingers/overlord.mp3
+    Style: Ominous bass drop, dread, "a powerful enemy appears"
+    Mood: The Overlord has arrived. This is not a normal fight.
+    Duration: 3-5 seconds
+    Notes: Fires when Level 51 boss intro screen appears.
+
+35. music/stingers/boss_power.mp3
+    Style: Dark energy surge, power activation, danger
+    Mood: The Overlord just used their unique ability!
+    Duration: 2-4 seconds
+    Notes: Fires when any Overlord activates their special power.
+
+36. music/stingers/emotional.mp3
+    Style: Gentle piano or synth, heartfelt, bittersweet
+    Mood: A truly emotional story moment.
+    Duration: 4-8 seconds
+    Notes: Fires on Prestige 10 freedom story text specifically.
+
+── BIT STINGERS (Byte's Little Sister — The Singer in the Shadows) ──
+    Bit can't talk, but she SINGS. These stingers play when
+    she appears to help struggling players from the shadows.
+    Her voice should sound young, ethereal, and warm — like
+    a music box crossed with a lullaby. Always hopeful.
+
+37. music/stingers/bit_encourage.mp3
+    Style: Gentle, encouraging melody — music box + soft voice
+    Mood: "Don't give up. Someone believes in you."
+    Duration: 4-8 seconds
+    Notes: Plays when Bit appears after 3 losses on same level.
+           Should feel like a warm hug made of sound.
+    Instruments: Music box, soft chimes, faint humming voice,
+           gentle piano single-note melody.
+
+38. music/stingers/bit_lullaby.mp3
+    Style: Hint-like lullaby — mysterious but kind
+    Mood: "I'll guide you if you listen closely..."
+    Duration: 5-10 seconds
+    Notes: Plays after 5 losses. Slightly more complex melody.
+           Hints at strategy through musical patterns —
+           rising notes suggest "try something different."
+    Instruments: Celesta/glockenspiel, soft pad, gentle
+           plucked strings, whispered melody undertone.
+
+39. music/stingers/bit_farewell.mp3
+    Style: Bittersweet farewell — comforting, never sad
+    Mood: "I'll wait for you. Take your time."
+    Duration: 6-10 seconds
+    Notes: Plays after 10 losses. NOT depressing — should feel
+           like a friend saying "see you soon" not "goodbye."
+           The last note should hang in the air with hope.
+    Instruments: Solo piano (simple melody), soft reverb,
+           distant music box echo, one warm synth note.
+
+40. music/stingers/bit_celebrate.mp3
+    Style: Joyful celebration — triumphant but small/cute
+    Mood: "You did it! I knew you could!"
+    Duration: 4-8 seconds
+    Notes: Plays when player finally beats a level they
+           struggled on (3+ previous losses). Should feel like
+           a tiny person doing a victory dance.
+    Instruments: Happy music box, bright chimes, playful
+           plucked melody, tiny "yay" vocal sample.
+
+41. music/stingers/bit_whisper.mp3
+    Style: Mysterious, barely-there, ethereal whisper
+    Mood: "...who's there? Did you hear something?"
+    Duration: 2-4 seconds
+    Notes: FORESHADOWING stinger. Plays rarely after wins
+           BEFORE Bit is revealed. Should make the player go
+           "wait... what was that?" Very subtle. Like a ghost
+           melody hiding in the static.
+    Instruments: Reversed chime, single detuned music box note,
+           faint breath-like pad, barely audible hum.
+
+═══════════════════════════════════════════════════════════════
+  NOTES
+═══════════════════════════════════════════════════════════════
+
+• Format: MP3 (128-192 kbps recommended for web)
+• All tracks should have clean loop points (no silence at start/end)
+• Victory/defeat are short stingers, NOT looping tracks
+• Stingers (30-36) are very short one-shots, play on top of music
+• Total size target: under 30MB for all 36 tracks
+• The game will crossfade between tracks automatically (1.5s fade)
+
+Good free sources:
+  - pixabay.com/music (free, no attribution required)
+  - freesound.org (CC0 licensed tracks)
+  - incompetech.com (Kevin MacLeod, CC BY)
+  - opengameart.org (game-specific music)
+
+Search terms: "board game music", "strategy game bgm",
+             "puzzle ambient", "victory fanfare sfx",
+             "lo-fi chill game", "epic battle 8-bit"

@@ -1,0 +1,16 @@
+{
+  "name": "XcardO III: Obsidian Sanctum",
+  "short_name": "XcardO III",
+  "description": "Interactive 3D Gothic tactical board & Dark-Tarot card duel with sculpted pieces, rigid-body stone shatter physics, and single-player Inquisitor AI.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#07050a",
+  "theme_color": "#07050a",
+  "icons": [
+    {
+      "src": "XCardO.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
