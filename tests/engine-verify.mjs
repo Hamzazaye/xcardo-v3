@@ -10,9 +10,15 @@ import {
   ARCANA_CARDS,
   CATHEDRAL_LEVELS,
   CRYPT_TRIALS,
+  INQUISITOR_BOSSES,
   SCULPTED_PIECES,
   STONE_MATERIALS,
 } from '../src/data/gothic-config.js';
+import {
+  renderTarotArtSVG,
+  renderBossCrestSVG,
+  renderRoseWindowSVG,
+} from '../src/ui/gothic-svg.js';
 import { scanBoardPatterns } from '../src/engine/pattern-detector.js';
 import { selectBestAIMove, scanEnemyThreatCells } from '../src/engine/ai-brain.js';
 import { BattleEngine } from '../src/engine/game-state.js';
@@ -230,6 +236,24 @@ runSuite('10. AppController Screen Navigation & Battle HUD Rendering', () => {
   assert.ok(mockRoot.innerHTML.includes('Reliquary Atelier'));
   app.startCampaignLevel(1);
   assert.ok(mockRoot.innerHTML.includes('ORDER OF THE ROSE'));
+
+  // Verify all 20 Dark-Tarot Cards & 6 Boss Portraits render unique bespoke SVG art
+  const tarotSVGs = new Set();
+  for (const card of ARCANA_CARDS) {
+    const svg = renderTarotArtSVG(card).replace(/tarot_[a-z0-9_]+/g, 'ID');
+    assert.ok(svg.includes('<svg'), `Card ${card.id} must render SVG`);
+    tarotSVGs.add(svg);
+  }
+  assert.equal(tarotSVGs.size, 20, 'All 20 Dark-Tarot cards must have unique bespoke vector artwork');
+
+  const bossSVGs = new Set();
+  for (const boss of INQUISITOR_BOSSES) {
+    const svg = renderBossCrestSVG(boss.id, boss.color);
+    assert.ok(svg.includes('<svg'));
+    bossSVGs.add(svg);
+  }
+  assert.equal(bossSVGs.size, 6, 'All 6 Arch-Inquisitor Bosses must have unique heraldic portraits');
+  assert.ok(renderRoseWindowSVG().includes('rose-window-svg'));
 });
 
 console.log(`\nALL ${passed}/10 XCARDO III VERIFICATION SUITES PASSED!`);

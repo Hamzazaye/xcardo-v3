@@ -27,6 +27,7 @@ import {
   renderBossCrestSVG,
   renderGothicIconSVG,
   renderGeometryBlueprintSVG,
+  renderRoseWindowSVG,
 } from './gothic-svg.js';
 
 export class AppController {
@@ -522,59 +523,157 @@ export class AppController {
   _renderSanctumHub() {
     const state = this.save.getState();
     const curLevel = getLevelByNumber(state.highestUnlockedLevel);
+    const curAct = CATHEDRAL_ACTS.find((a) => a.actId === (curLevel?.actId || 1)) || CATHEDRAL_ACTS[0];
+    const featuredTarot = [
+      getArcanaCardById('warhammer_penance'),
+      getArcanaCardById('brimstone_cataclysm'),
+      getArcanaCardById('sanguine_conversion'),
+    ].filter(Boolean);
+    const solvedCrypts = Object.keys(state.completedCrypts || {}).length;
 
     return `
       ${this._renderTopNav('hub')}
       <main class="hub-split-layout">
+        <!-- Left Cathedral Command Wing -->
         <section class="hub-hero-panel gothic-card-panel">
-          <div class="gothic-eyebrow">INTERACTIVE 3D WEBGL TABLETOP & DARK-TAROT DUEL</div>
-          <h1 class="gothic-hero-title">CONSECRATE THE ALTAR.<br/>SHATTER HERETICAL STONE.</h1>
+          <div class="hub-hero-header-badge">
+            <div class="rose-medallion-wrap">${renderRoseWindowSVG('#d4a853')}</div>
+            <div>
+              <div class="gothic-eyebrow">ACT ${curAct.actId}: ${curAct.name.toUpperCase()} • VOW #${state.highestUnlockedLevel}/36</div>
+              <h1 class="gothic-hero-title">CONSECRATE THE ALTAR.<br/>SHATTER HERETICAL STONE.</h1>
+            </div>
+          </div>
+
           <p class="gothic-hero-desc">
             Command sculpted 3D marble and obsidian relics across a candlelit Cathedral Altar.
-            Align Sacred Gothic Geometry, invoke 20 Dark-Tarot Arcana cards, and watch enemy formations
-            detonate with real-time rigid-body stone shatter physics against a 6-tier Single-Player Inquisitor AI.
+            Align Sacred Gothic Geometry, invoke 20 Dark-Tarot Arcana scripts, and detonate enemy formations
+            with real-time rigid-body stone shatter physics against a 6-tier Single-Player Inquisitor AI.
           </p>
+
+          <!-- Active Arch-Inquisitor Confrontation Strip + 3-Card Dark-Tarot Fan -->
+          <div class="hub-boss-and-tarot-showcase">
+            <div class="hub-boss-preview-box">
+              <div class="hub-boss-crest">${renderBossCrestSVG(curAct.boss.id, curAct.boss.color)}</div>
+              <div class="hub-boss-meta">
+                <span class="boss-eyebrow">ACT ${curAct.actId} OVERLORD</span>
+                <strong>${curAct.boss.name}</strong>
+                <small>${curAct.boss.title}</small>
+              </div>
+            </div>
+
+            <div class="hub-tarot-fan" aria-label="Featured Dark-Tarot Scripts">
+              ${featuredTarot
+                .map(
+                  (card, idx) => `
+                    <div class="hub-mini-tarot tarot-fan-${idx}" title="${card.name}: ${card.desc}">
+                      <div class="hub-mini-tarot-top">
+                        <span>${card.numeral}</span>
+                        <span>${card.cost}T</span>
+                      </div>
+                      <div class="hub-mini-tarot-art">${renderTarotArtSVG(card)}</div>
+                      <div class="hub-mini-tarot-name">${card.name}</div>
+                    </div>
+                  `
+                )
+                .join('')}
+            </div>
+          </div>
 
           <div class="hub-cta-row">
             <button class="btn-gothic-primary" data-action="start-level" data-level="${state.highestUnlockedLevel}">
               ${renderGothicIconSVG('sword')}
-              <span>Enter Sanctum Vow #${state.highestUnlockedLevel}: ${curLevel?.name || 'Nave'}</span>
+              <span>Enter Vow #${state.highestUnlockedLevel}: ${curLevel?.name || 'Nave'}</span>
             </button>
             <button class="btn-gothic-secondary" data-action="nav" data-screen="skirmish">
               Instant 3D AI Duel
             </button>
             <button class="btn-gothic-ghost" data-action="demo-shatter">
-              ${renderGothicIconSVG('shatter')} Test 3D Stone Shatter
+              ${renderGothicIconSVG('shatter')} Shatter 3D Altar Now
             </button>
           </div>
 
-          <div class="hub-feature-strip">
-            <div class="feature-badge">
-              <strong>6 Sculpted 3D Relics</strong>
-              <span>Seraph Cross, Templar Helm, Gargoyle, Iron Torus, Ossuary Skull & Obelisk</span>
+          <!-- 4 Quick Mode Bento Portals -->
+          <div class="hub-bento-portals">
+            <div class="hub-portal-tile" data-action="nav" data-screen="campaign">
+              <span class="portal-tile-tag">6 ACTS • 6 BOSSES</span>
+              <strong>36 Cathedral Vows</strong>
+              <small>Unlocked: #${state.highestUnlockedLevel}/36</small>
             </div>
-            <div class="feature-badge">
-              <strong>Rigid-Body Shatter Physics</strong>
-              <span>30+ polyhedral stone shards per blast with altar restitution & Warhammers</span>
+            <div class="hub-portal-tile" data-action="nav" data-screen="crypt">
+              <span class="portal-tile-tag">1-TURN LETHAL</span>
+              <strong>Crypt Stone Trials</strong>
+              <small>Solved: ${solvedCrypts}/${CRYPT_TRIALS.length}</small>
             </div>
-            <div class="feature-badge">
-              <strong>6-Tier Inquisitor AI</strong>
-              <span>Single-player bosses with live 3D head tracking & tactical Tarot counters</span>
+            <div class="hub-portal-tile" data-action="nav" data-screen="reliquary">
+              <span class="portal-tile-tag">3D SCULPTOR</span>
+              <strong>Reliquary Atelier</strong>
+              <small>6 Sculptures • 6 Stones</small>
+            </div>
+            <div class="hub-portal-tile" data-action="nav" data-screen="codex">
+              <span class="portal-tile-tag">EXALTED [+]</span>
+              <strong>Dark-Tarot Codex</strong>
+              <small>20 Arcana • 7 Shapes</small>
             </div>
           </div>
         </section>
 
+        <!-- Right Interactive 3D WebGL Altar Atelier & Camera Dock -->
         <aside class="hub-Viewport-Callout">
-          <div class="viewport-controls-floating">
-            <div class="viewport-hint-tag">LIVE 3D ALTAR PREVIEW — Drag to Orbit • Scroll to Zoom</div>
-            <div class="camera-preset-pills">
-              ${CAMERA_PRESETS.map(
-                (p) => `
-                  <button class="cam-pill ${state.cameraPreset === p.id ? 'active' : ''}" data-action="set-camera" data-cam="${p.id}">
-                    ${p.name}
-                  </button>
-                `
-              ).join('')}
+          <div class="viewport-controls-floating gothic-card-panel">
+            <div class="viewport-hint-tag">LIVE INTERACTIVE 3D ALTAR — Drag to Orbit • Scroll to Zoom</div>
+
+            <div class="hub-atelier-group">
+              <span class="atelier-group-label">3D Order Sculpture (Live Preview)</span>
+              <div class="camera-preset-pills">
+                ${SCULPTED_PIECES.player
+                  .map(
+                    (s) => `
+                      <button class="cam-pill ${state.equippedPlayerSculpt === s.id ? 'active' : ''}" data-action="hub-preview-sculpt" data-id="${s.id}">
+                        ${s.name.replace(' Relic', '')}
+                      </button>
+                    `
+                  )
+                  .join('')}
+              </div>
+            </div>
+
+            <div class="hub-atelier-group">
+              <span class="atelier-group-label">PBR Stone & Metal Finish</span>
+              <div class="camera-preset-pills">
+                ${STONE_MATERIALS.map(
+                  (m) => `
+                    <button class="cam-pill ${state.equippedPlayerMaterial === m.id ? 'active' : ''}" data-action="hub-preview-material" data-id="${m.id}">
+                      ${m.name.split(' ')[0]}
+                    </button>
+                  `
+                ).join('')}
+              </div>
+            </div>
+
+            <div class="hub-atelier-group">
+              <span class="atelier-group-label">3D Cathedral Hall & Torchlight</span>
+              <div class="camera-preset-pills">
+                ${CATHEDRAL_HALLS.map(
+                  (h) => `
+                    <button class="cam-pill ${state.equippedHall === h.id ? 'active' : ''}" data-action="hub-preview-hall" data-id="${h.id}">
+                      ${h.name.replace('The ', '')}
+                    </button>
+                  `
+                ).join('')}
+              </div>
+            </div>
+
+            <div class="hub-atelier-group">
+              <span class="atelier-group-label">3D Camera Perspective</span>
+              <div class="camera-preset-pills">
+                ${CAMERA_PRESETS.map(
+                  (p) => `
+                    <button class="cam-pill ${state.cameraPreset === p.id ? 'active' : ''}" data-action="set-camera" data-cam="${p.id}">
+                      ${p.name}
+                    </button>
+                  `
+                ).join('')}
+              </div>
             </div>
           </div>
         </aside>
@@ -1248,6 +1347,30 @@ export class AppController {
           case 'launch-skirmish':
             this.startSkirmishMatch();
             break;
+          case 'hub-preview-sculpt': {
+            const id = el.getAttribute('data-id');
+            this.save.equipCosmetic('equippedPlayerSculpt', id);
+            this.sound?.playStoneSlam('X');
+            this._setupDemoAltar();
+            this.render();
+            break;
+          }
+          case 'hub-preview-material': {
+            const id = el.getAttribute('data-id');
+            this.save.equipCosmetic('equippedPlayerMaterial', id);
+            this.sound?.playStoneSlam('X');
+            this._setupDemoAltar();
+            this.render();
+            break;
+          }
+          case 'hub-preview-hall': {
+            const id = el.getAttribute('data-id');
+            this.save.equipCosmetic('equippedHall', id);
+            this.sound?.playUIHover();
+            this._setupDemoAltar();
+            this.render();
+            break;
+          }
         }
       });
     });

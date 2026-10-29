@@ -530,6 +530,21 @@ export function createCathedralAltar3D(boardSize = 5, hallConfig = {}) {
   ];
   const brazierFlames = [];
 
+  // 2b. Distant Gothic Apse Ribbed Columns & Glowing Rose-Window Arch behind the Inquisitor
+  const apseZ = -altarWidth * 0.5 - 3.2;
+  for (const colX of [-4.2, -2.2, 2.2, 4.2]) {
+    const apseCol = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.44, 6.8, 8), slabMat);
+    apseCol.position.set(colX, 2.2, apseZ);
+    apseCol.receiveShadow = true;
+    root.add(apseCol);
+  }
+  const roseRing = new THREE.Mesh(
+    new THREE.TorusGeometry(1.75, 0.09, 8, 24),
+    trimMat
+  );
+  roseRing.position.set(0, 3.1, apseZ - 0.4);
+  root.add(roseRing);
+
   const emberMat = new THREE.MeshStandardMaterial({
     color: new THREE.Color(hallConfig.brazierColor || 0xff7b29),
     emissive: new THREE.Color(hallConfig.brazierColor || 0xff7b29),
