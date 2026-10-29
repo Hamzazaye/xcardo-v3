@@ -1,5 +1,5 @@
 /**
- * XcardO III — Obsidian Sanctum (3D Gothic Edition)
+ * XcardO — Warlords of the Obsidian Altar (Interactive 3D Edition)
  * Deterministic Seeded PRNG (Mulberry32) & FNV-1a Save Checksum
  */
 
@@ -31,6 +31,10 @@ export class SeededRNG {
 
   int(min, max) {
     return Math.floor(this.next() * (max - min + 1)) + min;
+  }
+
+  nextInt(min, max) {
+    return this.int(min, max);
   }
 
   chance(probability) {

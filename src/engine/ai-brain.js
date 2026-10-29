@@ -1,5 +1,5 @@
 /**
- * XcardO III: Obsidian Sanctum
+ * XcardO: Warlords of the Obsidian Altar
  * 6-Tier Single-Player Inquisitor AI & Tactical Oracle Engine
  */
 

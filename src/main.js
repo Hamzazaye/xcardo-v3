@@ -1,6 +1,6 @@
 /**
- * XcardO III: Obsidian Sanctum
- * Application Bootstrapper (3D WebGL Gothic Scene + Single-Player AI + Audio + HUD)
+ * XcardO — Warlords of the Obsidian Altar
+ * Application Bootstrapper (3D WebGL Fantasy War-Table + Single-Player AI + Audio + HUD)
  */
 
 import { EventBus } from './core/event-bus.js';

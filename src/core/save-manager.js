@@ -1,6 +1,6 @@
 /**
- * XcardO III: Obsidian Sanctum
- * Checksummed Save & 3D Reliquary Progression Manager
+ * XcardO — 3D Fantasy War-Table Strategy
+ * Checksummed Save, Fantasy Hero Roster & War-Scroll Progression Manager
  */
 
 import { computeSaveChecksum } from './rng.js';
@@ -16,11 +16,13 @@ export class SaveManager {
   _defaultState() {
     return {
       version: 3,
-      commanderTitle: 'Grand Templar',
+      commanderTitle: 'High Paladin',
+      selectedHeroId: 'hero_paladin',
       reliquarySigils: 300,
       highestUnlockedLevel: 1,
       completedLevels: {}, // { [levelNum]: stars (1..3) }
       completedCrypts: {}, // { [cryptId]: true }
+      unlockedCards: ['warhammer_penance', 'gargoyle_aegis', 'sanguine_conversion'],
       totalStonesShattered: 0,
       totalMatchesWon: 0,
       totalMatchesPlayed: 0,
@@ -44,7 +46,7 @@ export class SaveManager {
       equippedOaths: ['oath_blood_chalice'],
       equippedBell: 'bell_dies_irae',
 
-      // Exalted [+] Dark-Tarot Cards & Custom Deck
+      // Exalted [+] War-Scroll Cards & Custom Deck
       upgradedCards: [],
       customDeck: [],
 
@@ -92,6 +94,11 @@ export class SaveManager {
     return this.state;
   }
 
+  selectHero(heroId) {
+    this.state.selectedHeroId = heroId;
+    this.save();
+  }
+
   addReliquarySigils(amount) {
     this.state.reliquarySigils = Math.max(0, (this.state.reliquarySigils || 0) + amount);
     this.save();
@@ -102,7 +109,7 @@ export class SaveManager {
     this.save();
   }
 
-  recordCampaignVictory(levelNumber, stars = 3, sigilReward = 120) {
+  recordCampaignVictory(levelNumber, stars = 3, sigilReward = 120, cardUnlock = null) {
     this.state.totalMatchesPlayed++;
     this.state.totalMatchesWon++;
     this.state.reliquarySigils += sigilReward;
@@ -110,6 +117,9 @@ export class SaveManager {
     this.state.completedLevels[levelNumber] = Math.max(prevStars, stars);
     if (levelNumber >= this.state.highestUnlockedLevel && levelNumber < 36) {
       this.state.highestUnlockedLevel = levelNumber + 1;
+    }
+    if (cardUnlock && Array.isArray(this.state.unlockedCards) && !this.state.unlockedCards.includes(cardUnlock)) {
+      this.state.unlockedCards.push(cardUnlock);
     }
     this.save();
   }
@@ -163,7 +173,7 @@ export class SaveManager {
 
   exaltArcanaCard(cardId, cost = 150) {
     if (this.state.upgradedCards.includes(cardId)) {
-      return { ok: false, reason: 'Script is already Exalted [+].' };
+      return { ok: false, reason: 'Scroll is already Exalted [+].' };
     }
     if (this.state.reliquarySigils < cost) {
       return { ok: false, reason: `Requires ${cost} Reliquary Sigils to Exalt.` };

@@ -1,6 +1,7 @@
 /**
- * XcardO III: Obsidian Sanctum
- * Core Battle State Machine, Dark-Tarot Execution & 3D Event Bridge
+ * XcardO — 3D Fantasy War-Table Strategy
+ * Core Battle State Machine, v1 Rules Engine (No Cards Until Level 3, 3-Slot In-Battle Card Shop,
+ * Coin Economy, Mystery War-Chests & Siege Bombs) & 3D Event Bridge
  */
 
 import { SeededRNG } from '../core/rng.js';
@@ -10,6 +11,7 @@ import {
   getArcanaCardById,
   getLevelByNumber,
   getCryptTrialById,
+  getFantasyHeroById,
   PENITENCE_BELLS,
 } from '../data/gothic-config.js';
 import { scanBoardPatterns, previewPlacementScoring } from './pattern-detector.js';
@@ -19,8 +21,10 @@ export class BattleEngine {
   constructor(eventBus, options = {}) {
     this.bus = eventBus;
     this.mode = options.mode || 'campaign'; // 'campaign' | 'skirmish' | 'crypt' | 'local2p'
-    this.levelNumber = options.levelNumber || 1;
+    this.levelNumber = Number(options.levelNumber || 1);
     this.cryptId = options.cryptId || null;
+    this.heroId = options.heroId || 'hero_paladin';
+    this.hero = getFantasyHeroById(this.heroId);
 
     const levelData =
       this.mode === 'campaign'
@@ -33,14 +37,24 @@ export class BattleEngine {
     this.boardSize = options.boardSize || (levelData ? levelData.boardSize : 5);
     this.targetScore = options.targetScore || (levelData ? levelData.targetScore : 6);
     this.aiTier = options.aiTier || (levelData ? levelData.aiTier : 3);
-    this.boss = levelData ? levelData.boss : null;
+    this.boss = options.boss || (levelData ? levelData.boss : null);
     this.cathedralHallId = options.cathedralHallId || (levelData ? levelData.hallId : 'obsidian_nave');
+
+    // v1 RULE: NO CARDS & NO SHOP UNTIL LEVEL 3 IN CAMPAIGN MODE!
+    if (options.cardsEnabled !== undefined) {
+      this.cardsEnabled = Boolean(options.cardsEnabled);
+    } else if (this.mode === 'campaign') {
+      this.cardsEnabled = this.levelNumber >= GAME_CONFIG.CARDS_UNLOCK_LEVEL;
+    } else {
+      this.cardsEnabled = true;
+    }
 
     // Blood Oath Relics & Penitence Bell Ultimate
     this.activeOaths = new Set(options.activeOaths || ['oath_blood_chalice']);
     this.penitenceBellId = options.penitenceBellId || 'bell_dies_irae';
     this.upgradedCards = new Set(options.upgradedCards || []);
     this.customDeckIds = options.customDeckIds || null;
+    this.unlockedCardIds = options.unlockedCardIds || null;
 
     this.seed = options.seed || Date.now();
     this.rng = new SeededRNG(this.seed);
@@ -63,20 +77,29 @@ export class BattleEngine {
     this.winner = null;
 
     this.scores = { X: 0, O: 0 };
-    const bonusTitheX = this.hasOath('oath_blood_chalice') ? 2 : 0;
-    this.tithe = {
-      X: GAME_CONFIG.INITIAL_BLOOD_TITHE + bonusTitheX,
-      O: GAME_CONFIG.INITIAL_BLOOD_TITHE,
-    };
+    this.ownTurns = { X: 1, O: 0 };
+
+    // v1 Rule: If cardsEnabled is false (Levels 1 & 2), players start with 0 Gold and 0 Cards!
+    if (!this.cardsEnabled) {
+      this.tithe = { X: 0, O: 0 };
+    } else {
+      const oathCoins = this.hasOath('oath_blood_chalice') ? 2 : 0;
+      const heroCoins = this.hero?.id === 'hero_paladin' ? 1 : 0;
+      this.tithe = {
+        X: GAME_CONFIG.INITIAL_BLOOD_TITHE + oathCoins + heroCoins,
+        O: GAME_CONFIG.INITIAL_BLOOD_TITHE,
+      };
+    }
 
     this.placementsRemaining = 1;
     this.cardsPlayedThisTurn = 0;
     this.cardsPlayedTotal = 0;
     this.stonesShatteredThisMatch = 0;
 
-    // Penitence Bell Ultimate Charge (0..100)
+    // War-Horn / Penitence Bell Ultimate Charge (0..100)
+    const heroBellBonus = this.hero?.id === 'hero_valkyrie' ? 20 : 0;
     this.bellCharge = {
-      X: this.hasOath('oath_cathedral_chime') ? 35 : 0,
+      X: Math.min(100, (this.hasOath('oath_cathedral_chime') ? 35 : 0) + heroBellBonus),
       O: 0,
     };
     this.bellUsedThisMatch = { X: false, O: false };
@@ -100,35 +123,47 @@ export class BattleEngine {
         r,
         c,
         symbol: null,       // 'X' | 'O' | 'W' | null
-        locked: 0,          // Iron Cage turns remaining
+        locked: 0,          // Iron Cage / Crater revive turns remaining
         shield: 0,          // Gargoyle Aegis turns remaining
         obstacle: null,     // 'gargoyle_bastion' | 'reliquary_coffer' | null
         anomaly: null,      // 'sanctified_mosaic' | 'cursed_censer' | 'blood_chalice' | null
+        bombTimer: 0,       // v1 Ticking Siege Bomb countdown (4 turns -> 3x3 blast)
         placedTurn: 0,
       }))
     );
 
     this.scoredRegistry = new Set();
     this.hands = { X: [], O: [] };
+    this.shop = [];
+    this.shopLockedSlots = new Set();
+    this.shopRerollCount = 0;
     this._cardInstanceSeq = 1;
 
     if (this.mode === 'crypt' && this.levelData) {
       this._setupCryptTrial(this.levelData);
     } else {
       this._populateAltarHazards();
-      const initialHandCount = GAME_CONFIG.INITIAL_HAND_SIZE + (this.hasOath('oath_forbidden_tome') ? 1 : 0);
-      for (let i = 0; i < initialHandCount; i++) {
-        this.drawCard('X', true);
-      }
-      for (let i = 0; i < GAME_CONFIG.INITIAL_HAND_SIZE; i++) {
-        this.drawCard('O', true);
+      if (this.cardsEnabled) {
+        const heroCardBonus = this.hero?.id === 'hero_deathknight' ? 1 : 0;
+        const oathCardBonus = this.hasOath('oath_forbidden_tome') ? 1 : 0;
+        const initialHandCount = GAME_CONFIG.INITIAL_HAND_SIZE + oathCardBonus + heroCardBonus;
+        for (let i = 0; i < initialHandCount; i++) {
+          this.drawCard('X', true);
+        }
+        for (let i = 0; i < GAME_CONFIG.INITIAL_HAND_SIZE; i++) {
+          this.drawCard('O', true);
+        }
+        this.refillShop();
       }
     }
 
     this.selectedCardIndex = null;
     this.pendingTargets = [];
 
-    this._logChronicle('system', `Obsidian Sanctum Consecrated — Target: ${this.targetScore} VP`);
+    const modeMsg = !this.cardsEnabled
+      ? `Level ${this.levelNumber}: Pure Tactical Combat (War-Scrolls Unlock at Lv 3) — Target: ${this.targetScore} VP`
+      : `War-Table Consecrated — Target: ${this.targetScore} VP`;
+    this._logChronicle('system', modeMsg);
     this.bus.emit('battle:initialized', this.getSnapshot());
     this.bus.emit('3d:boardRebuild', this.getSnapshot());
   }
@@ -144,6 +179,157 @@ export class BattleEngine {
     if (this.battleChronicle.length > 35) {
       this.battleChronicle.pop();
     }
+  }
+
+  _getCardPoolForPlayer(player = 'X') {
+    let pool = ARCANA_CARDS;
+    if (player === 'X' && Array.isArray(this.customDeckIds) && this.customDeckIds.length >= 6) {
+      const customPool = ARCANA_CARDS.filter((c) => this.customDeckIds.includes(c.id));
+      if (customPool.length > 0) return customPool;
+    }
+    if (this.mode === 'campaign' && this.levelNumber >= 3) {
+      // Unlock cards progressively up to current campaign level (min 5 cards in pool at Lv 3)
+      const maxUnlockLvl = Math.max(7, this.levelNumber + 2);
+      const levelPool = ARCANA_CARDS.filter((c) => (c.unlockLevel || 3) <= maxUnlockLvl);
+      if (levelPool.length >= 3) return levelPool;
+    }
+    return pool;
+  }
+
+  // ────────── v1 3-SLOT IN-BATTLE WAR-SCROLL SHOP ──────────
+  getShopRerollCost() {
+    if (!this.cardsEnabled) return 0;
+    let base = GAME_CONFIG.SHOP_REROLL_BASE_COST;
+    if (this.hero?.id === 'hero_archmage' && this.shopRerollCount === 0) {
+      base = Math.max(0, base - 1);
+    }
+    return base + this.shopRerollCount * GAME_CONFIG.SHOP_REROLL_ESCALATION;
+  }
+
+  refillShop() {
+    if (!this.cardsEnabled) {
+      this.shop = [];
+      return;
+    }
+    const pool = this._getCardPoolForPlayer('X');
+    const nextShop = [];
+    for (let i = 0; i < GAME_CONFIG.SHOP_SLOTS; i++) {
+      if (this.shopLockedSlots.has(i) && this.shop[i]) {
+        nextShop.push(this.shop[i]);
+        continue;
+      }
+      const uniquePool = pool.filter((c) => !nextShop.some((s) => s.cardId === c.id));
+      const pickFrom = uniquePool.length > 0 ? uniquePool : pool;
+      const picked = this.rng.weightedPick(pickFrom, (card) => {
+        if (card.rarity === 'common') return 45;
+        if (card.rarity === 'rare') return 30;
+        if (card.rarity === 'epic') return 17;
+        return 8;
+      });
+      nextShop.push({
+        slotIndex: i,
+        cardId: picked.id,
+        price: this.getEffectiveCardPrice(picked, 'X'),
+        exalted: this.isCardExalted(picked.id, 'X'),
+      });
+    }
+    this.shop = nextShop;
+  }
+
+  getEffectiveCardPrice(card, player = 'X') {
+    if (!card) return 2;
+    let price = card.cost;
+    if (player === 'X' && this.hasOath('oath_executioner_hood') && card.order === 'inquisition') {
+      price = Math.max(1, price - 1);
+    }
+    return price;
+  }
+
+  toggleShopLock(slotIndex) {
+    if (!this.cardsEnabled) return { ok: false, reason: 'Shop unlocks at Level 3.' };
+    if (slotIndex < 0 || slotIndex >= this.shop.length) return { ok: false };
+    if (this.shopLockedSlots.has(slotIndex)) {
+      this.shopLockedSlots.delete(slotIndex);
+    } else {
+      this.shopLockedSlots.add(slotIndex);
+    }
+    this.bus.emit('battle:updated', this.getSnapshot());
+    return { ok: true, locked: this.shopLockedSlots.has(slotIndex) };
+  }
+
+  rerollShop(player = 'X') {
+    if (!this.cardsEnabled) {
+      return { ok: false, reason: 'War-Scroll Shop unlocks at Level 3!' };
+    }
+    if (this.status !== 'playing' || this.activePlayer !== player) {
+      return { ok: false, reason: 'Wait for your turn to reroll the Shop.' };
+    }
+    const cost = this.getShopRerollCost();
+    if (this.tithe[player] < cost) {
+      return { ok: false, reason: `Need ${cost} Gold Coins to reroll Shop.` };
+    }
+    this.tithe[player] -= cost;
+    this.shopRerollCount++;
+    this.refillShop();
+    this._logChronicle('shop', `Rerolled War-Scroll Shop (-${cost}🪙)`, player);
+    this.bus.emit('battle:shopRerolled', { player, cost, snapshot: this.getSnapshot() });
+    this.bus.emit('battle:updated', this.getSnapshot());
+    return { ok: true, cost };
+  }
+
+  buyShopCard(slotIndex, player = 'X') {
+    if (!this.cardsEnabled) {
+      return { ok: false, reason: 'War-Scroll Shop unlocks at Level 3!' };
+    }
+    if (this.status !== 'playing' || this.activePlayer !== player) {
+      return { ok: false, reason: 'Wait for your turn to buy War-Scrolls.' };
+    }
+    const slot = this.shop[slotIndex];
+    if (!slot || !slot.cardId) {
+      return { ok: false, reason: 'Shop slot is empty.' };
+    }
+    if (this.hands[player].length >= GAME_CONFIG.MAX_HAND_SIZE) {
+      return { ok: false, reason: `Hand is full (${GAME_CONFIG.MAX_HAND_SIZE}/${GAME_CONFIG.MAX_HAND_SIZE})! Play a Scroll first.` };
+    }
+    const card = getArcanaCardById(slot.cardId);
+    if (!card) return { ok: false, reason: 'Unknown War-Scroll.' };
+
+    const price = this.getEffectiveCardPrice(card, player);
+    if (this.tithe[player] < price) {
+      return { ok: false, reason: `Need ${price} Gold Coins to buy ${card.name}.` };
+    }
+
+    if (player === 'X') {
+      this.saveUndoSnapshot();
+    }
+
+    // Pay Gold Coin price on purchase — playing this card from Hand is then FREE (v1 rule!)
+    this.tithe[player] -= price;
+    const instance = {
+      instanceId: `arcana_${this._cardInstanceSeq++}`,
+      cardId: card.id,
+      exalted: this.isCardExalted(card.id, player),
+      paidInShop: true,
+    };
+    this.hands[player].push(instance);
+    this.shopLockedSlots.delete(slotIndex);
+
+    // Replace bought slot with a fresh card
+    const pool = this._getCardPoolForPlayer(player);
+    const uniquePool = pool.filter((c) => !this.shop.some((s) => s && s.cardId === c.id));
+    const pickFrom = uniquePool.length > 0 ? uniquePool : pool;
+    const replacement = this.rng.pick(pickFrom);
+    this.shop[slotIndex] = {
+      slotIndex,
+      cardId: replacement.id,
+      price: this.getEffectiveCardPrice(replacement, 'X'),
+      exalted: this.isCardExalted(replacement.id, 'X'),
+    };
+
+    this._logChronicle('shop', `Bought ${card.name} for ${price}🪙`, player);
+    this.bus.emit('battle:cardDrawn', { player, instance, card, fromShop: true });
+    this.bus.emit('battle:updated', this.getSnapshot());
+    return { ok: true, card, instance, price };
   }
 
   _setupCryptTrial(crypt) {
@@ -192,7 +378,7 @@ export class BattleEngine {
       this.board[r][c].obstacle = 'gargoyle_bastion';
     }
 
-    // 2. Reliquary Coffers (shatter when an adjacent stone is consecrated!)
+    // 2. Mystery War-Chests / Reliquary Coffers (shatter when an adjacent stone is consecrated!)
     const cofferCount = this.levelData.reliquaryCoffers || 0;
     for (let i = 0; i < cofferCount && emptyCoords.length > 0; i++) {
       const [r, c] = emptyCoords.pop();
@@ -206,15 +392,16 @@ export class BattleEngine {
       this.board[r][c].anomaly = 'sanctified_mosaic';
     }
 
-    // 4. Cursed Censers (volatile incense burners that shatter pieces if disturbed)
+    // 4. Cursed Censers / Ticking Siege Bombs
     const censerCount = this.levelData.censers || 0;
     for (let i = 0; i < censerCount && emptyCoords.length > 0; i++) {
       const [r, c] = emptyCoords.pop();
       this.board[r][c].anomaly = 'cursed_censer';
+      this.board[r][c].bombTimer = GAME_CONFIG.BOMB_COUNTDOWN;
     }
 
-    // 5. Blood Chalices (+3 Blood Tithe + card draw)
-    if (this.boardSize >= 5 && emptyCoords.length > 0 && this.rng.chance(0.65)) {
+    // 5. Blood Chalices (+3 Gold Coins + card draw on Level 3+)
+    if (this.cardsEnabled && this.boardSize >= 5 && emptyCoords.length > 0 && this.rng.chance(0.65)) {
       const [r, c] = emptyCoords.pop();
       this.board[r][c].anomaly = 'blood_chalice';
     }
@@ -226,6 +413,7 @@ export class BattleEngine {
       turnNumber: this.turnNumber,
       scores: { ...this.scores },
       tithe: { ...this.tithe },
+      ownTurns: { ...this.ownTurns },
       placementsRemaining: this.placementsRemaining,
       cardsPlayedThisTurn: this.cardsPlayedThisTurn,
       cardsPlayedTotal: this.cardsPlayedTotal,
@@ -234,6 +422,8 @@ export class BattleEngine {
       bellUsedThisMatch: { ...this.bellUsedThisMatch },
       orderTally: { ...this.orderTally },
       scoredRegistry: Array.from(this.scoredRegistry),
+      shop: this.shop.map((s) => ({ ...s })),
+      shopRerollCount: this.shopRerollCount,
       hands: {
         X: this.hands.X.map((h) => ({ ...h })),
         O: this.hands.O.map((h) => ({ ...h })),
@@ -245,13 +435,14 @@ export class BattleEngine {
   }
 
   undoLastAction() {
-    if (this.undoStack.length === 0) return { ok: false, reason: 'No prior ritual step to restore.' };
+    if (this.undoStack.length === 0) return { ok: false, reason: 'No prior tactical step to restore.' };
     const snap = this.undoStack.pop();
     this.turnNumber = snap.turnNumber;
     this.status = 'playing';
     this.winner = null;
     this.scores = { ...snap.scores };
     this.tithe = { ...snap.tithe };
+    this.ownTurns = { ...(snap.ownTurns || { X: 1, O: 0 }) };
     this.placementsRemaining = snap.placementsRemaining;
     this.cardsPlayedThisTurn = snap.cardsPlayedThisTurn;
     this.cardsPlayedTotal = snap.cardsPlayedTotal;
@@ -260,6 +451,8 @@ export class BattleEngine {
     this.bellUsedThisMatch = { ...snap.bellUsedThisMatch };
     this.orderTally = { ...snap.orderTally };
     this.scoredRegistry = new Set(snap.scoredRegistry);
+    this.shop = (snap.shop || []).map((s) => ({ ...s }));
+    this.shopRerollCount = snap.shopRerollCount || 0;
     this.hands = {
       X: snap.hands.X.map((h) => ({ ...h })),
       O: snap.hands.O.map((h) => ({ ...h })),
@@ -268,7 +461,7 @@ export class BattleEngine {
     this.selectedCardIndex = null;
     this.pendingTargets = [];
 
-    this._logChronicle('system', 'Chronicle Rewound to Prior Step');
+    this._logChronicle('system', 'War-Chronicle Rewound to Prior Step');
     this.bus.emit('battle:updated', this.getSnapshot());
     this.bus.emit('3d:boardRebuild', this.getSnapshot());
     return { ok: true };
@@ -280,14 +473,11 @@ export class BattleEngine {
   }
 
   drawCard(player, silent = false) {
+    // v1 RULE: No cards can be drawn on Levels 1 & 2!
+    if (!this.cardsEnabled) return null;
     if (this.hands[player].length >= GAME_CONFIG.MAX_HAND_SIZE) return null;
 
-    let pool = ARCANA_CARDS;
-    if (player === 'X' && Array.isArray(this.customDeckIds) && this.customDeckIds.length >= 6) {
-      const customPool = ARCANA_CARDS.filter((c) => this.customDeckIds.includes(c.id));
-      if (customPool.length > 0) pool = customPool;
-    }
-
+    const pool = this._getCardPoolForPlayer(player);
     const picked = this.rng.weightedPick(pool, (card) => {
       if (card.rarity === 'common') return 45;
       if (card.rarity === 'rare') return 30;
@@ -299,6 +489,7 @@ export class BattleEngine {
       instanceId: `arcana_${this._cardInstanceSeq++}`,
       cardId: picked.id,
       exalted: this.isCardExalted(picked.id, player),
+      paidInShop: false,
     };
 
     this.hands[player].push(instance);
@@ -325,11 +516,11 @@ export class BattleEngine {
   }
 
   /**
-   * Place a 3D sculpted stone piece on `(r, c)` for `this.activePlayer`
+   * Place a 3D sculpted War-Champion piece on `(r, c)` for `this.activePlayer`
    */
   placePiece(r, c) {
     if (!this.canPlaceAt(r, c)) {
-      return { ok: false, reason: 'Altar tile is obstructed or consecrated.' };
+      return { ok: false, reason: 'War-Table tile is obstructed or locked.' };
     }
 
     if (this.activePlayer === 'X') {
@@ -343,9 +534,10 @@ export class BattleEngine {
     this.placementsRemaining--;
     this.addBellCharge(player, 18);
 
+    const actorLabel = player === 'X' ? (this.hero?.shortName || 'Hero') : (this.boss?.name || 'Warlord');
     this._logChronicle(
       'move',
-      `${player === 'X' ? 'Order' : 'Inquisition'} consecrated [${r + 1}, ${c + 1}]`,
+      `${actorLabel} deployed Champion to [${r + 1}, ${c + 1}]`,
       player
     );
 
@@ -362,12 +554,18 @@ export class BattleEngine {
     let anomalyEvent = null;
     if (cell.anomaly === 'blood_chalice') {
       cell.anomaly = null;
-      this.tithe[player] = Math.min(GAME_CONFIG.MAX_BLOOD_TITHE, this.tithe[player] + 3);
-      this.drawCard(player);
-      anomalyEvent = { type: 'blood_chalice', r, c, player, text: 'Blood Chalice Claimed! +3 Tithe & +1 Card' };
+      if (this.cardsEnabled) {
+        this.tithe[player] = Math.min(GAME_CONFIG.MAX_BLOOD_TITHE, this.tithe[player] + 3);
+        this.drawCard(player);
+        anomalyEvent = { type: 'blood_chalice', r, c, player, text: 'Golden Chalice Claimed! +3🪙 & +1 War-Scroll' };
+      } else {
+        this.scores[player] += 1;
+        anomalyEvent = { type: 'blood_chalice', r, c, player, text: 'Golden Chalice Claimed! +1 Bonus VP!' };
+      }
       this._logChronicle('anomaly', anomalyEvent.text, player);
     } else if (cell.anomaly === 'cursed_censer') {
       cell.anomaly = null;
+      cell.bombTimer = 0;
       cell.symbol = null;
       this.stonesShatteredThisMatch++;
       // Emit 3D Stone Shatter Physics explosion!
@@ -407,15 +605,15 @@ export class BattleEngine {
         c,
         player,
         shatteredNeighbors: neighborShatters,
-        text: 'Cursed Censer Detonated! Stone Shattered!',
+        text: 'Siege Bomb Detonated! Champions Shattered!',
       };
       this._logChronicle('anomaly', anomalyEvent.text, player);
     }
 
-    // Crack adjacent Reliquary Coffers!
+    // Crack adjacent Mystery War-Chests (Reliquary Coffers) with v1 Box Odds!
     const crackedCoffers = this._checkAdjacentReliquaryCoffers(r, c, player);
 
-    // Evaluate Sacred Gothic Geometry & Line Scoring
+    // Evaluate Sacred Geometry & Line Scoring (+v1 Coin Reward per score!)
     const newlyScored = this.evaluateBoardScoring(player);
 
     this.bus.emit('battle:piecePlaced', {
@@ -453,10 +651,50 @@ export class BattleEngine {
           if (nCell.obstacle === 'reliquary_coffer') {
             nCell.obstacle = null;
             this.stonesShatteredThisMatch++;
-            this.tithe[player] = Math.min(GAME_CONFIG.MAX_BLOOD_TITHE, this.tithe[player] + 2);
-            this.drawCard(player);
             this.addBellCharge(player, 25);
-            cracked.push({ r: nr, c: nc, player });
+
+            // v1 Mystery Box Roll (42% Gold, 24% Joker, 15% Bomb, 7% Jackpot, 12% Card/Star)
+            const roll = this.rng.nextInt(1, 100);
+            const rangerBonus = player === 'X' && this.hero?.id === 'hero_ranger' ? 1 : 0;
+            let rewardText = '';
+
+            if (this.cardsEnabled) {
+              this.tithe[player] = Math.min(GAME_CONFIG.MAX_BLOOD_TITHE, this.tithe[player] + 2 + rangerBonus);
+              this.drawCard(player);
+            }
+
+            if (roll <= 42) {
+              if (this.cardsEnabled) {
+                rewardText = `Mystery War-Chest [${nr + 1}, ${nc + 1}]: +${2 + rangerBonus}🪙 Gold & +1 War-Scroll!`;
+              } else {
+                this.scores[player] += 1;
+                rewardText = `Mystery War-Chest [${nr + 1}, ${nc + 1}]: +1 Bonus VP!`;
+              }
+            } else if (roll <= 66) {
+              // 24%: Wild Joker Idol (W) spawns in the chest tile!
+              nCell.symbol = 'W';
+              this.bus.emit('3d:piecePlaced', { r: nr, c: nc, symbol: 'W', snapshot: this.getSnapshot() });
+              rewardText = `Mystery War-Chest [${nr + 1}, ${nc + 1}]: Wild Joker Idol (★) Awakened!`;
+            } else if (roll <= 81) {
+              // 15%: Siege Bomb Fuse!
+              nCell.anomaly = 'cursed_censer';
+              nCell.bombTimer = GAME_CONFIG.BOMB_COUNTDOWN;
+              rewardText = `Mystery War-Chest [${nr + 1}, ${nc + 1}]: Trap! Ticking Siege Bomb (4T)!`;
+            } else if (roll <= 88) {
+              // 7%: Jackpot Gold!
+              if (this.cardsEnabled) {
+                this.tithe[player] = Math.min(GAME_CONFIG.MAX_BLOOD_TITHE, this.tithe[player] + 3);
+              } else {
+                this.scores[player] += 2;
+              }
+              rewardText = `Mystery War-Chest [${nr + 1}, ${nc + 1}]: JACKPOT TREASURY!`;
+            } else {
+              // 12%: Bonus Star / Scroll
+              this.scores[player] += 1;
+              rewardText = `Mystery War-Chest [${nr + 1}, ${nc + 1}]: +1 Bonus Star VP!`;
+            }
+
+            cracked.push({ r: nr, c: nc, player, rewardText });
 
             // Trigger 3D Stone Coffer Shatter Physics!
             this.bus.emit('3d:stoneShatter', {
@@ -464,7 +702,7 @@ export class BattleEngine {
               cause: 'reliquary_coffer',
               intensity: 1.25,
             });
-            this._logChronicle('reliquary', `Reliquary Coffer Shattered at [${nr + 1}, ${nc + 1}]! +2 Tithe & +1 Card`, player);
+            this._logChronicle('reliquary', rewardText, player);
           }
         }
       }
@@ -484,7 +722,20 @@ export class BattleEngine {
       }
       this.scores[pattern.symbol] += pattern.points;
       this.addBellCharge(pattern.symbol, pattern.points * 12);
-      this._logChronicle('score', `${pattern.name} (+${pattern.points} VP)`, pattern.symbol);
+
+      // v1 Rule: +1 Gold Coin per scoring alignment when cardsEnabled!
+      if (this.cardsEnabled) {
+        this.tithe[pattern.symbol] = Math.min(
+          GAME_CONFIG.MAX_BLOOD_TITHE,
+          this.tithe[pattern.symbol] + GAME_CONFIG.COIN_PER_SCORE
+        );
+      }
+
+      this._logChronicle(
+        'score',
+        `${pattern.name} (+${pattern.points} VP${this.cardsEnabled ? ' & +1🪙' : ''})`,
+        pattern.symbol
+      );
     }
 
     // Multi-Combo Consecration Bonus (2+ patterns in one action)
@@ -493,10 +744,12 @@ export class BattleEngine {
       if (playerPatterns.length >= 2) {
         const comboBonus = playerPatterns.length - 1;
         this.scores[triggerPlayer] += comboBonus;
-        this.tithe[triggerPlayer] = Math.min(
-          GAME_CONFIG.MAX_BLOOD_TITHE,
-          this.tithe[triggerPlayer] + 1
-        );
+        if (this.cardsEnabled) {
+          this.tithe[triggerPlayer] = Math.min(
+            GAME_CONFIG.MAX_BLOOD_TITHE,
+            this.tithe[triggerPlayer] + 1
+          );
+        }
         this.bus.emit('battle:comboAchieved', {
           player: triggerPlayer,
           count: playerPatterns.length,
@@ -519,14 +772,14 @@ export class BattleEngine {
   }
 
   /**
-   * Unleash the Player's Penitence Bell Ultimate Power (when bellCharge.X >= 100)
+   * Unleash the Player's War-Horn / Penitence Bell Ultimate Power (when bellCharge.X >= 100)
    */
   activatePenitenceBell(player = 'X') {
     if (this.status !== 'playing' || this.activePlayer !== player) {
       return { ok: false, reason: 'Not your turn.' };
     }
     if (this.bellUsedThisMatch[player] || (this.bellCharge[player] || 0) < 100) {
-      return { ok: false, reason: 'Penitence Bell is not fully consecrated.' };
+      return { ok: false, reason: 'War-Horn Ultimate is not fully charged.' };
     }
 
     if (player === 'X') this.saveUndoSnapshot();
@@ -587,7 +840,9 @@ export class BattleEngine {
         }
       }
       this.placementsRemaining += 1;
-      this.tithe[player] = Math.min(GAME_CONFIG.MAX_BLOOD_TITHE, this.tithe[player] + 4);
+      if (this.cardsEnabled) {
+        this.tithe[player] = Math.min(GAME_CONFIG.MAX_BLOOD_TITHE, this.tithe[player] + 4);
+      }
       this.bus.emit('3d:boardRebuild', this.getSnapshot());
     } else if (bell.id === 'bell_memento_mori') {
       const enemyCells = [];
@@ -604,11 +859,13 @@ export class BattleEngine {
         events.push({ type: 'convert', r, c, to: player });
         this.bus.emit('3d:pieceTransmuted', { r, c, from: enemy, to: player });
       }
-      this.drawCard(player);
-      this.drawCard(player);
+      if (this.cardsEnabled) {
+        this.drawCard(player);
+        this.drawCard(player);
+      }
     }
 
-    this._logChronicle('bell', `Penitence Bell Tolled: ${bell.name}!`, player);
+    this._logChronicle('bell', `War-Horn Sounded: ${bell.name}!`, player);
     const newlyScored = this.evaluateBoardScoring(player);
 
     this.bus.emit('battle:bellActivated', {
@@ -626,27 +883,32 @@ export class BattleEngine {
   }
 
   /**
-   * Play a Dark-Tarot Arcana Card from `player`'s hand
+   * Play a War-Scroll Card from `player`'s hand (1 Card / Turn v1 rule)
    */
   playCard(player, handIndex, targets = []) {
+    if (!this.cardsEnabled) {
+      return { ok: false, reason: 'War-Scrolls unlock at Level 3!' };
+    }
     if (this.status !== 'playing' || this.activePlayer !== player) {
-      return { ok: false, reason: 'Cannot invoke Dark-Tarot outside your turn.' };
+      return { ok: false, reason: 'Cannot invoke War-Scrolls outside your turn.' };
+    }
+    if (this.cardsPlayedThisTurn >= 1 && this.mode !== 'crypt') {
+      return { ok: false, reason: '1 War-Scroll per turn limit reached!' };
     }
 
     const hand = this.hands[player];
     const instance = hand[handIndex];
-    if (!instance) return { ok: false, reason: 'Invalid Tarot selection.' };
+    if (!instance) return { ok: false, reason: 'Invalid War-Scroll selection.' };
 
     const card = getArcanaCardById(instance.cardId);
-    if (!card) return { ok: false, reason: 'Unknown Tarot script.' };
+    if (!card) return { ok: false, reason: 'Unknown War-Scroll.' };
 
-    let effectiveCost = card.cost;
-    if (player === 'X' && this.hasOath('oath_executioner_hood') && card.order === 'inquisition') {
-      effectiveCost = Math.max(0, effectiveCost - 1);
-    }
+    // v1 Rule: Cards bought from the in-battle Shop already had their Gold paid on purchase (`paidInShop: true`)!
+    // Cards drawn directly cost their Gold price unless already paid in shop.
+    let effectiveCost = instance.paidInShop ? 0 : this.getEffectiveCardPrice(card, player);
 
     if (this.tithe[player] < effectiveCost) {
-      return { ok: false, reason: 'Insufficient Blood Tithe.' };
+      return { ok: false, reason: `Need ${effectiveCost} Gold Coins to invoke ${card.name}.` };
     }
 
     const validation = this.validateCardTargets(player, card, targets);
@@ -656,7 +918,7 @@ export class BattleEngine {
       this.saveUndoSnapshot();
     }
 
-    // Deduct Tithe & remove from hand
+    // Deduct Gold & remove from hand
     this.tithe[player] -= effectiveCost;
     hand.splice(handIndex, 1);
     this.cardsPlayedThisTurn++;
@@ -676,13 +938,14 @@ export class BattleEngine {
         this.tithe.X = Math.min(GAME_CONFIG.MAX_BLOOD_TITHE, this.tithe.X + 2);
         this.drawCard('X');
         synergyBonus = { order: card.order, count };
-        this._logChronicle('synergy', `Order Resonance (${card.order.toUpperCase()}): +1 VP, +2 Tithe, +1 Card!`, 'X');
+        this._logChronicle('synergy', `Order Resonance (${card.order.toUpperCase()}): +1 VP, +2🪙, +1 Scroll!`, 'X');
       }
     }
 
+    const actorLabel = player === 'X' ? (this.hero?.shortName || 'Hero') : (this.boss?.name || 'Warlord');
     this._logChronicle(
       'card',
-      `${player === 'X' ? 'Order' : 'Inquisition'} invoked ${card.name}${exalted ? ' [+]' : ''}`,
+      `${actorLabel} invoked ${card.name}${exalted ? ' [+]' : ''}`,
       player
     );
 
@@ -726,33 +989,33 @@ export class BattleEngine {
         return { ok: true };
 
       case 'enemy_cell': {
-        if (targets.length < 1) return { ok: false, reason: 'Select an enemy stone on the altar.' };
+        if (targets.length < 1) return { ok: false, reason: 'Select an enemy Champion on the War-Table.' };
         const [r, c] = targets[0];
-        if (!inBounds(r, c)) return { ok: false, reason: 'Target outside altar.' };
+        if (!inBounds(r, c)) return { ok: false, reason: 'Target outside War-Table.' };
         const cell = this.board[r][c];
-        if (cell.symbol !== enemy) return { ok: false, reason: 'Must target an Adversary stone.' };
-        if (cell.shield > 0) return { ok: false, reason: 'Target is protected by Gargoyle Aegis!' };
+        if (cell.symbol !== enemy) return { ok: false, reason: 'Must target an enemy Champion.' };
+        if (cell.shield > 0) return { ok: false, reason: 'Target is protected by Aegis Shield!' };
         return { ok: true };
       }
 
       case 'friendly_cell': {
-        if (targets.length < 1) return { ok: false, reason: 'Select one of your consecrated stones.' };
+        if (targets.length < 1) return { ok: false, reason: 'Select one of your friendly Champions.' };
         const [r, c] = targets[0];
-        if (!inBounds(r, c)) return { ok: false, reason: 'Target outside altar.' };
+        if (!inBounds(r, c)) return { ok: false, reason: 'Target outside War-Table.' };
         const cell = this.board[r][c];
         if (cell.symbol !== player && cell.symbol !== 'W') {
-          return { ok: false, reason: 'Must target a friendly stone.' };
+          return { ok: false, reason: 'Must target a friendly Champion.' };
         }
         return { ok: true };
       }
 
       case 'empty_cell': {
-        if (targets.length < 1) return { ok: false, reason: 'Select an empty altar tile.' };
+        if (targets.length < 1) return { ok: false, reason: 'Select an empty War-Table tile.' };
         const [r, c] = targets[0];
-        if (!inBounds(r, c)) return { ok: false, reason: 'Target outside altar.' };
+        if (!inBounds(r, c)) return { ok: false, reason: 'Target outside War-Table.' };
         const cell = this.board[r][c];
         if (cell.symbol !== null || cell.obstacle) {
-          return { ok: false, reason: 'Altar tile must be empty.' };
+          return { ok: false, reason: 'War-Table tile must be empty.' };
         }
         return { ok: true };
       }
@@ -760,22 +1023,22 @@ export class BattleEngine {
       case 'any_cell':
       case 'row':
       case 'col': {
-        if (targets.length < 1) return { ok: false, reason: 'Select a target tile on the altar.' };
+        if (targets.length < 1) return { ok: false, reason: 'Select a target tile on the War-Table.' };
         const [r, c] = targets[0];
-        if (!inBounds(r, c)) return { ok: false, reason: 'Target outside altar.' };
+        if (!inBounds(r, c)) return { ok: false, reason: 'Target outside War-Table.' };
         return { ok: true };
       }
 
       case 'two_occupied': {
-        if (targets.length < 2) return { ok: false, reason: 'Select two consecrated stones to transpose.' };
+        if (targets.length < 2) return { ok: false, reason: 'Select two Champions to swap.' };
         const [[r1, c1], [r2, c2]] = targets;
         if (!inBounds(r1, c1) || !inBounds(r2, c2)) return { ok: false, reason: 'Out of bounds.' };
-        if (r1 === r2 && c1 === c2) return { ok: false, reason: 'Select two distinct stones.' };
+        if (r1 === r2 && c1 === c2) return { ok: false, reason: 'Select two distinct Champions.' };
         const cell1 = this.board[r1][c1];
         const cell2 = this.board[r2][c2];
-        if (!cell1.symbol || !cell2.symbol) return { ok: false, reason: 'Both tiles must contain stones.' };
+        if (!cell1.symbol || !cell2.symbol) return { ok: false, reason: 'Both tiles must contain Champions.' };
         if (cell1.shield > 0 || cell2.shield > 0) {
-          return { ok: false, reason: 'Gargoyle Aegis stones cannot be transposed.' };
+          return { ok: false, reason: 'Shielded Champions cannot be swapped.' };
         }
         return { ok: true };
       }
@@ -796,8 +1059,10 @@ export class BattleEngine {
       if (cell.obstacle === 'reliquary_coffer') {
         cell.obstacle = null;
         this.stonesShatteredThisMatch++;
-        this.tithe[player] = Math.min(GAME_CONFIG.MAX_BLOOD_TITHE, this.tithe[player] + 2);
-        this.drawCard(player);
+        if (this.cardsEnabled) {
+          this.tithe[player] = Math.min(GAME_CONFIG.MAX_BLOOD_TITHE, this.tithe[player] + 2);
+          this.drawCard(player);
+        }
         shatteredCells.push({ r, c, symbol: 'COFFER', wasObstacle: 'reliquary_coffer' });
         events.push({ type: 'destroy', r, c });
         return true;
@@ -811,6 +1076,9 @@ export class BattleEngine {
       shatteredCells.push({ r, c, symbol: prevSymbol });
       events.push({ type: 'destroy', r, c, symbol: prevSymbol });
 
+      if (player === 'X' && this.hero?.id === 'hero_dragonknight') {
+        this.addBellCharge('X', 10);
+      }
       if (player === 'X' && this.hasOath('oath_shattered_crown') && prevSymbol === enemy) {
         this.tithe.X = Math.min(GAME_CONFIG.MAX_BLOOD_TITHE, this.tithe.X + 1);
       }
@@ -901,7 +1169,6 @@ export class BattleEngine {
         const [r, c] = targets[0];
         for (let dr = -1; dr <= 1; dr++) {
           for (let dc = -1; dc <= 1; dc++) {
-            // Exalted spares friendly pieces!
             shatterCell(r + dr, c + dc, !exalted);
           }
         }
@@ -1058,6 +1325,7 @@ export class BattleEngine {
 
       case 'consecrate_mosaic': {
         const [r, c] = targets[0];
+        this.board[r][c].locked = 0; // Revives locked/cratered tile!
         this.board[r][c].anomaly = 'sanctified_mosaic';
         if (exalted && !this.board[r][c].symbol && !this.board[r][c].obstacle) {
           this.board[r][c].symbol = player;
@@ -1174,7 +1442,7 @@ export class BattleEngine {
   }
 
   /**
-   * End current player's turn, tick statuses, fire Inquisitor Boss passives, and advance turn
+   * End current player's turn, tick statuses & Siege Bombs, grant v1 Coins, and advance turn
    */
   endTurn() {
     if (this.status !== 'playing') return;
@@ -1196,11 +1464,13 @@ export class BattleEngine {
 
     this.turnNumber++;
     this.activePlayer = this.activePlayer === 'X' ? 'O' : 'X';
+    this.ownTurns[this.activePlayer] = (this.ownTurns[this.activePlayer] || 0) + 1;
     this.placementsRemaining = 1;
     this.cardsPlayedThisTurn = 0;
 
-    // Tick down Iron Cage locks and Gargoyle Aegis shields
+    // Tick down Iron Cage locks, Gargoyle Aegis shields, and Ticking Siege Bombs!
     let boardChanged = false;
+    const bombShatters = [];
     for (let r = 0; r < this.boardSize; r++) {
       for (let c = 0; c < this.boardSize; c++) {
         const cell = this.board[r][c];
@@ -1212,28 +1482,60 @@ export class BattleEngine {
           cell.shield--;
           if (cell.shield === 0) boardChanged = true;
         }
+        if (cell.anomaly === 'cursed_censer' && cell.bombTimer > 0) {
+          cell.bombTimer--;
+          if (cell.bombTimer === 0) {
+            // Detonate 3×3 Siege Bomb!
+            cell.anomaly = null;
+            boardChanged = true;
+            for (let dr = -1; dr <= 1; dr++) {
+              for (let dc = -1; dc <= 1; dc++) {
+                const bCell = this.board[r + dr]?.[c + dc];
+                if (!bCell) continue;
+                if (bCell.symbol && bCell.shield === 0) {
+                  bombShatters.push({ r: r + dr, c: c + dc, symbol: bCell.symbol });
+                  bCell.symbol = null;
+                  bCell.locked = 1;
+                  this.stonesShatteredThisMatch++;
+                }
+              }
+            }
+            this._logChronicle('anomaly', `💣 Siege Bomb detonated at [${r + 1}, ${c + 1}] in a 3×3 blast!`);
+          }
+        }
       }
     }
 
-    // Grant Blood Tithe & draw 1 Dark-Tarot card
-    let titheGain = GAME_CONFIG.TITHE_PER_TURN;
-    if (
-      this.activePlayer === 'X' &&
-      this.hasOath('oath_Gargoyle_vigil') &&
-      Math.ceil(this.turnNumber / 2) % 2 === 0
-    ) {
-      titheGain += 1;
+    if (bombShatters.length > 0) {
+      this.bus.emit('3d:stoneShatter', {
+        cells: bombShatters,
+        cause: 'siege_bomb_3x3',
+        weapon: 'brimstone_meteor',
+        intensity: 1.65,
+      });
     }
 
-    this.tithe[this.activePlayer] = Math.min(
-      GAME_CONFIG.MAX_BLOOD_TITHE,
-      this.tithe[this.activePlayer] + titheGain
-    );
-    this.drawCard(this.activePlayer);
+    // v1 Economy Rule: Only grant Coins & Cards when `this.cardsEnabled` (Level 3+)!
+    if (this.cardsEnabled) {
+      // v1 COIN_EVERY_OWN_TURNS: +1 Coin every 2 own turns (plus base turn tithe)
+      const isCoinTurn = this.ownTurns[this.activePlayer] % GAME_CONFIG.COIN_EVERY_OWN_TURNS === 0;
+      const coinGain = isCoinTurn ? 2 : 1;
+      this.tithe[this.activePlayer] = Math.min(
+        GAME_CONFIG.MAX_BLOOD_TITHE,
+        this.tithe[this.activePlayer] + coinGain
+      );
 
-    // Trigger Inquisitor Boss Ritual at start of AI turn
+      // AI draws 1 card every 2nd AI turn to stay competitive; Player buys from the 3-Slot Shop (or draws if hand is empty on turn 4+)
+      if (this.activePlayer === 'O' && this.ownTurns.O % 2 === 0) {
+        this.drawCard('O', true);
+      } else if (this.activePlayer === 'X' && this.hands.X.length === 0 && this.ownTurns.X % 3 === 0) {
+        this.drawCard('X');
+      }
+    }
+
+    // Trigger Warlord Boss Ritual at start of AI turn (only from Level 3+ or Boss Levels)
     const bossEvents = [];
-    if (this.activePlayer === 'O' && this.boss) {
+    if (this.activePlayer === 'O' && this.boss && (this.levelNumber >= 3 || this.mode !== 'campaign')) {
       const aiTurnCount = Math.ceil(this.turnNumber / 2);
       if (aiTurnCount % 3 === 0) {
         this._executeBossRitual(bossEvents);
@@ -1278,15 +1580,16 @@ export class BattleEngine {
     } else if (this.boss.passiveId === 'ossuary_pillar' && emptyCells.length > 0) {
       const [r, c] = this.rng.pick(emptyCells);
       this.board[r][c].obstacle = 'reliquary_coffer';
-      bossEvents.push({ boss: this.boss.name, text: `${this.boss.name} raised an Ossuary Coffer!` });
+      bossEvents.push({ boss: this.boss.name, text: `${this.boss.name} summoned a Mystery Bone-Chest!` });
     } else if (this.boss.passiveId === 'plague_censer' && emptyCells.length > 0) {
       const [r, c] = this.rng.pick(emptyCells);
       this.board[r][c].anomaly = 'cursed_censer';
-      bossEvents.push({ boss: this.boss.name, text: `${this.boss.name} ignited a Cursed Censer!` });
-    } else if (this.boss.passiveId === 'blood_tithe_tax') {
+      this.board[r][c].bombTimer = GAME_CONFIG.BOMB_COUNTDOWN;
+      bossEvents.push({ boss: this.boss.name, text: `${this.boss.name} planted a Siege Bomb (4T)!` });
+    } else if (this.boss.passiveId === 'blood_tithe_tax' && this.cardsEnabled) {
       this.tithe.X = Math.max(0, this.tithe.X - 1);
       this.tithe.O = Math.min(GAME_CONFIG.MAX_BLOOD_TITHE, this.tithe.O + 1);
-      bossEvents.push({ boss: this.boss.name, text: `${this.boss.name} siphoned 1 Blood Tithe!` });
+      bossEvents.push({ boss: this.boss.name, text: `${this.boss.name} siphoned 1🪙 Gold Coin!` });
     } else if (this.boss.passiveId === 'bell_shockwave' && playerCells.length > 0) {
       const [r, c] = this.rng.pick(playerCells);
       this.board[r][c].symbol = null;
@@ -1297,12 +1600,14 @@ export class BattleEngine {
         weapon: 'warhammer',
         intensity: 1.5,
       });
-      bossEvents.push({ boss: this.boss.name, text: `${this.boss.name}'s Bell Shockwave shattered [${r + 1}, ${c + 1}]!` });
+      bossEvents.push({ boss: this.boss.name, text: `${this.boss.name}'s Wyrm-Hammer shattered [${r + 1}, ${c + 1}]!` });
     } else if (this.boss.passiveId === 'seraph_aegis' && aiCells.length > 0) {
       const [r, c] = this.rng.pick(aiCells);
       this.board[r][c].shield = 2;
-      this.tithe.O = Math.min(GAME_CONFIG.MAX_BLOOD_TITHE, this.tithe.O + 1);
-      bossEvents.push({ boss: this.boss.name, text: `${this.boss.name} consecrated Seraph Aegis!` });
+      if (this.cardsEnabled) {
+        this.tithe.O = Math.min(GAME_CONFIG.MAX_BLOOD_TITHE, this.tithe.O + 1);
+      }
+      bossEvents.push({ boss: this.boss.name, text: `${this.boss.name} consecrated War-God Aegis!` });
     }
 
     if (bossEvents.length > 0) {
@@ -1322,7 +1627,7 @@ export class BattleEngine {
   }
 
   /**
-   * Cathedral Cataclysm Stalemate Breaker: shatters oldest unshielded stones so the duel never softlocks
+   * War-Table Cataclysm Stalemate Breaker: shatters oldest unshielded stones so the duel never softlocks
    */
   _resolveStalemateBreaker() {
     for (let r = 0; r < this.boardSize; r++) {
@@ -1355,7 +1660,7 @@ export class BattleEngine {
         cause: 'cathedral_cataclysm',
         intensity: 1.6,
       });
-      this._logChronicle('system', 'Cathedral Tremor shattered 4 ancient stones to clear the altar!');
+      this._logChronicle('system', 'War-Table Tremor shattered 4 ancient Champions to clear the battlefield!');
     }
   }
 
@@ -1395,15 +1700,16 @@ export class BattleEngine {
   }
 
   /**
-   * Execute Single-Player Inquisitor AI Turn (Card Cast + Stone Placement)
+   * Execute Single-Player Warlord AI Turn (Card Cast on Lv 3+ & Champion Placement)
    */
   executeAITurnStep() {
     if (this.status !== 'playing' || this.activePlayer !== 'O') return null;
 
-    if (this.cardsPlayedThisTurn < 1) {
+    // v1 Rule: AI only uses cards when cardsEnabled is true (Level 3+)!
+    if (this.cardsEnabled && this.cardsPlayedThisTurn < 1) {
       const cardDecision = selectBestAICardAction(this, this.aiTier);
       if (cardDecision) {
-        this.bus.emit('3d:inquisitorReact', { mood: 'cast', text: 'Inquisitor invokes Dark-Tarot' });
+        this.bus.emit('3d:inquisitorReact', { mood: 'cast', text: `${this.boss?.name || 'Warlord'} invokes a War-Scroll` });
         const res = this.playCard('O', cardDecision.handIndex, cardDecision.targets);
         if (res.ok) {
           return { action: 'card', ...res };
@@ -1428,7 +1734,9 @@ export class BattleEngine {
       levelNumber: this.levelNumber,
       cryptId: this.cryptId,
       levelData: this.levelData,
+      hero: this.hero,
       boss: this.boss,
+      cardsEnabled: this.cardsEnabled,
       cathedralHallId: this.cathedralHallId,
       boardSize: this.boardSize,
       targetScore: this.targetScore,
@@ -1449,6 +1757,12 @@ export class BattleEngine {
       stonesShatteredThisMatch: this.stonesShatteredThisMatch,
       canUndo: this.undoStack.length > 0 && this.activePlayer === 'X' && this.status === 'playing',
       battleChronicle: this.battleChronicle.slice(0, 12),
+      shop: this.shop.map((slot, i) => ({
+        ...slot,
+        locked: this.shopLockedSlots.has(i),
+        card: getArcanaCardById(slot.cardId),
+      })),
+      shopRerollCost: this.getShopRerollCost(),
       hands: {
         X: this.hands.X.map((h) => ({ ...h, card: getArcanaCardById(h.cardId) })),
         O: this.hands.O.map((h) => ({ ...h, card: getArcanaCardById(h.cardId) })),

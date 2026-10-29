@@ -1,6 +1,6 @@
 /**
- * XcardO III: Obsidian Sanctum
- * Procedural 3D Gothic Piece Sculptor, Cathedral Altar & Inquisitor Automaton Builder
+ * XcardO — 3D Fantasy War-Table Strategy
+ * Procedural 3D Fantasy War Character Sculptor, Cathedral War-Table & Warlord Commander Builder
  * Uses Vendored Three.js r162 (ES Module)
  */
 
@@ -25,7 +25,7 @@ export function createStoneMaterial(materialId, overrides = {}) {
 }
 
 /**
- * Create a 3D Sculpted Gothic Piece for 'X' (Order), 'O' (Inquisition), or 'W' (Sanctified Wild Relic)
+ * Create a 3D Sculpted Fantasy War Character Miniature for 'X' (Hero Order), 'O' (Enemy Warlord), or 'W' (Wild Joker Idol)
  */
 export function createPieceSculpture3D(symbol, sculptId, materialId, options = {}) {
   const group = new THREE.Group();
@@ -53,7 +53,7 @@ export function createPieceSculpture3D(symbol, sculptId, materialId, options = {
   const trimMat = new THREE.MeshStandardMaterial({
     color: new THREE.Color(matDef.accentColor || trimColor),
     roughness: 0.25,
-    metalness: 0.82,
+    metalness: 0.84,
     emissive: new THREE.Color(trimColor),
     emissiveIntensity: isGhost ? 0.9 : 0.45,
     transparent: isGhost,
@@ -64,14 +64,14 @@ export function createPieceSculpture3D(symbol, sculptId, materialId, options = {
   const glowMat = new THREE.MeshStandardMaterial({
     color: new THREE.Color(coreGlowColor),
     emissive: new THREE.Color(coreGlowColor),
-    emissiveIntensity: 1.4,
+    emissiveIntensity: 1.45,
     roughness: 0.15,
     metalness: 0.2,
     transparent: isGhost,
     opacity: isGhost ? 0.75 : 1.0,
   });
 
-  // 1. Stepped Octagonal Gothic Plinth Base (shared heritage across all pieces)
+  // 1. Stepped Octagonal War-Table Plinth Base (shared across all war miniatures)
   const baseLower = new THREE.Mesh(new THREE.CylinderGeometry(0.41, 0.45, 0.12, 8), primaryMat);
   baseLower.position.y = 0.06;
   baseLower.castShadow = !isGhost;
@@ -89,13 +89,20 @@ export function createPieceSculpture3D(symbol, sculptId, materialId, options = {
   baseCollar.position.y = 0.21;
   group.add(baseCollar);
 
-  // 2. Sculpted Archetype Upper Geometry
+  // 2. Sculpted Fantasy War Character Upper Geometry
   if (symbol === 'W') {
-    // Sanctified Wild Relic: Levitating Sunburst Reliquary
-    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.22, 0.32, 8), trimMat);
+    // Wild Joker Idol: Winged Valkyrie Trophy with Levitating Sunburst Halo
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.23, 0.34, 8), trimMat);
     stem.position.y = 0.36;
     stem.castShadow = !isGhost;
     group.add(stem);
+
+    for (const dir of [-1, 1]) {
+      const wing = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.34, 0.18), trimMat);
+      wing.position.set(dir * 0.22, 0.62, -0.02);
+      wing.rotation.z = dir * -0.42;
+      group.add(wing);
+    }
 
     const haloOuter = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.035, 10, 24), trimMat);
     haloOuter.position.y = 0.68;
@@ -112,29 +119,35 @@ export function createPieceSculpture3D(symbol, sculptId, materialId, options = {
     crystal.userData.spinSpeed = -2.4;
     group.add(crystal);
   } else if (sculptId === 'templar_knight') {
-    // Crusader Great-Helm + Upright Broadsword Cross
-    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.3, 0.34, 8), primaryMat);
-    torso.position.y = 0.37;
+    // Valkyrie / Crusader War-Champion: Cuirass, Winged Great-Helm, Kite Shield & Sky-Lance
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.29, 0.36, 8), primaryMat);
+    torso.position.y = 0.38;
     torso.castShadow = !isGhost;
     group.add(torso);
 
-    // Shoulder Pauldrons
+    // Armored Shoulder Pauldrons & Helm Wings
     for (const dir of [-1, 1]) {
       const pauldron = new THREE.Mesh(new THREE.DodecahedronGeometry(0.14, 0), primaryMat);
-      pauldron.position.set(dir * 0.24, 0.48, 0);
-      pauldron.scale.set(1.1, 0.8, 1.2);
+      pauldron.position.set(dir * 0.25, 0.49, 0);
+      pauldron.scale.set(1.15, 0.85, 1.2);
       pauldron.castShadow = !isGhost;
       group.add(pauldron);
+
+      const helmWing = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.26, 4), trimMat);
+      helmWing.position.set(dir * 0.19, 0.79, -0.02);
+      helmWing.rotation.z = dir * -0.45;
+      helmWing.rotation.x = -0.2;
+      group.add(helmWing);
     }
 
     // Great-Helm
-    const helm = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.19, 0.28, 8), primaryMat);
-    helm.position.y = 0.66;
+    const helm = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.28, 8), primaryMat);
+    helm.position.y = 0.67;
     helm.castShadow = !isGhost;
     group.add(helm);
 
-    const helmCrown = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.14, 8), trimMat);
-    helmCrown.position.y = 0.87;
+    const helmCrown = new THREE.Mesh(new THREE.ConeGeometry(0.17, 0.14, 8), trimMat);
+    helmCrown.position.y = 0.88;
     helmCrown.castShadow = !isGhost;
     group.add(helmCrown);
 
@@ -146,46 +159,54 @@ export function createPieceSculpture3D(symbol, sculptId, materialId, options = {
     const visorV = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.2, 0.06), trimMat);
     visorV.position.set(0, 0.66, 0.16);
     group.add(visorV);
+
+    // Upright Sky-Lance at right side
+    const lanceShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.028, 0.78, 6), trimMat);
+    lanceShaft.position.set(0.28, 0.56, 0.1);
+    group.add(lanceShaft);
+    const lanceTip = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.22, 4), glowMat);
+    lanceTip.position.set(0.28, 1.0, 0.1);
+    group.add(lanceTip);
   } else if (sculptId === 'gargoyle_warden') {
-    // Winged Gothic Gargoyle Sentinel
+    // Dragon-Lord Sentinel: Armored Wyrm-Knight with Swept Dragon Wings, Horns & Halberd
     const pedestal = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.26, 0.38), primaryMat);
     pedestal.position.y = 0.33;
     pedestal.castShadow = !isGhost;
     group.add(pedestal);
 
-    const body = new THREE.Mesh(new THREE.DodecahedronGeometry(0.22, 0), primaryMat);
+    const body = new THREE.Mesh(new THREE.DodecahedronGeometry(0.23, 0), primaryMat);
     body.position.set(0, 0.56, 0.03);
-    body.scale.set(1.0, 1.25, 0.95);
+    body.scale.set(1.05, 1.25, 0.95);
     body.castShadow = !isGhost;
     group.add(body);
 
-    const head = new THREE.Mesh(new THREE.OctahedronGeometry(0.15, 0), primaryMat);
-    head.position.set(0, 0.78, 0.08);
+    const head = new THREE.Mesh(new THREE.OctahedronGeometry(0.16, 0), primaryMat);
+    head.position.set(0, 0.79, 0.08);
     head.castShadow = !isGhost;
     group.add(head);
 
-    // Swept Stone Wings & Horns
+    // Swept Dragon Wings & Curved Wyrm Horns
     for (const dir of [-1, 1]) {
-      const wing = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.42, 0.26), trimMat);
-      wing.position.set(dir * 0.24, 0.68, -0.08);
-      wing.rotation.z = dir * -0.38;
+      const wing = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.44, 0.28), trimMat);
+      wing.position.set(dir * 0.25, 0.68, -0.08);
+      wing.rotation.z = dir * -0.4;
       wing.rotation.y = dir * 0.25;
       wing.castShadow = !isGhost;
       group.add(wing);
 
-      const horn = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.22, 5), trimMat);
-      horn.position.set(dir * 0.1, 0.92, 0.02);
-      horn.rotation.z = dir * -0.35;
+      const horn = new THREE.Mesh(new THREE.ConeGeometry(0.048, 0.25, 5), trimMat);
+      horn.position.set(dir * 0.11, 0.94, 0.02);
+      horn.rotation.z = dir * -0.38;
       horn.rotation.x = -0.3;
       group.add(horn);
 
-      const eye = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.025, 0.04), glowMat);
-      eye.position.set(dir * 0.055, 0.79, 0.19);
+      const eye = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.028, 0.04), glowMat);
+      eye.position.set(dir * 0.055, 0.8, 0.19);
       group.add(eye);
     }
   } else if (sculptId === 'ossuary_skull') {
-    // Memento Mori Cathedral Skull & Iron Halo
-    const column = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.28, 0.24, 8), primaryMat);
+    // Necromancer Lich Warlord: Crowned Skull Bust, Pauldrons & Soul-Fire Eyes
+    const column = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.29, 0.26, 8), primaryMat);
     column.position.y = 0.32;
     column.castShadow = !isGhost;
     group.add(column);
@@ -201,20 +222,20 @@ export function createPieceSculpture3D(symbol, sculptId, materialId, options = {
     jaw.castShadow = !isGhost;
     group.add(jaw);
 
-    // Glowing Crimson Eye Sockets
+    // Glowing Eye Sockets
     for (const dir of [-1, 1]) {
-      const socket = new THREE.Mesh(new THREE.OctahedronGeometry(0.055, 0), glowMat);
+      const socket = new THREE.Mesh(new THREE.OctahedronGeometry(0.058, 0), glowMat);
       socket.position.set(dir * 0.085, 0.61, 0.21);
       group.add(socket);
     }
 
-    // Spiked Iron Crown Halo behind skull
+    // Spiked Necromancer Crown Halo
     const crownHalo = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.028, 8, 16), trimMat);
     crownHalo.position.set(0, 0.65, -0.05);
     crownHalo.rotation.x = 0.35;
     group.add(crownHalo);
   } else if (sculptId === 'abyssal_obelisk') {
-    // Twisted Monolith Spire + Floating Inverted Pyramid
+    // Abyssal Demon General Monolith + Orbiting Hell-Iron Chains
     const obelisk = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.27, 0.62, 4), primaryMat);
     obelisk.position.y = 0.52;
     obelisk.rotation.y = Math.PI / 4;
@@ -233,25 +254,33 @@ export function createPieceSculpture3D(symbol, sculptId, materialId, options = {
     shackle.userData.spinSpeed = -1.2;
     group.add(shackle);
   } else if (symbol === 'O' || sculptId === 'iron_torus') {
-    // Default Inquisition 'O': Spiked Iron Crown Torus + Abyssal Eye Core
-    const chalicePedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.28, 0.26, 8), primaryMat);
-    chalicePedestal.position.y = 0.32;
-    chalicePedestal.castShadow = !isGhost;
-    group.add(chalicePedestal);
+    // Enemy Warlord 'O' (`iron_torus`): Horned Dread-Warlord Juggernaut + Spiked Iron Crown
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.29, 0.3, 8), primaryMat);
+    torso.position.y = 0.34;
+    torso.castShadow = !isGhost;
+    group.add(torso);
 
-    const torus = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.075, 12, 24), primaryMat);
-    torus.position.y = 0.64;
+    // Spiked Warlord Pauldrons
+    for (const dir of [-1, 1]) {
+      const pauldron = new THREE.Mesh(new THREE.DodecahedronGeometry(0.13, 0), primaryMat);
+      pauldron.position.set(dir * 0.24, 0.45, 0);
+      pauldron.castShadow = !isGhost;
+      group.add(pauldron);
+    }
+
+    const torus = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.07, 12, 24), primaryMat);
+    torus.position.y = 0.66;
     torus.rotation.x = 0.28;
     torus.castShadow = !isGhost;
     group.add(torus);
 
-    // 8 Radial Iron Spikes around the Torus
+    // 8 Radial Iron Spikes around the Warlord Crown
     for (let i = 0; i < 8; i++) {
       const angle = (i / 8) * Math.PI * 2;
       const spike = new THREE.Mesh(new THREE.ConeGeometry(0.036, 0.14, 5), trimMat);
       spike.position.set(
-        Math.cos(angle) * 0.34,
-        0.64 + Math.sin(angle) * 0.32,
+        Math.cos(angle) * 0.33,
+        0.66 + Math.sin(angle) * 0.31,
         Math.sin(angle) * -0.09
       );
       spike.rotation.z = angle - Math.PI / 2;
@@ -259,37 +288,37 @@ export function createPieceSculpture3D(symbol, sculptId, materialId, options = {
     }
 
     const eyeCore = new THREE.Mesh(new THREE.OctahedronGeometry(0.11, 0), glowMat);
-    eyeCore.position.y = 0.64;
+    eyeCore.position.y = 0.66;
     eyeCore.userData.spinSpeed = 2.0;
     group.add(eyeCore);
   } else {
-    // Default Order 'X' (`seraph_cross`): Crossed Cathedral Blades + Levitating Halo
-    const altarBlock = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.18, 0.32), primaryMat);
-    altarBlock.position.y = 0.28;
+    // Player Hero 'X' (`seraph_cross`): Paladin Runeblade Champion with Twin Crossed Greatswords & Halo
+    const altarBlock = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, 0.24, 8), primaryMat);
+    altarBlock.position.y = 0.3;
     altarBlock.castShadow = !isGhost;
     group.add(altarBlock);
 
-    const bladeGeo = new THREE.BoxGeometry(0.68, 0.14, 0.16);
+    const bladeGeo = new THREE.BoxGeometry(0.68, 0.13, 0.15);
     const blade1 = new THREE.Mesh(bladeGeo, primaryMat);
-    blade1.position.y = 0.58;
+    blade1.position.y = 0.6;
     blade1.rotation.z = Math.PI / 4;
     blade1.castShadow = !isGhost;
     group.add(blade1);
 
     const blade2 = new THREE.Mesh(bladeGeo, primaryMat);
-    blade2.position.y = 0.58;
+    blade2.position.y = 0.6;
     blade2.rotation.z = -Math.PI / 4;
     blade2.castShadow = !isGhost;
     group.add(blade2);
 
-    // Gold Reliquary Halo around the X intersection
-    const halo = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.026, 8, 24), trimMat);
-    halo.position.y = 0.58;
+    // Sunforged Gold Halo around the Runeblade intersection
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.028, 8, 24), trimMat);
+    halo.position.y = 0.6;
     group.add(halo);
 
-    // Radiant Diamond Heart
+    // Radiant Sun-Heart Gem
     const heart = new THREE.Mesh(new THREE.OctahedronGeometry(0.11, 0), glowMat);
-    heart.position.y = 0.58;
+    heart.position.y = 0.6;
     heart.userData.spinSpeed = 1.6;
     group.add(heart);
   }
@@ -339,7 +368,7 @@ export function createTileEntity3D(entityType) {
   group.name = `TileEntity_${entityType}`;
 
   if (entityType === 'gargoyle_bastion') {
-    // Indestructible Gothic Stone Pillar with Iron Bands
+    // Indestructible Fortress Stone Pillar with Iron Bands
     const stoneMat = createStoneMaterial('weathered_basalt');
     const ironMat = createStoneMaterial('verdigris_bronze', { color: 0x52525b });
 
@@ -360,7 +389,7 @@ export function createTileEntity3D(entityType) {
     cap.castShadow = true;
     group.add(cap);
   } else if (entityType === 'reliquary_coffer') {
-    // Breakable Ornate Stone & Gilded-Iron Reliquary Chest
+    // Breakable Ornate Fantasy War-Chest (Mystery Box!)
     const chestMat = createStoneMaterial('weathered_basalt', { color: 0x3b2f2f });
     const goldMat = createStoneMaterial('gilded_reliquary');
     const glowMat = new THREE.MeshStandardMaterial({
@@ -385,7 +414,7 @@ export function createTileEntity3D(entityType) {
     lockGem.position.set(0, 0.3, 0.25);
     group.add(lockGem);
   } else if (entityType === 'sanctified_mosaic') {
-    // Glowing Stained-Glass Rose Window Medallion inlaid into the tile
+    // Glowing Runic War-Seal Medallion inlaid into the tile (+2 bonus VP)
     const ringMat = createStoneMaterial('gilded_reliquary');
     const glassMat = new THREE.MeshStandardMaterial({
       color: 0x38bdf8,
@@ -406,7 +435,7 @@ export function createTileEntity3D(entityType) {
     rim.position.y = 0.03;
     group.add(rim);
   } else if (entityType === 'cursed_censer') {
-    // Volatile Brimstone Incense Burner
+    // Ticking Siege Bomb / Volatile Brimstone Keg
     const bronzeMat = createStoneMaterial('verdigris_bronze');
     const emberMat = new THREE.MeshStandardMaterial({
       color: 0xf43f5e,
@@ -424,7 +453,7 @@ export function createTileEntity3D(entityType) {
     core.userData.spinSpeed = 1.4;
     group.add(core);
   } else if (entityType === 'blood_chalice') {
-    // Golden Sanguine Goblet
+    // Golden War-Chalice (+3 Gold Coins & +1 Scroll)
     const goldMat = createStoneMaterial('gilded_reliquary');
     const bloodMat = new THREE.MeshStandardMaterial({
       color: 0xe11d48,
@@ -474,7 +503,7 @@ export function createTileEntity3D(entityType) {
 }
 
 /**
- * Build the 3D Gothic Cathedral Altar Table, Corner Fire Braziers, and Raycastable Stone Tiles
+ * Build the 3D Gothic War-Table Altar, Corner Fire Braziers, and Raycastable Stone Tiles
  */
 export function createCathedralAltar3D(boardSize = 5, hallConfig = {}) {
   const root = new THREE.Group();
@@ -496,7 +525,7 @@ export function createCathedralAltar3D(boardSize = 5, hallConfig = {}) {
     metalness: 0.78,
   });
 
-  // 1. Heavy Stepped Cathedral Altar Slab
+  // 1. Heavy Stepped War-Table Slab
   const mainSlab = new THREE.Mesh(new THREE.BoxGeometry(altarWidth, 0.55, altarWidth), slabMat);
   mainSlab.position.y = -0.34;
   mainSlab.receiveShadow = true;
@@ -511,7 +540,7 @@ export function createCathedralAltar3D(boardSize = 5, hallConfig = {}) {
   lowerPlinth.receiveShadow = true;
   root.add(lowerPlinth);
 
-  // Ornate Brass/Gold Altar Border Frame
+  // Ornate Brass/Gold War-Table Border Frame
   const borderRim = new THREE.Mesh(
     new THREE.BoxGeometry(boardSpan + 0.36, 0.14, boardSpan + 0.36),
     trimMat
@@ -520,7 +549,7 @@ export function createCathedralAltar3D(boardSize = 5, hallConfig = {}) {
   borderRim.receiveShadow = true;
   root.add(borderRim);
 
-  // 2. Corner Gothic Buttress Pillars & Flickering Fire Braziers
+  // 2. Corner Buttress Pillars & Flickering Fire Braziers
   const halfCorner = altarWidth * 0.5 - 0.25;
   const cornerCoords = [
     [-halfCorner, -halfCorner],
@@ -530,7 +559,7 @@ export function createCathedralAltar3D(boardSize = 5, hallConfig = {}) {
   ];
   const brazierFlames = [];
 
-  // 2b. Distant Gothic Apse Ribbed Columns & Glowing Rose-Window Arch behind the Inquisitor
+  // 2b. Distant War-Sanctum Columns & Glowing Rose-Window Arch behind the Enemy Warlord
   const apseZ = -altarWidth * 0.5 - 3.2;
   for (const colX of [-4.2, -2.2, 2.2, 4.2]) {
     const apseCol = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.44, 6.8, 8), slabMat);
@@ -572,7 +601,7 @@ export function createCathedralAltar3D(boardSize = 5, hallConfig = {}) {
     brazierFlames.push(flame);
   }
 
-  // 3. Individual Carved Stone Board Tiles (`r`, `c`)
+  // 3. Individual Carved Stone War-Table Tiles (`r`, `c`)
   const tilesGroup = new THREE.Group();
   tilesGroup.name = 'AltarTilesGroup';
   const tileMeshes = [];
@@ -637,7 +666,7 @@ export function createCathedralAltar3D(boardSize = 5, hallConfig = {}) {
 }
 
 /**
- * Build the 3D Inquisitor Automaton across the North edge of the Cathedral Altar
+ * Build the 3D Enemy Fantasy War Commander across the North edge of the War-Table
  */
 export function createInquisitorAutomaton3D(boss = null) {
   const group = new THREE.Group();
@@ -647,58 +676,82 @@ export function createInquisitorAutomaton3D(boss = null) {
   const obsidianMat = createStoneMaterial('blood_obsidian', { color: 0x18131e });
   const trimMat = new THREE.MeshStandardMaterial({
     color: new THREE.Color(armorColor),
-    roughness: 0.3,
-    metalness: 0.78,
+    roughness: 0.28,
+    metalness: 0.82,
     emissive: new THREE.Color(armorColor),
-    emissiveIntensity: 0.35,
+    emissiveIntensity: 0.38,
   });
   const eyeMat = new THREE.MeshStandardMaterial({
     color: 0xff2a55,
     emissive: 0xff1e42,
-    emissiveIntensity: 2.4,
+    emissiveIntensity: 2.5,
   });
 
-  // 1. Armored Chest & Mantle
-  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 1.05, 1.7, 8), obsidianMat);
-  torso.position.y = 0.4;
+  // 1. Armored Warlord Cuirass & Breastplate Crest
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.78, 1.08, 1.75, 8), obsidianMat);
+  torso.position.y = 0.42;
   torso.castShadow = true;
   group.add(torso);
 
-  // Shoulder Pauldrons
+  const chestCrest = new THREE.Mesh(new THREE.OctahedronGeometry(0.28, 0), trimMat);
+  chestCrest.position.set(0, 0.72, 0.75);
+  group.add(chestCrest);
+
+  // Heavy Layered Shoulder Pauldrons, Horns & Flanking War-Halberds
   for (const dir of [-1, 1]) {
-    const pauldron = new THREE.Mesh(new THREE.DodecahedronGeometry(0.52, 0), obsidianMat);
-    pauldron.position.set(dir * 0.95, 0.95, 0);
+    const pauldron = new THREE.Mesh(new THREE.DodecahedronGeometry(0.55, 0), obsidianMat);
+    pauldron.position.set(dir * 0.98, 0.98, 0);
     pauldron.castShadow = true;
     group.add(pauldron);
 
-    const spike = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.48, 5), trimMat);
-    spike.position.set(dir * 1.05, 1.38, 0);
+    const pauldronTrim = new THREE.Mesh(new THREE.TorusGeometry(0.46, 0.05, 6, 12), trimMat);
+    pauldronTrim.position.set(dir * 0.98, 0.98, 0);
+    pauldronTrim.rotation.y = Math.PI / 2;
+    group.add(pauldronTrim);
+
+    const spike = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.54, 5), trimMat);
+    spike.position.set(dir * 1.08, 1.44, 0);
     spike.rotation.z = dir * -0.35;
     group.add(spike);
+
+    // Flanking War-Halberd
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 2.8, 6), trimMat);
+    shaft.position.set(dir * 1.55, 0.95, 0.25);
+    group.add(shaft);
+
+    const axeBlade = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.65, 4), trimMat);
+    axeBlade.position.set(dir * 1.55, 2.25, 0.25);
+    group.add(axeBlade);
   }
 
-  // 2. Articulated Head & Gothic Cowl (rotates to watch board actions)
+  // 2. Articulated Warlord Head, Horned Great-Helm & Crown (rotates to watch board actions)
   const headGroup = new THREE.Group();
-  headGroup.position.set(0, 1.62, 0.1);
+  headGroup.position.set(0, 1.65, 0.1);
 
-  const skullHelm = new THREE.Mesh(new THREE.IcosahedronGeometry(0.44, 0), obsidianMat);
-  skullHelm.scale.set(0.9, 1.2, 1.0);
+  const skullHelm = new THREE.Mesh(new THREE.IcosahedronGeometry(0.45, 0), obsidianMat);
+  skullHelm.scale.set(0.92, 1.22, 1.02);
   skullHelm.castShadow = true;
   headGroup.add(skullHelm);
 
-  const hoodCowl = new THREE.Mesh(new THREE.ConeGeometry(0.56, 0.65, 6), trimMat);
-  hoodCowl.position.set(0, 0.38, -0.05);
+  const hoodCowl = new THREE.Mesh(new THREE.ConeGeometry(0.58, 0.68, 6), trimMat);
+  hoodCowl.position.set(0, 0.4, -0.05);
   headGroup.add(hoodCowl);
 
-  // Glowing Ocular Lenses
+  // Curved Warlord Horns on Helm
   for (const dir of [-1, 1]) {
-    const eye = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.05, 0.08), eyeMat);
-    eye.position.set(dir * 0.14, 0.05, 0.39);
+    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.62, 6), trimMat);
+    horn.position.set(dir * 0.42, 0.36, 0.05);
+    horn.rotation.z = dir * -0.48;
+    horn.rotation.x = 0.22;
+    headGroup.add(horn);
+
+    const eye = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.055, 0.08), eyeMat);
+    eye.position.set(dir * 0.14, 0.05, 0.4);
     headGroup.add(eye);
   }
 
-  // Floating Iron Halo behind the Inquisitor
-  const halo = new THREE.Mesh(new THREE.TorusGeometry(0.85, 0.05, 8, 24), trimMat);
+  // Floating Iron Warlord Halo behind the Commander
+  const halo = new THREE.Mesh(new THREE.TorusGeometry(0.88, 0.055, 8, 24), trimMat);
   halo.position.set(0, 0.25, -0.38);
   headGroup.add(halo);
 

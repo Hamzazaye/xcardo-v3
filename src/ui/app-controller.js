@@ -1,6 +1,8 @@
 /**
- * XcardO III: Obsidian Sanctum
- * Master Application Controller, 3D Battle HUD, Reliquary 3D Atelier & Single-Player Campaign
+ * ============================================================================
+ * XcardO — Warlords of the Obsidian Altar
+ * Master Application Controller, 3D War-Table HUD, V1 Rules Shop & Hero Roster
+ * ============================================================================
  */
 
 import {
@@ -15,9 +17,13 @@ import {
   CATHEDRAL_ACTS,
   CATHEDRAL_LEVELS,
   CRYPT_TRIALS,
+  INQUISITOR_BOSSES,
+  FANTASY_HEROES,
+  V1_BOX_ODDS,
   getArcanaCardById,
   getArcanaPreviewCells,
   getLevelByNumber,
+  getFantasyHeroById,
 } from '../data/gothic-config.js';
 import { BattleEngine } from '../engine/game-state.js';
 import { selectBestAIMove, scanEnemyThreatCells } from '../engine/ai-brain.js';
@@ -28,6 +34,7 @@ import {
   renderGothicIconSVG,
   renderGeometryBlueprintSVG,
   renderRoseWindowSVG,
+  renderFantasyHeroPortraitSVG,
 } from './gothic-svg.js';
 
 export class AppController {
@@ -65,7 +72,13 @@ export class AppController {
   _setupDemoAltar() {
     if (!this.scene3d) return;
     const state = this.save.getState();
-    this.scene3d.rebuildAltar(5, state.equippedHall || 'obsidian_nave', null);
+    const nextLvl = getLevelByNumber(state.highestUnlockedLevel || 1);
+    const currentAct =
+      CATHEDRAL_ACTS.find((a) => a.id === nextLvl.actId) || CATHEDRAL_ACTS[0];
+    const currentBoss =
+      INQUISITOR_BOSSES.find((b) => b.id === currentAct.bossId) || INQUISITOR_BOSSES[0];
+
+    this.scene3d.rebuildAltar(5, state.equippedHall || 'obsidian_nave', currentBoss);
     this.scene3d.placePieceImmediate(2, 2, 'X', 0);
     this.scene3d.placePieceImmediate(1, 2, 'O', 0);
     this.scene3d.placePieceImmediate(2, 1, 'O', 0);
@@ -74,6 +87,8 @@ export class AppController {
   }
 
   _bindEvents() {
+    if (!this.bus) return;
+
     // 3D Raycaster Tile Hover & Click from GothicScene3D
     this.bus.on('3d:tileHover', (coord) => {
       if (this.currentScreen !== 'battle' || !this.engine) return;
@@ -114,7 +129,7 @@ export class AppController {
 
     this.bus.on('battle:bellActivated', ({ bell }) => {
       this.sound?.playCathedralBell();
-      this.showToast(`${bell.name} Tolled Across the Sanctum!`);
+      this.showToast(`${bell.name} Sounded Across the War-Table!`);
     });
 
     this.bus.on('battle:turnStarted', ({ activePlayer, bossEvents }) => {
@@ -195,6 +210,7 @@ export class AppController {
     this.engine = new BattleEngine(this.bus, {
       mode: 'campaign',
       levelNumber,
+      heroId: state.selectedHeroId || 'hero_paladin',
       cathedralHallId: level?.hallId || state.equippedHall,
       activeOaths: state.equippedOaths,
       penitenceBellId: state.equippedBell,
@@ -203,6 +219,13 @@ export class AppController {
     });
     this.currentScreen = 'battle';
     this.sound?.startMusic(levelNumber % 13);
+    if (levelNumber < GAME_CONFIG.CARDS_UNLOCK_LEVEL) {
+      this.showToast(
+        `⚔️ Level ${levelNumber}: Pure Tactical Combat — War-Scroll Shop & Cards Unlock at Level ${GAME_CONFIG.CARDS_UNLOCK_LEVEL}!`
+      );
+    } else if (level?.cardUnlock) {
+      this.showToast(`🔓 Level ${levelNumber}: War-Scroll Shop Open! New Scroll: ${level.cardUnlock}`);
+    }
     this.render();
   }
 
@@ -211,6 +234,7 @@ export class AppController {
     this.engine = new BattleEngine(this.bus, {
       mode: 'crypt',
       cryptId,
+      heroId: state.selectedHeroId || 'hero_paladin',
       cathedralHallId: 'ossuary_crypt',
       activeOaths: state.equippedOaths,
       penitenceBellId: state.equippedBell,
@@ -228,6 +252,7 @@ export class AppController {
       boardSize: this.skirmishConfig.boardSize,
       targetScore: this.skirmishConfig.targetScore,
       aiTier: this.skirmishConfig.aiTier,
+      heroId: state.selectedHeroId || 'hero_paladin',
       cathedralHallId: this.skirmishConfig.cathedralHallId,
       activeOaths: state.equippedOaths,
       penitenceBellId: state.equippedBell,
@@ -301,7 +326,7 @@ export class AppController {
       return;
     }
 
-    // If a Dark-Tarot card is selected, highlight its blast footprint on the 3D Altar
+    // If a War-Scroll card is selected, highlight its blast footprint on the 3D War-Table
     if (this.engine.selectedCardIndex !== null) {
       const inst = this.engine.hands[this.engine.activePlayer][this.engine.selectedCardIndex];
       const card = inst ? getArcanaCardById(inst.cardId) : null;
@@ -334,7 +359,7 @@ export class AppController {
 
     const actor = this.engine.activePlayer;
 
-    // 1. If a Dark-Tarot card is selected, apply target
+    // 1. If a War-Scroll card is selected, apply target
     if (this.engine.selectedCardIndex !== null) {
       const inst = this.engine.hands[actor][this.engine.selectedCardIndex];
       const card = inst ? getArcanaCardById(inst.cardId) : null;
@@ -351,13 +376,13 @@ export class AppController {
         }
         this.render();
       } else {
-        this.showToast('Select the second consecrated stone to transpose.');
+        this.showToast('Select the second Champion to transpose.');
         this.render();
       }
       return;
     }
 
-    // 2. Otherwise place a 3D sculpted stone piece on `(r, c)`
+    // 2. Otherwise place a 3D sculpted War Champion on `(r, c)`
     const res = this.engine.placePiece(r, c);
     if (!res.ok) {
       this.showToast(res.reason);
@@ -367,6 +392,10 @@ export class AppController {
 
   selectHandCard(index) {
     if (!this.engine || this.engine.status !== 'playing') return;
+    if (!this.engine.cardsEnabled) {
+      this.showToast(`🔒 War-Scrolls unlock at Level ${GAME_CONFIG.CARDS_UNLOCK_LEVEL}!`);
+      return;
+    }
     const actor = this.engine.activePlayer;
     if (actor !== 'X' && this.engine.mode !== 'local2p') return;
 
@@ -392,7 +421,7 @@ export class AppController {
 
     this.engine.selectedCardIndex = index;
     this.engine.pendingTargets = [];
-    this.showToast(`${card.name}: Click a valid target on the 3D Altar.`);
+    this.showToast(`${card.name}: Click a valid target on the 3D War-Table.`);
     this.render();
   }
 
@@ -431,11 +460,12 @@ export class AppController {
 
   requestSeerHint() {
     if (!this.engine || this.engine.status !== 'playing') return;
-    if (this.engine.tithe.X < 1) {
-      this.showToast('Requires 1 Blood Tithe to consult the Seer Oracle.');
+    const cost = this.engine.cardsEnabled ? 1 : 0;
+    if (cost > 0 && this.engine.tithe.X < cost) {
+      this.showToast('Requires 1 Gold Coin to consult the War-Oracle.');
       return;
     }
-    this.engine.tithe.X -= 1;
+    this.engine.tithe.X -= cost;
     const best = selectBestAIMove(this.engine, 'X', 5);
     if (best) {
       this.seerHintCoord = { r: best.r, c: best.c, reason: best.reason };
@@ -489,32 +519,38 @@ export class AppController {
 
   _renderTopNav(activeTab) {
     const state = this.save.getState();
+    const hero = getFantasyHeroById(state.selectedHeroId);
     return `
       <header class="sanctum-topbar">
         <div class="brand-cluster" data-action="nav" data-screen="hub">
-          <img src="XCardO.png" alt="XcardO III Crest" class="brand-crest-img" />
+          <div class="brand-rose-mini">${renderRoseWindowSVG(38)}</div>
           <div>
-            <div class="brand-title">XCARDO III</div>
-            <div class="brand-subtitle">OBSIDIAN SANCTUM • 3D GOTHIC EDITION</div>
+            <div class="brand-title">XCARDO</div>
+            <div class="brand-subtitle">WARLORDS OF THE OBSIDIAN ALTAR</div>
           </div>
         </div>
 
-        <nav class="sanctum-nav-tabs">
-          <button class="nav-tab-btn ${activeTab === 'hub' ? 'active' : ''}" data-action="nav" data-screen="hub">Sanctum</button>
-          <button class="nav-tab-btn ${activeTab === 'campaign' ? 'active' : ''}" data-action="nav" data-screen="campaign">Cathedral Acts (36)</button>
-          <button class="nav-tab-btn ${activeTab === 'crypt' ? 'active' : ''}" data-action="nav" data-screen="crypt">Crypt Trials</button>
-          <button class="nav-tab-btn ${activeTab === 'reliquary' ? 'active' : ''}" data-action="nav" data-screen="reliquary">3D Reliquary</button>
-          <button class="nav-tab-btn ${activeTab === 'codex' ? 'active' : ''}" data-action="nav" data-screen="codex">Dark-Tarot Codex</button>
+        <nav class="sanctum-nav-tabs" aria-label="War-Table Navigation">
+          <button class="nav-tab-btn ${activeTab === 'hub' ? 'active' : ''}" data-action="nav" data-screen="hub">War-Table</button>
+          <button class="nav-tab-btn ${activeTab === 'campaign' ? 'active' : ''}" data-action="nav" data-screen="campaign">36-Level Campaign</button>
           <button class="nav-tab-btn ${activeTab === 'skirmish' ? 'active' : ''}" data-action="nav" data-screen="skirmish">3D Skirmish</button>
+          <button class="nav-tab-btn ${activeTab === 'crypt' ? 'active' : ''}" data-action="nav" data-screen="crypt">Chaos Trials</button>
+          <button class="nav-tab-btn ${activeTab === 'reliquary' ? 'active' : ''}" data-action="nav" data-screen="reliquary">Heroes & Forge</button>
+          <button class="nav-tab-btn ${activeTab === 'codex' ? 'active' : ''}" data-action="nav" data-screen="codex">War-Scrolls</button>
         </nav>
 
-        <div class="sanctum-currency-bar">
-          <span class="sigil-pill" title="Reliquary Sigils">
-            ${renderGothicIconSVG('crown')} <strong>${state.reliquarySigils}</strong> Sigils
-          </span>
-          <span class="shatter-pill" title="Total 3D Stones Shattered">
-            ${renderGothicIconSVG('shatter')} <strong>${state.totalStonesShattered}</strong> Shattered
-          </span>
+        <div class="sanctum-currencies">
+          <div class="currency-pill" title="Active Fantasy War Hero">
+            <span>⚔️</span>
+            <span>${hero.shortName}</span>
+          </div>
+          <div class="currency-pill" title="War Sigils">
+            ${renderGothicIconSVG('sigil')}
+            <span>${state.reliquarySigils} Sigils</span>
+          </div>
+          <button class="icon-btn" data-action="cycle-camera" title="Switch 3D Camera Angle (Key: C)">
+            ${renderGothicIconSVG('camera')}
+          </button>
         </div>
       </header>
     `;
@@ -522,114 +558,169 @@ export class AppController {
 
   _renderSanctumHub() {
     const state = this.save.getState();
-    const curLevel = getLevelByNumber(state.highestUnlockedLevel);
-    const curAct = CATHEDRAL_ACTS.find((a) => a.actId === (curLevel?.actId || 1)) || CATHEDRAL_ACTS[0];
-    const featuredTarot = [
-      getArcanaCardById('warhammer_penance'),
-      getArcanaCardById('brimstone_cataclysm'),
-      getArcanaCardById('sanguine_conversion'),
-    ].filter(Boolean);
-    const solvedCrypts = Object.keys(state.completedCrypts || {}).length;
+    const nextLvlNum = state.highestUnlockedLevel || 1;
+    const nextLevel = getLevelByNumber(nextLvlNum);
+    const currentAct =
+      CATHEDRAL_ACTS.find((a) => a.id === nextLevel.actId) || CATHEDRAL_ACTS[0];
+    const currentBoss =
+      INQUISITOR_BOSSES.find((b) => b.id === currentAct.bossId) || INQUISITOR_BOSSES[0];
+    const hero = getFantasyHeroById(state.selectedHeroId);
+    const totalStars = Object.values(state.completedLevels || {}).reduce((a, b) => a + b, 0);
 
     return `
       ${this._renderTopNav('hub')}
-      <main class="hub-split-layout">
-        <!-- Left Cathedral Command Wing -->
-        <section class="hub-hero-panel gothic-card-panel">
-          <div class="hub-hero-header-badge">
-            <div class="rose-medallion-wrap">${renderRoseWindowSVG('#d4a853')}</div>
-            <div>
-              <div class="gothic-eyebrow">ACT ${curAct.actId}: ${curAct.name.toUpperCase()} • VOW #${state.highestUnlockedLevel}/36</div>
-              <h1 class="gothic-hero-title">CONSECRATE THE ALTAR.<br/>SHATTER HERETICAL STONE.</h1>
+      <main class="hub-main-grid">
+        <!-- LEFT WING: CHOSEN FANTASY WAR HERO & 6-HERO QUICK ROSTER -->
+        <section class="hub-left-column">
+          <div class="gothic-card-panel hero-confrontation-card player-hero-card">
+            <div class="gothic-eyebrow">YOUR CHOSEN FANTASY WAR HERO</div>
+            <div class="character-showcase-row">
+              <div class="character-portrait-frame hero-frame" style="--char-color:${hero.color}">
+                ${renderFantasyHeroPortraitSVG(hero.id, hero.color)}
+              </div>
+              <div class="character-meta">
+                <span class="char-class-badge" style="color:${hero.accent}">${hero.classTitle}</span>
+                <h2 class="char-name">${hero.name}</h2>
+                <div class="char-title-sub">${hero.title} · <em>${hero.weapon}</em></div>
+                <div class="char-passive-box">
+                  <strong>Hero Passive:</strong> ${hero.passiveDesc}
+                </div>
+              </div>
+            </div>
+            <blockquote class="char-battle-cry">${hero.battleCry}</blockquote>
+
+            <div class="hero-quick-roster-label">SELECT FANTASY WAR CHAMPION (6 HEROES):</div>
+            <div class="hero-quick-roster-strip">
+              ${FANTASY_HEROES.map(
+                (h) => `
+                  <button class="hero-mini-Roster-btn ${h.id === hero.id ? 'active' : ''}" data-action="select-hero" data-hero="${h.id}" title="${h.name} (${h.classTitle}) — ${h.passiveDesc}">
+                    <div class="hero-mini-avatar">${renderFantasyHeroPortraitSVG(h.id, h.color)}</div>
+                    <span>${h.shortName}</span>
+                  </button>
+                `
+              ).join('')}
             </div>
           </div>
 
-          <p class="gothic-hero-desc">
-            Command sculpted 3D marble and obsidian relics across a candlelit Cathedral Altar.
-            Align Sacred Gothic Geometry, invoke 20 Dark-Tarot Arcana scripts, and detonate enemy formations
-            with real-time rigid-body stone shatter physics against a 6-tier Single-Player Inquisitor AI.
-          </p>
+          <div class="gothic-card-panel hub-campaign-spotlight">
+            <div class="act-badge" style="border-color:${currentAct.themeColor}">
+              ACT ${currentAct.roman} • ${currentAct.name.toUpperCase()}
+            </div>
+            <h3 class="hub-spotlight-title">Level #${nextLevel.level}: ${nextLevel.name}</h3>
+            <p class="hub-lore-quote">${nextLevel.lore}</p>
 
-          <!-- Active Arch-Inquisitor Confrontation Strip + 3-Card Dark-Tarot Fan -->
-          <div class="hub-boss-and-tarot-showcase">
-            <div class="hub-boss-preview-box">
-              <div class="hub-boss-crest">${renderBossCrestSVG(curAct.boss.id, curAct.boss.color)}</div>
-              <div class="hub-boss-meta">
-                <span class="boss-eyebrow">ACT ${curAct.actId} OVERLORD</span>
-                <strong>${curAct.boss.name}</strong>
-                <small>${curAct.boss.title}</small>
+            <div class="v1-rule-callout ${nextLevel.cardsEnabled ? 'cards-live' : 'cards-sealed'}">
+              ${
+                nextLevel.cardsEnabled
+                  ? `<span>🏪 <strong>Level 3+ Rules Active:</strong> 3-Slot In-Battle War-Scroll Shop & Gold Economy Unlocked!</span>`
+                  : `<span>🔒 <strong>v1 Pure Tactical Warmup (Levels 1–2):</strong> No Cards & No Shop until Level 3!</span>`
+              }
+            </div>
+
+            <div class="hub-meta-grid">
+              <div class="meta-stat">
+                <span class="meta-label">War-Table Grid</span>
+                <span class="meta-val">${nextLevel.boardSize}×${nextLevel.boardSize} Stones</span>
+              </div>
+              <div class="meta-stat">
+                <span class="meta-label">Victory Target</span>
+                <span class="meta-val">${nextLevel.targetScore} VP</span>
+              </div>
+              <div class="meta-stat">
+                <span class="meta-label">Campaign Stars</span>
+                <span class="meta-val">${totalStars} / 108 ★</span>
+              </div>
+              <div class="meta-stat">
+                <span class="meta-label">Stones Shattered</span>
+                <span class="meta-val">${state.totalStonesShattered || 0}</span>
               </div>
             </div>
 
-            <div class="hub-tarot-fan" aria-label="Featured Dark-Tarot Scripts">
-              ${featuredTarot
-                .map(
-                  (card, idx) => `
-                    <div class="hub-mini-tarot tarot-fan-${idx}" title="${card.name}: ${card.desc}">
-                      <div class="hub-mini-tarot-top">
-                        <span>${card.numeral}</span>
-                        <span>${card.cost}T</span>
-                      </div>
-                      <div class="hub-mini-tarot-art">${renderTarotArtSVG(card)}</div>
-                      <div class="hub-mini-tarot-name">${card.name}</div>
-                    </div>
-                  `
-                )
-                .join('')}
-            </div>
-          </div>
-
-          <div class="hub-cta-row">
-            <button class="btn-gothic-primary" data-action="start-level" data-level="${state.highestUnlockedLevel}">
-              ${renderGothicIconSVG('sword')}
-              <span>Enter Vow #${state.highestUnlockedLevel}: ${curLevel?.name || 'Nave'}</span>
-            </button>
-            <button class="btn-gothic-secondary" data-action="nav" data-screen="skirmish">
-              Instant 3D AI Duel
-            </button>
-            <button class="btn-gothic-ghost" data-action="demo-shatter">
-              ${renderGothicIconSVG('shatter')} Shatter 3D Altar Now
-            </button>
-          </div>
-
-          <!-- 4 Quick Mode Bento Portals -->
-          <div class="hub-bento-portals">
-            <div class="hub-portal-tile" data-action="nav" data-screen="campaign">
-              <span class="portal-tile-tag">6 ACTS • 6 BOSSES</span>
-              <strong>36 Cathedral Vows</strong>
-              <small>Unlocked: #${state.highestUnlockedLevel}/36</small>
-            </div>
-            <div class="hub-portal-tile" data-action="nav" data-screen="crypt">
-              <span class="portal-tile-tag">1-TURN LETHAL</span>
-              <strong>Crypt Stone Trials</strong>
-              <small>Solved: ${solvedCrypts}/${CRYPT_TRIALS.length}</small>
-            </div>
-            <div class="hub-portal-tile" data-action="nav" data-screen="reliquary">
-              <span class="portal-tile-tag">3D SCULPTOR</span>
-              <strong>Reliquary Atelier</strong>
-              <small>6 Sculptures • 6 Stones</small>
-            </div>
-            <div class="hub-portal-tile" data-action="nav" data-screen="codex">
-              <span class="portal-tile-tag">EXALTED [+]</span>
-              <strong>Dark-Tarot Codex</strong>
-              <small>20 Arcana • 7 Shapes</small>
+            <div class="hub-cta-stack">
+              <button class="btn-gothic-primary" data-action="start-level" data-level="${nextLevel.level}">
+                ${renderGothicIconSVG('sword')}
+                <span>Enter Battle (Level #${nextLevel.level})</span>
+              </button>
+              <button class="btn-gothic-secondary" data-action="nav" data-screen="campaign">
+                <span>36-Level War Map</span>
+              </button>
             </div>
           </div>
         </section>
 
-        <!-- Right Interactive 3D WebGL Altar Atelier & Camera Dock -->
-        <aside class="hub-Viewport-Callout">
-          <div class="viewport-controls-floating gothic-card-panel">
-            <div class="viewport-hint-tag">LIVE INTERACTIVE 3D ALTAR — Drag to Orbit • Scroll to Zoom</div>
+        <!-- CENTER MEDALLION: GRAND WAR-TABLE ROSE & COMMAND MODES -->
+        <section class="hub-center-medallion">
+          <div class="rose-halo-wrapper">
+            ${renderRoseWindowSVG(142)}
+            <div class="medallion-caption">3D FANTASY WAR-TABLE • DRAG TO ORBIT • CLICK TO SHATTER</div>
+          </div>
 
-            <div class="hub-atelier-group">
-              <span class="atelier-group-label">3D Order Sculpture (Live Preview)</span>
-              <div class="camera-preset-pills">
+          <div class="hub-command-deck gothic-card-panel">
+            <div class="gothic-eyebrow">WAR-TABLE COMMAND DECK</div>
+            <div class="command-deck-grid">
+              <button class="command-card-btn primary-cmd" data-action="start-level" data-level="${nextLevel.level}">
+                <span class="cmd-icon">⚔️</span>
+                <div>
+                  <strong>Campaign Lvl #${nextLevel.level}</strong>
+                  <small>${nextLevel.cardsEnabled ? '3-Slot Shop Active' : 'Pure Tactical (No Cards)'}</small>
+                </div>
+              </button>
+              <button class="command-card-btn" data-action="nav" data-screen="skirmish">
+                <span class="cmd-icon">🛡️</span>
+                <div>
+                  <strong>3D Skirmish Duel</strong>
+                  <small>Custom AI or 2P Local</small>
+                </div>
+              </button>
+              <button class="command-card-btn" data-action="nav" data-screen="crypt">
+                <span class="cmd-icon">💀</span>
+                <div>
+                  <strong>5 Chaos Trials</strong>
+                  <small>1-Turn Lethal Puzzles</small>
+                </div>
+              </button>
+              <button class="command-card-btn" data-action="nav" data-screen="reliquary">
+                <span class="cmd-icon">👑</span>
+                <div>
+                  <strong>6 War Heroes</strong>
+                  <small>Portraits & 3D Minis</small>
+                </div>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- RIGHT WING: ENEMY WARLORD COMMANDER & LIVE 3D CUSTOMIZER -->
+        <section class="hub-right-column">
+          <div class="gothic-card-panel hero-confrontation-card enemy-boss-card">
+            <div class="gothic-eyebrow">OPPOSING ACT WARLORD COMMANDER</div>
+            <div class="character-showcase-row">
+              <div class="character-portrait-frame boss-frame" style="--char-color:${currentBoss.color}">
+                ${renderBossCrestSVG(currentBoss.id, currentBoss.color)}
+              </div>
+              <div class="character-meta">
+                <span class="char-class-badge enemy-badge">${currentBoss.classTitle || currentBoss.title}</span>
+                <h2 class="char-name">${currentBoss.name}</h2>
+                <div class="char-title-sub">Act ${currentAct.roman} Commander · AI Tier ${nextLevel.aiTier}</div>
+                <div class="char-passive-box enemy-passive">
+                  <strong>Warlord Decree:</strong> ${currentBoss.passiveDesc}
+                </div>
+              </div>
+            </div>
+            <blockquote class="char-battle-cry enemy-cry">${currentBoss.quote}</blockquote>
+          </div>
+
+          <div class="gothic-card-panel hub-3d-showcase-card">
+            <div class="gothic-eyebrow">LIVE 3D MINIATURE & WAR-TABLE INSPECTOR</div>
+
+            <div class="hub-customizer-group">
+              <span class="customizer-label">3D Champion Miniature</span>
+              <div class="pill-group">
                 ${SCULPTED_PIECES.player
                   .map(
                     (s) => `
                       <button class="cam-pill ${state.equippedPlayerSculpt === s.id ? 'active' : ''}" data-action="hub-preview-sculpt" data-id="${s.id}">
-                        ${s.name.replace(' Relic', '')}
+                        ${s.name.split(' ')[0]}
                       </button>
                     `
                   )
@@ -637,104 +728,122 @@ export class AppController {
               </div>
             </div>
 
-            <div class="hub-atelier-group">
-              <span class="atelier-group-label">PBR Stone & Metal Finish</span>
-              <div class="camera-preset-pills">
-                ${STONE_MATERIALS.map(
-                  (m) => `
-                    <button class="cam-pill ${state.equippedPlayerMaterial === m.id ? 'active' : ''}" data-action="hub-preview-material" data-id="${m.id}">
-                      ${m.name.split(' ')[0]}
-                    </button>
-                  `
-                ).join('')}
+            <div class="hub-customizer-group">
+              <span class="customizer-label">Armor & Stone Material</span>
+              <div class="pill-group">
+                ${STONE_MATERIALS.slice(0, 4)
+                  .map(
+                    (m) => `
+                      <button class="cam-pill ${state.equippedPlayerMaterial === m.id ? 'active' : ''}" data-action="hub-preview-material" data-id="${m.id}">
+                        ${m.name.split(' ')[0]}
+                      </button>
+                    `
+                  )
+                  .join('')}
               </div>
             </div>
 
-            <div class="hub-atelier-group">
-              <span class="atelier-group-label">3D Cathedral Hall & Torchlight</span>
-              <div class="camera-preset-pills">
-                ${CATHEDRAL_HALLS.map(
-                  (h) => `
-                    <button class="cam-pill ${state.equippedHall === h.id ? 'active' : ''}" data-action="hub-preview-hall" data-id="${h.id}">
-                      ${h.name.replace('The ', '')}
-                    </button>
-                  `
-                ).join('')}
-              </div>
-            </div>
-
-            <div class="hub-atelier-group">
-              <span class="atelier-group-label">3D Camera Perspective</span>
-              <div class="camera-preset-pills">
+            <div class="hub-customizer-group">
+              <span class="customizer-label">3D Camera Perspective</span>
+              <div class="camera-pill-row">
                 ${CAMERA_PRESETS.map(
                   (p) => `
                     <button class="cam-pill ${state.cameraPreset === p.id ? 'active' : ''}" data-action="set-camera" data-cam="${p.id}">
-                      ${p.name}
+                      ${p.name.split(' ')[0]}
                     </button>
                   `
                 ).join('')}
               </div>
             </div>
+
+            <div class="hub-card-actions-row">
+              <button class="btn-gothic-ghost" data-action="demo-shatter">
+                ${renderGothicIconSVG('shatter')}
+                <span>Test 3D Stone Shatter</span>
+              </button>
+              <button class="btn-gothic-ghost" data-action="nav" data-screen="codex">
+                <span>20 War-Scrolls</span>
+              </button>
+            </div>
           </div>
-        </aside>
+        </section>
       </main>
     `;
   }
 
   _renderCampaignScreen() {
     const state = this.save.getState();
-    const actLevels = CATHEDRAL_LEVELS.filter((l) => l.actId === this.selectedActId);
-    const activeAct = CATHEDRAL_ACTS.find((a) => a.actId === this.selectedActId) || CATHEDRAL_ACTS[0];
+    const act = CATHEDRAL_ACTS.find((a) => a.id === this.selectedActId) || CATHEDRAL_ACTS[0];
+    const boss = INQUISITOR_BOSSES.find((b) => b.id === act.bossId) || INQUISITOR_BOSSES[0];
+    const actLevels = CATHEDRAL_LEVELS.filter((l) => l.actId === act.id);
 
     return `
       ${this._renderTopNav('campaign')}
       <section class="modal-screen-container gothic-card-panel">
         <div class="screen-header-row">
           <div>
-            <div class="gothic-eyebrow">SINGLE-PLAYER SANCTUM CAMPAIGN • 36 CONSECRATIONS</div>
-            <h2>Cathedral Acts & Inquisitor Bosses</h2>
+            <div class="gothic-eyebrow">36-LEVEL WAR CAMPAIGN • V1 PROGRESSION RULES</div>
+            <h2>Cathedral Acts & Warlord Strongholds</h2>
+            <p class="screen-sub-note">
+              <strong>Levels 1–2:</strong> Pure Tactical Combat (No Cards / No Shop) •
+              <strong>Level 3+:</strong> 3-Slot In-Battle War-Scroll Shop & Gold Economy Unlocked!
+            </p>
           </div>
-          <div class="act-selector-pills">
+          <div class="act-selector-tabs">
             ${CATHEDRAL_ACTS.map(
-              (act) => `
-                <button class="act-pill-btn ${act.actId === this.selectedActId ? 'active' : ''}" data-action="select-act" data-act="${act.actId}">
-                  Act ${act.actId}: ${act.name}
+              (a) => `
+                <button class="act-tab ${a.id === act.id ? 'active' : ''}" data-action="select-act" data-act="${a.id}">
+                  <span>ACT ${a.roman}</span>
+                  <small>${a.name}</small>
                 </button>
               `
             ).join('')}
           </div>
         </div>
 
-        <div class="act-banner-card">
-          <div class="act-boss-crest">
-            ${renderBossCrestSVG(activeAct.boss.id, activeAct.boss.color)}
-          </div>
+        <div class="act-boss-banner">
+          <div class="act-boss-crest">${renderBossCrestSVG(boss.id, boss.color)}</div>
           <div class="act-boss-info">
-            <div class="gothic-eyebrow">ACT ${activeAct.actId} ARCH-INQUISITOR</div>
-            <h3>${activeAct.boss.name} — <span>${activeAct.boss.title}</span></h3>
-            <p>${activeAct.boss.quote} • <strong>Ritual Passive:</strong> ${activeAct.boss.passiveDesc}</p>
+            <div class="gothic-eyebrow">ACT ${act.roman} WARLORD COMMANDER • ${act.subtitle.toUpperCase()}</div>
+            <h3>${boss.name} — <span>${boss.title}</span></h3>
+            <p class="act-boss-quote">${boss.quote}</p>
+            <div class="act-boss-passive"><strong>Warlord Decree:</strong> ${boss.passiveDesc}</div>
           </div>
         </div>
 
-        <div class="levels-grid">
+        <div class="campaign-nodes-grid">
           ${actLevels
             .map((lvl) => {
-              const unlocked = lvl.level <= state.highestUnlockedLevel;
-              const stars = state.completedLevels[lvl.level] || 0;
+              const unlocked = lvl.level <= (state.highestUnlockedLevel || 1);
+              const stars = (state.completedLevels && state.completedLevels[lvl.level]) || 0;
               return `
-                <div class="level-node-card ${unlocked ? 'unlocked' : 'locked'} ${lvl.isBossLevel ? 'boss-node' : ''}">
-                  <div class="level-node-top">
-                    <span class="level-num">VOW #${lvl.level}</span>
-                    <span class="level-stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</span>
+                <div class="campaign-node-card ${unlocked ? 'unlocked' : 'locked'} ${
+                lvl.isBossLevel ? 'boss-node' : ''
+              }">
+                  <div class="node-top">
+                    <span class="node-num">LEVEL #${lvl.level}</span>
+                    <span class="node-stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</span>
                   </div>
                   <h4>${lvl.name}</h4>
-                  <div class="level-meta">
-                    <span>${lvl.boardSize}×${lvl.boardSize} Altar</span>
-                    <span>Target: ${lvl.targetScore} VP</span>
+                  <p class="node-lore">${lvl.lore}</p>
+                  <div class="node-rule-tag ${lvl.cardsEnabled ? 'shop-open' : 'pure-tactical'}">
+                    ${
+                      !lvl.cardsEnabled
+                        ? '🔒 Pure Tactical (No Cards / Shop)'
+                        : lvl.cardUnlock
+                        ? `🔓 Unlocks: ${lvl.cardUnlock}`
+                        : '🏪 3-Slot War-Scroll Shop Active'
+                    }
+                  </div>
+                  <div class="node-specs">
+                    <span>${lvl.boardSize}×${lvl.boardSize} Grid</span>
+                    <span>Target ${lvl.targetScore} VP</span>
                     <span>AI Tier ${lvl.aiTier}</span>
                   </div>
-                  <button class="btn-gothic-small" ${unlocked ? '' : 'disabled'} data-action="start-level" data-level="${lvl.level}">
-                    ${unlocked ? (lvl.isBossLevel ? 'Confront Boss' : 'Enter Altar') : 'Sealed'}
+                  <button class="btn-gothic-primary" ${
+                    unlocked ? '' : 'disabled'
+                  } data-action="start-level" data-level="${lvl.level}">
+                    ${unlocked ? (lvl.isBossLevel ? '⚔️ Challenge Warlord' : 'Enter Battle') : 'Sealed'}
                   </button>
                 </div>
               `;
@@ -750,27 +859,27 @@ export class AppController {
     return `
       ${this._renderTopNav('crypt')}
       <section class="modal-screen-container gothic-card-panel">
-        <div class="screen-header-row">
-          <div>
-            <div class="gothic-eyebrow">1-TURN LETHAL SACRED GEOMETRY PUZZLES</div>
-            <h2>Crypt Trials of the Ossuary</h2>
-          </div>
-        </div>
+        <div class="gothic-eyebrow">1-TURN LETHAL WAR-TABLE PUZZLES</div>
+        <h2>The 5 Chaos Trials of the Undercroft</h2>
+        <p class="screen-desc">Reach the target Victory Points in a single decisive turn using War-Scrolls and Sacred Geometry alignments.</p>
 
         <div class="crypt-trials-grid">
           ${CRYPT_TRIALS.map((trial) => {
-            const solved = Boolean(state.completedCrypts[trial.id]);
+            const cleared = Boolean(state.completedCrypts && state.completedCrypts[trial.id]);
             return `
-              <div class="crypt-trial-card ${solved ? 'solved' : ''}">
-                <div class="crypt-card-header">
-                  <span class="crypt-badge">${solved ? 'CONSECRATED' : 'UNSOLVED'}</span>
-                  <span class="crypt-reward">+${trial.rewardSigils} Sigils</span>
+              <div class="crypt-trial-card ${cleared ? 'cleared' : ''}">
+                <div class="crypt-header">
+                  <span>${trial.name}</span>
+                  <span>+${trial.rewardSigils} Sigils</span>
                 </div>
-                <h3>${trial.name}</h3>
                 <p>${trial.subtitle}</p>
-                <div class="crypt-hint-box"><strong>Scroll Hint:</strong> ${trial.hint}</div>
+                <div class="crypt-hint-box">💡 Hint: ${trial.hint}</div>
+                <div class="node-specs">
+                  <span>${trial.boardSize}×${trial.boardSize} Grid</span>
+                  <span>Target ${trial.targetScore} VP</span>
+                </div>
                 <button class="btn-gothic-primary" data-action="start-crypt" data-crypt="${trial.id}">
-                  Attempt Crypt Trial
+                  ${cleared ? 'Re-Conquer Trial' : 'Enter Trial'}
                 </button>
               </div>
             `;
@@ -784,101 +893,87 @@ export class AppController {
     const state = this.save.getState();
     return `
       ${this._renderTopNav('reliquary')}
-      <section class="modal-screen-container gothic-card-panel reliquary-layout">
-        <div class="screen-header-row">
-          <div>
-            <div class="gothic-eyebrow">CUSTOMIZE 3D SCULPTED PIECES, PBR STONE MATERIALS & OATHS</div>
-            <h2>The 3D Cathedral Reliquary Atelier</h2>
-          </div>
-          <button class="btn-gothic-ghost" data-action="demo-shatter">
-            ${renderGothicIconSVG('shatter')} Test Shatter on Current Sculptures
-          </button>
+      <section class="modal-screen-container gothic-card-panel">
+        <div class="gothic-eyebrow">RELIQUARY ATELIER • CHAMPIONS & 3D WAR-FORGE</div>
+        <h2>Playable Fantasy War Heroes, 3D Miniatures & Relics</h2>
+
+        <h3 class="reliquary-section-title">1. Choose Your Playable Fantasy War Hero (6 Champions)</h3>
+        <div class="heroes-roster-grid">
+          ${FANTASY_HEROES.map((hero) => {
+            const selected = state.selectedHeroId === hero.id;
+            return `
+              <div class="reliquary-item-card hero-roster-card ${selected ? 'equipped' : ''}">
+                <div class="hero-roster-top">
+                  <div class="hero-roster-portrait" style="--char-color:${hero.color}">
+                    ${renderFantasyHeroPortraitSVG(hero.id, hero.color)}
+                  </div>
+                  <div>
+                    <span class="char-class-badge" style="color:${hero.accent}">${hero.classTitle}</span>
+                    <h4>${hero.name}</h4>
+                    <div class="char-title-sub">${hero.title} · <em>${hero.weapon}</em></div>
+                  </div>
+                </div>
+                <p class="hero-lore-text">${hero.lore}</p>
+                <div class="char-passive-box"><strong>Hero Passive:</strong> ${hero.passiveDesc}</div>
+                <button class="btn-gothic-secondary" data-action="select-hero" data-hero="${hero.id}">
+                  ${selected ? '✓ Active War Champion' : 'Select War Champion'}
+                </button>
+              </div>
+            `;
+          }).join('')}
         </div>
 
-        <div class="reliquary-columns">
-          <div class="reliquary-section">
-            <h3>Order ('X') 3D Piece Sculpture</h3>
-            <div class="cosmetic-list">
-              ${SCULPTED_PIECES.player
-                .map((s) => {
-                  const owned = state.unlockedSculpts.includes(s.id);
-                  const equipped = state.equippedPlayerSculpt === s.id;
-                  return `
-                    <div class="cosmetic-item ${equipped ? 'equipped' : ''}">
-                      <div>
-                        <strong>${s.name}</strong>
-                        <p>${s.desc}</p>
-                      </div>
-                      <button class="btn-gothic-small" data-action="select-sculpt" data-faction="player" data-id="${s.id}" data-cost="${s.cost}">
-                        ${equipped ? 'Equipped' : owned ? 'Equip' : `Unlock (${s.cost})`}
-                      </button>
-                    </div>
-                  `;
-                })
-                .join('')}
-            </div>
+        <h3 class="reliquary-section-title">2. 3D Sculpted War Miniatures</h3>
+        <div class="reliquary-grid">
+          ${SCULPTED_PIECES.player
+            .map((sculpt) => {
+              const unlocked = state.unlockedSculpts.includes(sculpt.id);
+              const equipped = state.equippedPlayerSculpt === sculpt.id;
+              return `
+                <div class="reliquary-item-card ${equipped ? 'equipped' : ''}">
+                  <h4>${sculpt.name}</h4>
+                  <p>${sculpt.desc}</p>
+                  <button class="btn-gothic-secondary" data-action="select-sculpt" data-faction="player" data-id="${sculpt.id}" data-cost="${sculpt.cost}">
+                    ${equipped ? 'Equipped on 3D Board' : unlocked ? 'Equip Miniature' : `Forge (${sculpt.cost} Sigils)`}
+                  </button>
+                </div>
+              `;
+            })
+            .join('')}
+        </div>
 
-            <h3>Inquisition ('O') 3D Piece Sculpture</h3>
-            <div class="cosmetic-list">
-              ${SCULPTED_PIECES.enemy
-                .map((s) => {
-                  const owned = state.unlockedSculpts.includes(s.id);
-                  const equipped = state.equippedEnemySculpt === s.id;
-                  return `
-                    <div class="cosmetic-item ${equipped ? 'equipped' : ''}">
-                      <div>
-                        <strong>${s.name}</strong>
-                        <p>${s.desc}</p>
-                      </div>
-                      <button class="btn-gothic-small" data-action="select-sculpt" data-faction="enemy" data-id="${s.id}" data-cost="${s.cost}">
-                        ${equipped ? 'Equipped' : owned ? 'Equip' : `Unlock (${s.cost})`}
-                      </button>
-                    </div>
-                  `;
-                })
-                .join('')}
-            </div>
-          </div>
+        <h3 class="reliquary-section-title">3. Sacred War Relics (Equip Up to 2 Passives)</h3>
+        <div class="reliquary-grid">
+          ${BLOOD_OATHS.map((oath) => {
+            const unlocked = state.unlockedOaths.includes(oath.id);
+            const equipped = state.equippedOaths.includes(oath.id);
+            return `
+              <div class="reliquary-item-card ${equipped ? 'equipped' : ''}">
+                <h4>${oath.name}</h4>
+                <p>${oath.desc}</p>
+                <button class="btn-gothic-secondary" data-action="toggle-oath" data-id="${oath.id}" data-cost="${oath.cost}">
+                  ${equipped ? 'Active Relic (Unequip)' : unlocked ? 'Equip Relic' : `Claim (${oath.cost} Sigils)`}
+                </button>
+              </div>
+            `;
+          }).join('')}
+        </div>
 
-          <div class="reliquary-section">
-            <h3>PBR Stone & Metal Finish (Player 'X')</h3>
-            <div class="cosmetic-list">
-              ${STONE_MATERIALS.map((m) => {
-                const owned = state.unlockedMaterials.includes(m.id);
-                const equipped = state.equippedPlayerMaterial === m.id;
-                return `
-                  <div class="cosmetic-item ${equipped ? 'equipped' : ''}">
-                    <div>
-                      <strong>${m.name}</strong>
-                      <p>${m.desc}</p>
-                    </div>
-                    <button class="btn-gothic-small" data-action="select-material" data-id="${m.id}" data-cost="${m.cost}">
-                      ${equipped ? 'Active' : owned ? 'Apply' : `Unlock (${m.cost})`}
-                    </button>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-
-            <h3>Blood Oath Relics (Equip up to 2) & Penitence Bell</h3>
-            <div class="cosmetic-list">
-              ${BLOOD_OATHS.map((oath) => {
-                const owned = state.unlockedOaths.includes(oath.id);
-                const equipped = state.equippedOaths.includes(oath.id);
-                return `
-                  <div class="cosmetic-item ${equipped ? 'equipped' : ''}">
-                    <div>
-                      <strong>${oath.name}</strong>
-                      <p>${oath.desc}</p>
-                    </div>
-                    <button class="btn-gothic-small" data-action="toggle-oath" data-id="${oath.id}" data-cost="${oath.cost}">
-                      ${equipped ? 'Equipped' : owned ? 'Equip' : `Unlock (${oath.cost})`}
-                    </button>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          </div>
+        <h3 class="reliquary-section-title">4. 3D Armor & Stone Materials</h3>
+        <div class="reliquary-grid">
+          ${STONE_MATERIALS.map((mat) => {
+            const unlocked = state.unlockedMaterials.includes(mat.id);
+            const equipped = state.equippedPlayerMaterial === mat.id;
+            return `
+              <div class="reliquary-item-card ${equipped ? 'equipped' : ''}">
+                <div class="mat-swatch" style="background:#${mat.color.toString(16).padStart(6, '0')}"></div>
+                <h4>${mat.name}</h4>
+                <button class="btn-gothic-secondary" data-action="select-material" data-id="${mat.id}" data-cost="${mat.cost}">
+                  ${equipped ? 'Equipped Material' : unlocked ? 'Apply Material' : `Acquire (${mat.cost} Sigils)`}
+                </button>
+              </div>
+            `;
+          }).join('')}
         </div>
       </section>
     `;
@@ -889,14 +984,10 @@ export class AppController {
     return `
       ${this._renderTopNav('codex')}
       <section class="modal-screen-container gothic-card-panel">
-        <div class="screen-header-row">
-          <div>
-            <div class="gothic-eyebrow">20 DARK-TAROT ARCANA SCRIPTS & SACRED GEOMETRY BLUEPRINTS</div>
-            <h2>The Forbidden Scriptorium</h2>
-          </div>
-        </div>
+        <div class="gothic-eyebrow">20 WAR-SCROLLS & SACRED ALIGNMENT BLUEPRINTS</div>
+        <h2>Grimoire of the War-Table (Shop Unlocks at Campaign Level 3)</h2>
 
-        <div class="sacred-geometry-strip">
+        <div class="codex-geometries-strip">
           ${SACRED_GEOMETRY_SHAPES.map(
             (shape) => `
               <div class="geometry-mini-card">
@@ -916,14 +1007,14 @@ export class AppController {
             return `
               <div class="codex-tarot-card ${exalted ? 'exalted' : ''}">
                 <div class="codex-tarot-top">
-                  <span class="tarot-num">${card.numeral}</span>
-                  <span class="tarot-cost">${card.cost} Tithe</span>
+                  <span class="tarot-num">${card.numeral} · Lvl ${card.unlockLevel || 3}+</span>
+                  <span class="tarot-cost">🪙 ${card.cost} Gold</span>
                 </div>
                 <div class="codex-tarot-art">${renderTarotArtSVG(card)}</div>
                 <h4>${card.name} ${exalted ? '<span class="exalt-badge">[+]</span>' : ''}</h4>
                 <p>${exalted ? card.exaltedDesc : card.desc}</p>
                 <button class="btn-gothic-small" ${exalted ? 'disabled' : ''} data-action="exalt-card" data-card="${card.id}">
-                  ${exalted ? 'Exalted [+]' : 'Exalt Script (150 Sigils)'}
+                  ${exalted ? 'Exalted [+]' : 'Exalt Scroll (150 Sigils)'}
                 </button>
               </div>
             `;
@@ -937,26 +1028,26 @@ export class AppController {
     return `
       ${this._renderTopNav('skirmish')}
       <section class="modal-screen-container gothic-card-panel skirmish-panel">
-        <div class="gothic-eyebrow">CUSTOM 3D ALTAR DUEL</div>
-        <h2>Configure Single-Player AI or Pass-and-Play Duel</h2>
+        <div class="gothic-eyebrow">CUSTOM 3D WAR-TABLE DUEL</div>
+        <h2>Configure Single-Player Warlord AI or Local 2-Player Battle</h2>
 
         <div class="skirmish-options-grid">
           <div class="skirmish-field">
-            <label>Opponent Mode</label>
+            <label>Battle Mode</label>
             <div class="pill-group">
-              <button class="cam-pill ${this.skirmishConfig.mode === 'skirmish' ? 'active' : ''}" data-action="skirmish-set" data-key="mode" data-val="skirmish">Single-Player Inquisitor AI</button>
-              <button class="cam-pill ${this.skirmishConfig.mode === 'local2p' ? 'active' : ''}" data-action="skirmish-set" data-key="mode" data-val="local2p">Local 2-Player Altar</button>
+              <button class="cam-pill ${this.skirmishConfig.mode === 'skirmish' ? 'active' : ''}" data-action="skirmish-set" data-key="mode" data-val="skirmish">Single-Player Warlord AI</button>
+              <button class="cam-pill ${this.skirmishConfig.mode === 'local2p' ? 'active' : ''}" data-action="skirmish-set" data-key="mode" data-val="local2p">Local 2-Player War-Table</button>
             </div>
           </div>
 
           <div class="skirmish-field">
-            <label>Altar Grid Dimensions</label>
+            <label>War-Table Grid Dimensions</label>
             <div class="pill-group">
               ${[4, 5, 6, 7]
                 .map(
                   (sz) => `
                     <button class="cam-pill ${this.skirmishConfig.boardSize === sz ? 'active' : ''}" data-action="skirmish-set" data-key="boardSize" data-val="${sz}">
-                      ${sz}×${sz} Altar
+                      ${sz}×${sz} Grid
                     </button>
                   `
                 )
@@ -965,15 +1056,15 @@ export class AppController {
           </div>
 
           <div class="skirmish-field">
-            <label>Inquisitor AI Intelligence Tier</label>
+            <label>Enemy Warlord AI Tier</label>
             <div class="pill-group">
               ${[
-                [1, '1: Acolyte'],
-                [2, '2: Deacon'],
-                [3, '3: Canon'],
-                [4, '4: Prior'],
-                [5, '5: Grand Inquisitor'],
-                [6, '6: Hollow Seraph'],
+                [1, '1: Vanguard Scout'],
+                [2, '2: Lich Acolyte'],
+                [3, '3: Siege Captain'],
+                [4, '4: Pyromancer'],
+                [5, '5: Blood Countess'],
+                [6, '6: Abyssal War-God'],
               ]
                 .map(
                   ([tier, label]) => `
@@ -987,7 +1078,7 @@ export class AppController {
           </div>
 
           <div class="skirmish-field">
-            <label>3D Cathedral Hall & Lighting</label>
+            <label>3D War-Hall & Lighting</label>
             <div class="pill-group">
               ${CATHEDRAL_HALLS.map(
                 (h) => `
@@ -1002,7 +1093,7 @@ export class AppController {
 
         <div class="skirmish-launch-row">
           <button class="btn-gothic-primary" data-action="launch-skirmish">
-            ${renderGothicIconSVG('sword')} Consecrate 3D Skirmish Altar
+            ${renderGothicIconSVG('sword')} Launch 3D Skirmish Battle
           </button>
         </div>
       </section>
@@ -1013,39 +1104,62 @@ export class AppController {
     if (!this.engine) return '';
     const snap = this.engine.getSnapshot();
     const state = this.save.getState();
+    const hero = snap.hero || getFantasyHeroById(state.selectedHeroId);
+    const boss = snap.boss || INQUISITOR_BOSSES[0];
     const xPct = Math.min(100, Math.round((snap.scores.X / snap.targetScore) * 100));
     const oPct = Math.min(100, Math.round((snap.scores.O / snap.targetScore) * 100));
     const bellReady = !snap.bellUsedThisMatch.X && snap.bellCharge.X >= 100;
 
     return `
       <header class="battle-hud-topbar">
+        <!-- PLAYER FANTASY WAR HERO WING -->
         <div class="hud-wing player-wing ${snap.activePlayer === 'X' ? 'active-turn' : ''}">
-          <div class="wing-faction-tag">ORDER OF THE ROSE (X)</div>
-          <div class="wing-score-row">
-            <span class="score-big">${snap.scores.X}</span>
-            <span class="score-target">/ ${snap.targetScore} VP</span>
-          </div>
-          <div class="gothic-progress-track">
-            <div class="gothic-progress-fill player-fill" style="width:${xPct}%"></div>
-          </div>
-          <div class="wing-sub-row">
-            <span class="tithe-readout">${renderGothicIconSVG('chalice')} Blood Tithe: <strong>${snap.tithe.X}</strong>/${GAME_CONFIG.MAX_BLOOD_TITHE}</span>
-            <span class="placements-readout">Placements: <strong>${snap.placementsRemaining}</strong></span>
+          <div class="hud-commander-row">
+            <div class="hud-commander-avatar player-avatar" style="--char-color:${hero.color}">
+              ${renderFantasyHeroPortraitSVG(hero.id, hero.color)}
+            </div>
+            <div class="hud-commander-details">
+              <div class="wing-faction-tag">${hero.name.toUpperCase()} (${hero.classTitle})</div>
+              <div class="wing-score-row">
+                <span class="score-big">${snap.scores.X}</span>
+                <span class="score-target">/ ${snap.targetScore} VP</span>
+              </div>
+              <div class="gothic-progress-track">
+                <div class="gothic-progress-fill player-fill" style="width:${xPct}%"></div>
+              </div>
+              <div class="wing-sub-row">
+                <span class="tithe-readout">
+                  ${
+                    snap.cardsEnabled
+                      ? `🪙 Gold Coins: <strong>${snap.tithe.X}</strong>/${GAME_CONFIG.MAX_BLOOD_TITHE}`
+                      : `🔒 Shop & Gold: <strong>Unlocks Lvl 3</strong>`
+                  }
+                </span>
+                <span class="placements-readout">Moves: <strong>${snap.placementsRemaining}</strong></span>
+              </div>
+            </div>
           </div>
         </div>
 
+        <!-- CENTER BATTLE MEDALLION -->
         <div class="hud-center-medallion">
           <div class="turn-pill ${snap.activePlayer === 'X' ? 'turn-x' : 'turn-o'}">
-            ${snap.activePlayer === 'X' ? 'YOUR CONSECRATION' : 'INQUISITOR RITUAL'} • TURN ${snap.turnNumber}
+            ${snap.activePlayer === 'X' ? `${hero.shortName.toUpperCase()}'S TURN` : `${boss.name.split(' ')[0].toUpperCase()} ATTACKING`} • TURN ${snap.turnNumber}
           </div>
           <div class="battle-sub-title">
-            ${snap.boss ? `${snap.boss.name} (${snap.boss.title})` : snap.levelData?.name || 'Cathedral Altar Duel'}
+            ${
+              snap.mode === 'campaign'
+                ? `Level #${snap.levelNumber}: ${snap.levelData?.name || 'War-Table Clash'} ${
+                    !snap.cardsEnabled ? '• [PURE TACTICAL — NO CARDS]' : ''
+                  }`
+                : `${boss.name} (${boss.title})`
+            }
           </div>
           <div class="hud-utility-strip">
             <button class="hud-tool-btn" data-action="cycle-camera" title="Switch 3D Camera Angle (C)">
               ${renderGothicIconSVG('camera')} <span>Camera</span>
             </button>
-            <button class="hud-tool-btn" data-action="seer-hint" title="Oracle Best Move Hint (1 Tithe)">
+            <button class="hud-tool-btn" data-action="seer-hint" title="War-Oracle Best Move Hint">
               ${renderGothicIconSVG('eye')} <span>Oracle</span>
             </button>
             <button class="hud-tool-btn ${this.showThreatScan ? 'active' : ''}" data-action="toggle-threat" title="Highlight Enemy Scoring Threats">
@@ -1057,35 +1171,43 @@ export class AppController {
             <button class="hud-tool-btn" ${snap.canUndo ? '' : 'disabled'} data-action="undo-move" title="Rewind Last Action">
               ${renderGothicIconSVG('undo')}
             </button>
-            <button class="hud-tool-btn" data-action="nav" data-screen="hub" title="Retreat to Sanctum Hub">
+            <button class="hud-tool-btn" data-action="nav" data-screen="hub" title="Retreat to War-Table Hub">
               <span>Exit</span>
             </button>
           </div>
         </div>
 
+        <!-- ENEMY WARLORD COMMANDER WING -->
         <div class="hud-wing enemy-wing ${snap.activePlayer === 'O' ? 'active-turn' : ''}">
-          <div class="wing-faction-tag">${snap.boss ? snap.boss.name.toUpperCase() : 'INQUISITION AUTOMATON (O)'}</div>
-          <div class="wing-score-row">
-            <span class="score-big">${snap.scores.O}</span>
-            <span class="score-target">/ ${snap.targetScore} VP</span>
-          </div>
-          <div class="gothic-progress-track">
-            <div class="gothic-progress-fill enemy-fill" style="width:${oPct}%"></div>
-          </div>
-          <div class="wing-sub-row">
-            <span>Enemy Tithe: <strong>${snap.tithe.O}</strong></span>
-            <span>Shattered: <strong>${snap.stonesShatteredThisMatch}</strong></span>
+          <div class="hud-commander-row enemy-commander-row">
+            <div class="hud-commander-details enemy-details">
+              <div class="wing-faction-tag">${boss.name.toUpperCase()} (${boss.classTitle || 'WARLORD'})</div>
+              <div class="wing-score-row">
+                <span class="score-big">${snap.scores.O}</span>
+                <span class="score-target">/ ${snap.targetScore} VP</span>
+              </div>
+              <div class="gothic-progress-track">
+                <div class="gothic-progress-fill enemy-fill" style="width:${oPct}%"></div>
+              </div>
+              <div class="wing-sub-row">
+                <span>${snap.cardsEnabled ? `🪙 Enemy Gold: <strong>${snap.tithe.O}</strong>` : `⚔️ Pure Tactical AI`}</span>
+                <span>Shattered: <strong>${snap.stonesShatteredThisMatch}</strong></span>
+              </div>
+            </div>
+            <div class="hud-commander-avatar enemy-avatar" style="--char-color:${boss.color}">
+              ${renderBossCrestSVG(boss.id, boss.color)}
+            </div>
           </div>
         </div>
       </header>
 
-      <!-- Optional 2D Tactical Mini-Grid for instant precision or headless testing -->
+      <!-- RIGHT SIDE WIDGETS: 2D MATRIX, WAR-COUNSEL TIP, CHEST ODDS & CHRONICLE -->
       <aside class="battle-side-widgets">
         ${
           this.showMiniTacticalGrid
             ? `
               <div class="mini-tactical-grid-panel gothic-card-panel">
-                <div class="gothic-eyebrow">TACTICAL ALTAR MATRIX</div>
+                <div class="gothic-eyebrow">TACTICAL WAR-TABLE MATRIX</div>
                 <div class="mini-grid-board" style="grid-template-columns: repeat(${snap.boardSize}, 1fr)">
                   ${snap.board
                     .map((row) =>
@@ -1095,7 +1217,16 @@ export class AppController {
                             <button class="mini-grid-cell ${cell.symbol ? `sym-${cell.symbol}` : ''} ${
                             cell.obstacle ? 'has-obstacle' : ''
                           }" data-action="board-cell" data-r="${cell.r}" data-c="${cell.c}">
-                              ${cell.symbol || (cell.obstacle === 'reliquary_coffer' ? '□' : cell.obstacle ? '■' : '·')}
+                              ${
+                                cell.symbol ||
+                                (cell.obstacle === 'reliquary_coffer'
+                                  ? '📦'
+                                  : cell.anomaly === 'cursed_censer'
+                                  ? `💣${cell.bombTimer || ''}`
+                                  : cell.obstacle
+                                  ? '■'
+                                  : '·')
+                              }
                             </button>
                           `
                         )
@@ -1108,8 +1239,28 @@ export class AppController {
             : ''
         }
 
+        ${
+          snap.levelData?.tip
+            ? `
+              <div class="chronicle-feed-panel war-counsel-box">
+                <div class="gothic-eyebrow">💡 WAR-COUNSEL TACTICAL TIP</div>
+                <p class="war-counsel-text">${snap.levelData.tip}</p>
+              </div>
+            `
+            : ''
+        }
+
+        <div class="chronicle-feed-panel chest-odds-panel">
+          <div class="gothic-eyebrow">📦 MYSTERY WAR-CHEST ODDS</div>
+          <div class="chest-odds-badges">
+            ${V1_BOX_ODDS.map(
+              (o) => `<span class="odds-chip" title="${o.label}">${o.icon} ${o.pct}%</span>`
+            ).join('')}
+          </div>
+        </div>
+
         <div class="chronicle-feed-panel">
-          <div class="gothic-eyebrow">SANCTUM CHRONICLE</div>
+          <div class="gothic-eyebrow">WAR CHRONICLE</div>
           <ul class="chronicle-list">
             ${snap.battleChronicle
               .slice(0, 4)
@@ -1119,7 +1270,7 @@ export class AppController {
         </div>
       </aside>
 
-      <!-- Bottom Dark-Tarot Hand & Penitence Bell Dock -->
+      <!-- BOTTOM DOCK: V1 LEVEL 1-2 SEALED BANNER OR LEVEL 3+ 3-SLOT SHOP & HAND -->
       <footer class="battle-hud-bottom">
         <div class="penitence-bell-dock">
           <button class="bell-ultimate-btn ${bellReady ? 'ready' : ''}" ${
@@ -1127,37 +1278,108 @@ export class AppController {
     } data-action="toll-bell">
             ${renderGothicIconSVG('bell')}
             <div>
-              <div class="bell-label">PENITENCE BELL</div>
+              <div class="bell-label">WAR-HORN CATACLYSM</div>
               <div class="bell-pct">${
-                snap.bellUsedThisMatch.X ? 'TOLLED' : `${Math.floor(snap.bellCharge.X)}%`
+                snap.bellUsedThisMatch.X ? 'UNLEASHED' : `${Math.floor(snap.bellCharge.X)}%`
               }</div>
             </div>
           </button>
         </div>
 
-        <div class="dark-tarot-hand" role="list" aria-label="Dark-Tarot Arcana Hand">
-          ${snap.hands.X.map((inst, idx) => {
-            const card = inst.card;
-            if (!card) return '';
-            const selected = this.engine.selectedCardIndex === idx;
-            const affordable = snap.tithe.X >= card.cost;
-            return `
-              <div class="tarot-hand-card ${selected ? 'selected' : ''} ${
-              affordable ? 'affordable' : 'unaffordable'
-            }" data-action="select-card" data-index="${idx}">
-                <div class="tarot-card-header">
-                  <span class="tarot-roman">${card.numeral}</span>
-                  <span class="tarot-cost-gem">${card.cost}</span>
+        ${
+          !snap.cardsEnabled
+            ? `
+              <div class="v1-sealed-scrolls-banner gothic-card-panel">
+                <div class="sealed-icon">🔒</div>
+                <div class="sealed-copy">
+                  <div class="gothic-eyebrow">V1 CAMPAIGN RULES • LEVELS 1 & 2 WARMUP</div>
+                  <h4>WAR-SCROLL SHOP & CARDS UNLOCK AT LEVEL 3</h4>
+                  <p>Master pure tactical alignments and obstacle positioning first. Complete Level 2 to unlock Gold Coins and the 3-Slot In-Battle War-Scroll Shop!</p>
                 </div>
-                <div class="tarot-card-illustration">
-                  ${renderTarotArtSVG(card)}
-                </div>
-                <div class="tarot-card-title">${card.name}${inst.exalted ? ' [+]' : ''}</div>
-                <div class="tarot-card-desc">${inst.exalted ? card.exaltedDesc : card.desc}</div>
               </div>
-            `;
-          }).join('')}
-        </div>
+            `
+            : `
+              <!-- V1 3-SLOT IN-BATTLE WAR-SCROLL SHOP + PLAYER HAND -->
+              <div class="v1-battle-cards-zone">
+                <div class="v1-shop-strip gothic-card-panel">
+                  <div class="v1-shop-header">
+                    <div>
+                      <span class="shop-title">🏪 WAR-SCROLL SHOP</span>
+                      <span class="shop-sub">Buy with 🪙 Gold • Bought Scrolls Cast FREE</span>
+                    </div>
+                    <button class="btn-shop-reroll" data-action="reroll-shop" ${
+                      snap.tithe.X >= snap.shopRerollCost ? '' : 'disabled'
+                    }>
+                      🔄 Reroll (${snap.shopRerollCost}🪙)
+                    </button>
+                  </div>
+                  <div class="v1-shop-slots">
+                    ${(snap.shop || [])
+                      .map((slot, sIdx) => {
+                        if (!slot || !slot.card) {
+                          return `<div class="v1-shop-slot sold-out"><span>EMPTY</span></div>`;
+                        }
+                        const c = slot.card;
+                        const price = slot.price ?? c.cost;
+                        const canBuy =
+                          snap.tithe.X >= price &&
+                          snap.hands.X.length < GAME_CONFIG.MAX_HAND_SIZE;
+                        return `
+                          <div class="v1-shop-slot ${slot.locked ? 'locked' : ''}">
+                            <div class="shop-slot-top">
+                              <span class="shop-slot-price">🪙 ${price}</span>
+                              <button class="shop-lock-btn" data-action="lock-shop-slot" data-slot="${sIdx}" title="Lock/Unlock Slot">
+                                ${slot.locked ? '🔒' : '🔓'}
+                              </button>
+                            </div>
+                            <div class="shop-slot-name">${c.name}</div>
+                            <div class="shop-slot-desc">${c.desc}</div>
+                            <button class="btn-shop-buy" ${
+                              canBuy ? '' : 'disabled'
+                            } data-action="buy-shop-card" data-slot="${sIdx}">
+                              BUY (${price}🪙)
+                            </button>
+                          </div>
+                        `;
+                      })
+                      .join('')}
+                  </div>
+                </div>
+
+                <div class="dark-tarot-hand" role="list" aria-label="War-Scroll Hand">
+                  ${
+                    snap.hands.X.length === 0
+                      ? `<div class="empty-hand-hint">Hand Empty — Buy War-Scrolls from the Shop (Left) or Crack 📦 Mystery Chests!</div>`
+                      : snap.hands.X.map((inst, idx) => {
+                          const card = inst.card;
+                          if (!card) return '';
+                          const selected = this.engine.selectedCardIndex === idx;
+                          const effectiveCost = inst.paidInShop ? 0 : card.cost;
+                          const affordable =
+                            snap.tithe.X >= effectiveCost && snap.cardsPlayedThisTurn < 1;
+                          return `
+                            <div class="tarot-hand-card ${selected ? 'selected' : ''} ${
+                            affordable ? 'affordable' : 'unaffordable'
+                          }" data-action="select-card" data-index="${idx}">
+                              <div class="tarot-card-header">
+                                <span class="tarot-roman">${card.numeral}</span>
+                                <span class="tarot-cost-gem">${
+                                  inst.paidInShop ? 'FREE' : `${card.cost}🪙`
+                                }</span>
+                              </div>
+                              <div class="tarot-card-illustration">
+                                ${renderTarotArtSVG(card)}
+                              </div>
+                              <div class="tarot-card-title">${card.name}${inst.exalted ? ' [+]' : ''}</div>
+                              <div class="tarot-card-desc">${inst.exalted ? card.exaltedDesc : card.desc}</div>
+                            </div>
+                          `;
+                        }).join('')
+                  }
+                </div>
+              </div>
+            `
+        }
 
         <div class="camera-quick-dock">
           <div class="dock-caption">3D CAMERA PRESET</div>
@@ -1179,23 +1401,29 @@ export class AppController {
 
   _renderEndgameOverlay(snap) {
     const isWin = snap.status === 'victory';
+    const unlockedLvl3 = isWin && snap.mode === 'campaign' && snap.levelNumber === 2;
     return `
       <div class="endgame-modal-backdrop">
         <div class="endgame-modal-card gothic-card-panel">
-          <div class="gothic-eyebrow">${isWin ? 'SANCTUM CONSECRATED' : 'ALTAR OVERRUN BY INQUISITION'}</div>
-          <h2>${isWin ? 'VICTORY IN THE CATHEDRAL' : 'DEFEAT IN THE DARK'}</h2>
+          <div class="gothic-eyebrow">${isWin ? 'WAR-TABLE CONQUERED' : 'OVERRUN BY ENEMY WARLORD'}</div>
+          <h2>${isWin ? 'VICTORY ON THE ALTAR' : 'DEFEAT IN BATTLE'}</h2>
           <p class="endgame-score-summary">
-            Final Alignment: <strong>Order ${snap.scores.X} VP</strong> — <strong>Inquisition ${snap.scores.O} VP</strong>
+            Final Alignment: <strong>Champion ${snap.scores.X} VP</strong> — <strong>Warlord ${snap.scores.O} VP</strong>
             <br/>Stones Shattered This Duel: <strong>${snap.stonesShatteredThisMatch}</strong>
+            ${
+              unlockedLvl3
+                ? `<br/><span class="unlock-callout">🔓 LEVEL 3 UNLOCKED: 3-Slot War-Scroll Shop & Gold Coin Economy Now Available!</span>`
+                : ''
+            }
           </p>
           <div class="endgame-actions">
             ${
               isWin && snap.mode === 'campaign' && snap.levelNumber < 36
-                ? `<button class="btn-gothic-primary" data-action="start-level" data-level="${snap.levelNumber + 1}">Next Sanctum Vow (#${snap.levelNumber + 1})</button>`
+                ? `<button class="btn-gothic-primary" data-action="start-level" data-level="${snap.levelNumber + 1}">Next Battle (Level #${snap.levelNumber + 1})</button>`
                 : ''
             }
-            <button class="btn-gothic-secondary" data-action="rematch">Rematch Altar</button>
-            <button class="btn-gothic-ghost" data-action="nav" data-screen="hub">Return to Sanctum Hub</button>
+            <button class="btn-gothic-secondary" data-action="rematch">Rematch War-Table</button>
+            <button class="btn-gothic-ghost" data-action="nav" data-screen="hub">Return to War-Table Hub</button>
           </div>
         </div>
       </div>
@@ -1225,6 +1453,52 @@ export class AppController {
             this.selectedActId = Number(el.getAttribute('data-act') || 1);
             this.render();
             break;
+          case 'select-hero': {
+            const heroId = el.getAttribute('data-hero');
+            const hero = getFantasyHeroById(heroId);
+            this.save.selectHero(hero.id);
+            this.save.equipCosmetic('equippedPlayerSculpt', hero.defaultSculpt);
+            this.save.equipCosmetic('equippedPlayerMaterial', hero.defaultMaterial);
+            this.sound?.playStoneSlam('X');
+            this.showToast(`⚔️ Champion Selected: ${hero.name} (${hero.classTitle})`);
+            if (this.currentScreen === 'hub') {
+              this._setupDemoAltar();
+            }
+            this.render();
+            break;
+          }
+          case 'buy-shop-card': {
+            if (!this.engine) break;
+            const slotIdx = Number(el.getAttribute('data-slot'));
+            const res = this.engine.buyShopCard(slotIdx, 'X');
+            if (!res.ok) {
+              this.showToast(res.reason);
+            } else {
+              this.sound?.playSacredChord('minor');
+              this.showToast(`Bought ${res.card.name} — Cast from Hand for FREE!`);
+            }
+            this.render();
+            break;
+          }
+          case 'reroll-shop': {
+            if (!this.engine) break;
+            const res = this.engine.rerollShop('X');
+            if (!res.ok) {
+              this.showToast(res.reason);
+            } else {
+              this.sound?.playUIHover();
+              this.showToast('War-Scroll Shop Refreshed!');
+            }
+            this.render();
+            break;
+          }
+          case 'lock-shop-slot': {
+            if (!this.engine) break;
+            const slotIdx = Number(el.getAttribute('data-slot'));
+            this.engine.toggleShopLock(slotIdx);
+            this.render();
+            break;
+          }
           case 'set-camera':
             this.cycleCameraPreset(el.getAttribute('data-cam'));
             break;
@@ -1329,7 +1603,7 @@ export class AppController {
             const cardId = el.getAttribute('data-card');
             const res = this.save.exaltArcanaCard(cardId, 150);
             if (!res.ok) this.showToast(res.reason);
-            else this.showToast('Dark-Tarot Script Exalted to [+] Mastery!');
+            else this.showToast('War-Scroll Exalted to [+] Mastery!');
             this.render();
             break;
           }

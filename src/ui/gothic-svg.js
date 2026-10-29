@@ -1,10 +1,10 @@
 /**
- * XcardO III: Obsidian Sanctum
- * Master Gothic Vector Art Suite:
- * - 20 Bespoke Dark-Tarot Woodcut & Stained-Glass Illustrations (renderTarotArtSVG)
- * - 6 Distinct Arch-Inquisitor Boss Heraldic Portraits (renderBossCrestSVG)
- * - Stained-Glass Rose Window & Wrought-Iron Corner Filigrees (renderRoseWindowSVG, renderGothicFiligreeSVG)
- * - Wrought-Iron UI Icons & Sacred Geometry Blueprints
+ * XcardO — 3D Fantasy War-Table Strategy
+ * Master Fantasy War Character & Dark-Tarot Vector Art Suite:
+ * - 6 Playable Fantasy War Hero Character Portraits (renderFantasyHeroPortraitSVG)
+ * - 6 Enemy Fantasy War Commander Character Portraits (renderBossCrestSVG)
+ * - 20 Bespoke War-Scroll Illustrations (renderTarotArtSVG)
+ * - Rose Window, Wrought-Iron UI Icons & Sacred Geometry Blueprints
  */
 
 const ORDER_PALETTES = {
@@ -16,8 +16,8 @@ const ORDER_PALETTES = {
 };
 
 /**
- * Render an engraved Dark-Tarot Card illustration SVG (`viewBox="0 0 120 96"`)
- * Every single one of the 20 Dark-Tarot cards has its own unique Gothic woodcut + stained-glass illustration.
+ * Render an engraved War-Scroll Card illustration SVG (`viewBox="0 0 120 96"`)
+ * Every single one of the 20 War-Scroll cards has its own unique woodcut + stained-glass illustration.
  */
 export function renderTarotArtSVG(card) {
   if (!card) return '';
@@ -216,18 +216,159 @@ export function renderTarotArtSVG(card) {
 }
 
 /**
- * Render 6 Distinct Arch-Inquisitor Boss Heraldic Portraits (`viewBox="0 0 80 80"`)
+ * Render 6 Playable Fantasy War Hero Character Bust Portraits (`viewBox="0 0 100 100"`)
+ * Features layered armor pauldrons, cloaks, helms/crowns, glowing eyes, and signature weapons.
+ */
+export function renderFantasyHeroPortraitSVG(heroId = 'hero_paladin', color = '#f59e0b') {
+  let bust = '';
+  switch (heroId) {
+    case 'hero_valkyrie':
+      // Shieldmaiden Freya: Silver Valkyrie Winged Diadem, Dragon-Scale Pauldrons & Sky-Lance
+      bust = `
+        <!-- Cloak & Aura -->
+        <path d="M16,92 C18,64 82,64 84,92 Z" fill="#0c2d48" stroke="#38bdf8" stroke-width="2"/>
+        <!-- Pauldrons -->
+        <path d="M10,82 Q16,60 36,66 L32,88 Z M90,82 Q84,60 64,66 L68,88 Z" fill="#1e293b" stroke="#bae6fd" stroke-width="2"/>
+        <!-- Cuirass -->
+        <polygon points="34,66 66,66 60,92 40,92" fill="#0f172a" stroke="#f59e0b" stroke-width="2"/>
+        <!-- Winged Valkyrie Helm -->
+        <path d="M14,34 L34,42 L30,22 Z M86,34 L66,42 L70,22 Z" fill="#bae6fd" stroke="#38bdf8" stroke-width="1.8"/>
+        <path d="M33,34 C33,18 67,18 67,34 L64,58 L50,64 L36,58 Z" fill="#1e293b" stroke="#fde68a" stroke-width="2.2"/>
+        <!-- Glowing Cyan Eyes & Diadem Gem -->
+        <polygon points="50,18 55,28 50,36 45,28" fill="#38bdf8" stroke="#ffffff" stroke-width="1.2"/>
+        <rect x="38" y="42" width="8" height="3.5" rx="1" fill="#38bdf8"/>
+        <rect x="54" y="42" width="8" height="3.5" rx="1" fill="#38bdf8"/>
+        <!-- Sky-Lance -->
+        <line x1="82" y1="14" x2="74" y2="90" stroke="#fde68a" stroke-width="3"/>
+        <polygon points="84,6 90,22 82,18 76,22" fill="#38bdf8" stroke="#ffffff" stroke-width="1.4"/>
+      `;
+      break;
+
+    case 'hero_archmage':
+      // Arch-Warlock Kaelen: Deep Astral Hooded Cowl, Floating Runestones & Void-Star Staff
+      bust = `
+        <!-- Arcane Mantle & Pauldrons -->
+        <path d="M12,92 C16,60 84,60 88,92 Z" fill="#2e1065" stroke="#c084fc" stroke-width="2.2"/>
+        <polygon points="14,72 36,62 30,86 10,86" fill="#1e1b4b" stroke="#e9d5ff" stroke-width="1.8"/>
+        <polygon points="86,72 64,62 70,86 90,86" fill="#1e1b4b" stroke="#e9d5ff" stroke-width="1.8"/>
+        <!-- Deep Hooded Cowl -->
+        <path d="M50,12 L74,34 L68,64 L32,64 L26,34 Z" fill="#170930" stroke="#c084fc" stroke-width="2.4"/>
+        <path d="M36,34 L50,22 L64,34 L60,58 L40,58 Z" fill="#090414" stroke="#a855f7" stroke-width="1.5"/>
+        <!-- Glowing Arcane Eyes -->
+        <polygon points="40,42 47,40 45,46" fill="#e9d5ff"/>
+        <polygon points="60,42 53,40 55,46" fill="#e9d5ff"/>
+        <!-- Floating Runestones & Staff -->
+        <polygon points="20,28 25,20 30,28 25,36" fill="#c084fc" stroke="#ffffff" stroke-width="1.2"/>
+        <polygon points="80,24 86,14 92,24 86,34" fill="#38bdf8" stroke="#ffffff" stroke-width="1.4"/>
+        <line x1="86" y1="34" x2="78" y2="92" stroke="#d4a853" stroke-width="3"/>
+      `;
+      break;
+
+    case 'hero_dragonknight':
+      // Dragon-Lord Draven: Horned Crimson Wyrm-Helm, Molten Scale Armor & Hellfire Halberd
+      bust = `
+        <!-- Wyrm-Scale Pauldrons & Torso -->
+        <path d="M10,92 L16,62 L38,68 L34,92 Z M90,92 L84,62 L62,68 L66,92 Z" fill="#450a0a" stroke="#f97316" stroke-width="2.2"/>
+        <polygon points="32,66 68,66 62,92 38,92" fill="#270909" stroke="#fbbf24" stroke-width="2"/>
+        <circle cx="50" cy="78" r="6" fill="#f97316" stroke="#fde68a" stroke-width="1.5"/>
+        <!-- Curved Dragon Horns -->
+        <path d="M32,32 Q12,16 18,8 Q26,18 38,26 Z" fill="#fde68a" stroke="#f97316" stroke-width="1.8"/>
+        <path d="M68,32 Q88,16 82,8 Q74,18 62,26 Z" fill="#fde68a" stroke="#f97316" stroke-width="1.8"/>
+        <!-- Dragon Visor Helm -->
+        <polygon points="50,16 68,30 64,58 50,66 36,58 32,30" fill="#3b0a0a" stroke="#f97316" stroke-width="2.4"/>
+        <polygon points="38,40 48,44 38,47" fill="#fde68a"/>
+        <polygon points="62,40 52,44 62,47" fill="#fde68a"/>
+        <line x1="50" y1="22" x2="50" y2="60" stroke="#fbbf24" stroke-width="2"/>
+      `;
+      break;
+
+    case 'hero_ranger':
+      // Sylvan Warden Lyra: Antlered Elven Hood, Emerald Pauldrons & Starlight Bow
+      bust = `
+        <!-- Elven Cloak & Leaf Pauldrons -->
+        <path d="M14,92 C18,62 82,62 86,92 Z" fill="#064e3b" stroke="#2dd4bf" stroke-width="2.2"/>
+        <path d="M12,76 Q24,58 38,68 L30,88 Z M88,76 Q76,58 62,68 L70,88 Z" fill="#115e59" stroke="#99f6e4" stroke-width="1.8"/>
+        <!-- Silver Antler Crown -->
+        <path d="M34,26 L20,10 M26,17 L16,18 M66,26 L80,10 M74,17 L84,18" stroke="#fde68a" stroke-width="2.4" stroke-linecap="round"/>
+        <!-- Emerald Hood & Visage -->
+        <path d="M50,14 L70,34 L64,62 L36,62 L30,34 Z" fill="#042f2e" stroke="#2dd4bf" stroke-width="2.2"/>
+        <polygon points="39,42 46,41 44,45" fill="#99f6e4"/>
+        <polygon points="61,42 54,41 56,45" fill="#99f6e4"/>
+        <!-- Starlight Bow Arc -->
+        <path d="M82,14 Q94,50 78,88" fill="none" stroke="#fde68a" stroke-width="2.5"/>
+        <line x1="82" y1="14" x2="78" y2="88" stroke="#99f6e4" stroke-width="1.2"/>
+      `;
+      break;
+
+    case 'hero_deathknight':
+      // Runeblade Arthos: Frost-Mourne Skull Visor, Spiked Dread-Plate & Glacial Greatsword
+      bust = `
+        <!-- Dread-Plate Pauldrons -->
+        <polygon points="8,84 18,58 38,66 32,92" fill="#0f172a" stroke="#60a5fa" stroke-width="2.2"/>
+        <polygon points="92,84 82,58 62,66 68,92" fill="#0f172a" stroke="#60a5fa" stroke-width="2.2"/>
+        <polygon points="32,66 68,66 62,92 38,92" fill="#1e293b" stroke="#93c5fd" stroke-width="2"/>
+        <!-- Jagged Ice Crown & Skull Helm -->
+        <polygon points="28,28 36,10 44,24 50,8 56,24 64,10 72,28" fill="#1e3a8a" stroke="#bfdbfe" stroke-width="1.8"/>
+        <path d="M32,28 H68 L64,58 L50,66 L36,58 Z" fill="#0f172a" stroke="#60a5fa" stroke-width="2.4"/>
+        <!-- Glowing Frost Eyes & Nose Slits -->
+        <circle cx="42" cy="42" r="4" fill="#60a5fa"/>
+        <circle cx="58" cy="42" r="4" fill="#60a5fa"/>
+        <circle cx="42" cy="42" r="1.8" fill="#ffffff"/>
+        <circle cx="58" cy="42" r="1.8" fill="#ffffff"/>
+        <line x1="44" y1="54" x2="44" y2="61" stroke="#93c5fd" stroke-width="2"/>
+        <line x1="50" y1="54" x2="50" y2="63" stroke="#93c5fd" stroke-width="2"/>
+        <line x1="56" y1="54" x2="56" y2="61" stroke="#93c5fd" stroke-width="2"/>
+      `;
+      break;
+
+    case 'hero_paladin':
+    default:
+      // High Paladin Aurelius: Sunforged Winged Great-Helm, Lion Pauldrons & Dawnbreaker Greatsword
+      bust = `
+        <!-- Radiant Halo Ring -->
+        <circle cx="50" cy="40" r="34" fill="none" stroke="#fbbf24" stroke-width="1.6" stroke-dasharray="5 3" opacity="0.8"/>
+        <!-- Sunforged Pauldrons & Cuirass -->
+        <path d="M8,86 Q14,58 38,64 L34,92 Z M92,86 Q86,58 62,64 L66,92 Z" fill="#451a03" stroke="#fbbf24" stroke-width="2.4"/>
+        <polygon points="34,64 66,64 60,92 40,92" fill="#78350f" stroke="#fde68a" stroke-width="2.2"/>
+        <polygon points="50,68 56,78 50,88 44,78" fill="#fde68a"/>
+        <!-- Golden Helm Wings -->
+        <path d="M16,22 L32,38 L28,50 L12,34 Z M84,22 L68,38 L72,50 L88,34 Z" fill="#fbbf24" stroke="#fef08a" stroke-width="1.6"/>
+        <!-- Great-Helm & Cruciform Visor -->
+        <path d="M33,26 L50,14 L67,26 L64,58 L50,65 L36,58 Z" fill="#292524" stroke="#fde68a" stroke-width="2.4"/>
+        <line x1="50" y1="20" x2="50" y2="62" stroke="#fbbf24" stroke-width="3"/>
+        <rect x="37" y="38" width="26" height="5" rx="1.5" fill="#fde68a"/>
+        <!-- Upright Greatsword -->
+        <line x1="84" y1="10" x2="84" y2="90" stroke="#fef08a" stroke-width="3.5"/>
+        <line x1="74" y1="28" x2="94" y2="28" stroke="#f59e0b" stroke-width="3"/>
+      `;
+      break;
+  }
+
+  return `
+    <svg class="hero-portrait-svg" viewBox="0 0 100 100" aria-hidden="true">
+      <polygon points="50,3 93,22 93,78 50,97 7,78 7,22" fill="#130f1e" stroke="${color}" stroke-width="2.5"/>
+      <polygon points="50,8 88,25 88,75 50,92 12,75 12,25" fill="none" stroke="#fde68a" stroke-width="0.9" stroke-opacity="0.45"/>
+      ${bust}
+    </svg>
+  `;
+}
+
+/**
+ * Render 6 Distinct Enemy Fantasy War Commander Portraits (`viewBox="0 0 80 80"`)
  */
 export function renderBossCrestSVG(bossId, color = '#e11d48') {
   let inner = '';
   switch (bossId) {
     case 'boss_malakor':
-      // Warden of the Iron Gate: Portcullis Great-Helm & Spiked Crown
+      // Warlord Malakor the Ironclad: Spiked Black-Iron Juggernaut Bust & Visor
       inner = `
-        <path d="M22,24 L40,12 L58,24 L56,62 L40,70 L24,62 Z" fill="#181224" stroke="${color}" stroke-width="2.4"/>
-        <line x1="32" y1="24" x2="32" y2="64" stroke="#fde68a" stroke-width="2"/>
-        <line x1="40" y1="18" x2="40" y2="68" stroke="#fde68a" stroke-width="2.2"/>
-        <line x1="48" y1="24" x2="48" y2="64" stroke="#fde68a" stroke-width="2"/>
+        <path d="M10,72 Q16,50 32,54 L28,74 Z M70,72 Q64,50 48,54 L52,74 Z" fill="#1f1629" stroke="${color}" stroke-width="2"/>
+        <path d="M22,24 L40,12 L58,24 L56,58 L40,66 L24,58 Z" fill="#181224" stroke="${color}" stroke-width="2.4"/>
+        <polygon points="14,16 24,28 20,34" fill="#fde68a"/>
+        <polygon points="66,16 56,28 60,34" fill="#fde68a"/>
+        <line x1="32" y1="24" x2="32" y2="60" stroke="#fde68a" stroke-width="2"/>
+        <line x1="40" y1="18" x2="40" y2="64" stroke="#fde68a" stroke-width="2.2"/>
+        <line x1="48" y1="24" x2="48" y2="60" stroke="#fde68a" stroke-width="2"/>
         <rect x="24" y="36" width="32" height="6" fill="${color}"/>
         <circle cx="33" cy="39" r="2.2" fill="#ffffff"/>
         <circle cx="47" cy="39" r="2.2" fill="#ffffff"/>
@@ -235,57 +376,64 @@ export function renderBossCrestSVG(bossId, color = '#e11d48') {
       break;
 
     case 'boss_vespera':
-      // Keeper of the Bone Reliquary: Crowned Ossuary Skull & Soul-Lantern Halo
+      // Lich-Empress Vespera: Undead Necromancer Queen with Bone Crown & Soul-Fire Eyes
       inner = `
-        <circle cx="40" cy="38" r="20" fill="#122024" stroke="${color}" stroke-width="2.4"/>
+        <path d="M12,72 C16,52 64,52 68,72 Z" fill="#0d2629" stroke="${color}" stroke-width="2"/>
+        <circle cx="40" cy="38" r="19" fill="#122024" stroke="${color}" stroke-width="2.4"/>
         <rect x="31" y="50" width="18" height="12" rx="2" fill="#122024" stroke="${color}" stroke-width="2"/>
-        <polygon points="24,24 32,12 40,22 48,12 56,24" fill="${color}" stroke="#fde68a" stroke-width="1.5"/>
+        <polygon points="22,24 30,8 40,20 50,8 58,24" fill="${color}" stroke="#fde68a" stroke-width="1.5"/>
         <circle cx="33" cy="38" r="4.5" fill="${color}"/>
         <circle cx="47" cy="38" r="4.5" fill="${color}"/>
+        <circle cx="33" cy="38" r="2" fill="#ffffff"/>
+        <circle cx="47" cy="38" r="2" fill="#ffffff"/>
         <polygon points="40,42 43,48 37,48" fill="#fde68a"/>
       `;
       break;
 
     case 'boss_vorn':
-      // Master of the Gargoyle Belfry: Horned Bronze Bell & Gargoyle Wings
+      // General Vorn the Wyrm-Breaker: Horned Gargoyle Warlord with Swept Wings
       inner = `
-        <path d="M12,30 L28,22 L24,48 Z M68,30 L52,22 L56,48 Z" fill="${color}" fill-opacity="0.45" stroke="#fde68a" stroke-width="1.5"/>
-        <path d="M26,26 C26,16 54,16 54,26 L60,56 L20,56 Z" fill="#211510" stroke="${color}" stroke-width="2.5"/>
-        <circle cx="40" cy="62" r="5.5" fill="#fde68a"/>
-        <circle cx="34" cy="36" r="3" fill="#ffffff"/>
-        <circle cx="46" cy="36" r="3" fill="#ffffff"/>
+        <path d="M8,28 L28,22 L24,52 Z M72,28 L52,22 L56,52 Z" fill="${color}" fill-opacity="0.45" stroke="#fde68a" stroke-width="1.5"/>
+        <path d="M24,10 L32,26 L26,28 Z M56,10 L48,26 L54,28 Z" fill="#fde68a"/>
+        <path d="M26,26 C26,16 54,16 54,26 L60,58 L20,58 Z" fill="#211510" stroke="${color}" stroke-width="2.5"/>
+        <circle cx="40" cy="64" r="5.5" fill="#fde68a"/>
+        <circle cx="34" cy="36" r="3.2" fill="#ffffff"/>
+        <circle cx="46" cy="36" r="3.2" fill="#ffffff"/>
       `;
       break;
 
     case 'boss_thurible':
-      // Censer-Prelate Morvain: Smoking Brimstone Thurible & Chains
+      // Pyromancer Morvain: Hell-Forge Warlock Mitre, Chains & Brimstone Core
       inner = `
+        <path d="M14,72 C18,52 62,52 66,72 Z" fill="#231136" stroke="${color}" stroke-width="2"/>
         <line x1="40" y1="8" x2="26" y2="36" stroke="#fde68a" stroke-width="1.8" stroke-dasharray="3 2"/>
         <line x1="40" y1="8" x2="54" y2="36" stroke="#fde68a" stroke-width="1.8" stroke-dasharray="3 2"/>
         <polygon points="22,36 58,36 50,62 30,62" fill="#1d102b" stroke="${color}" stroke-width="2.4"/>
-        <polygon points="40,20 48,36 32,36" fill="${color}" fill-opacity="0.6" stroke="#ffffff" stroke-width="1.6"/>
-        <circle cx="40" cy="48" r="6" fill="#fde68a"/>
+        <polygon points="40,14 50,36 30,36" fill="${color}" fill-opacity="0.6" stroke="#ffffff" stroke-width="1.6"/>
+        <circle cx="35" cy="46" r="2.8" fill="#fde68a"/>
+        <circle cx="45" cy="46" r="2.8" fill="#fde68a"/>
       `;
       break;
 
     case 'boss_carmilla':
-      // Cardinal Sanguine: Sovereign Chalice & Crimson Rose Crown
+      // Blood-Countess Carmilla: Vampiric Crimson Valkyrie Collar & Ruby Tiara
       inner = `
-        <path d="M24,20 H56 L50,44 C48,54 44,56 40,56 C36,56 32,54 30,44 Z" fill="#260812" stroke="${color}" stroke-width="2.5"/>
-        <line x1="40" y1="56" x2="40" y2="68" stroke="#fde68a" stroke-width="3"/>
-        <line x1="28" y1="68" x2="52" y2="68" stroke="#fde68a" stroke-width="3"/>
-        <polygon points="40,10 47,26 40,38 33,26" fill="${color}" stroke="#ffffff" stroke-width="1.6"/>
+        <path d="M10,28 L28,44 L16,68 Z M70,28 L52,44 L64,68 Z" fill="#3b0716" stroke="${color}" stroke-width="1.8"/>
+        <path d="M24,22 H56 L50,48 C48,56 44,58 40,58 C36,58 32,56 30,48 Z" fill="#260812" stroke="${color}" stroke-width="2.5"/>
+        <polygon points="40,8 48,24 40,36 32,24" fill="${color}" stroke="#ffffff" stroke-width="1.6"/>
+        <circle cx="34" cy="40" r="2.6" fill="#fda4af"/>
+        <circle cx="46" cy="40" r="2.6" fill="#fda4af"/>
       `;
       break;
 
     case 'boss_hollow_seraph':
     default:
-      // The Hollow Seraph: Six-Winged Cruciform Automaton Mask
+      // The Abyssal War-God: Six-Winged Fallen Seraph Mask
       inner = `
-        <polygon points="40,8 48,32 72,40 48,48 40,72 32,48 8,40 32,32" fill="${color}" fill-opacity="0.52" stroke="#fde68a" stroke-width="1.8"/>
+        <polygon points="40,6 49,30 74,40 49,50 40,74 31,50 6,40 31,30" fill="${color}" fill-opacity="0.52" stroke="#fde68a" stroke-width="1.8"/>
         <polygon points="40,14 62,26 62,54 40,66 18,54 18,26" fill="none" stroke="#ffffff" stroke-width="1.6"/>
-        <circle cx="40" cy="40" r="10" fill="#140c1c" stroke="${color}" stroke-width="2.4"/>
-        <circle cx="40" cy="40" r="4" fill="#ffffff"/>
+        <circle cx="40" cy="40" r="11" fill="#140c1c" stroke="${color}" stroke-width="2.4"/>
+        <circle cx="40" cy="40" r="4.5" fill="#ffffff"/>
       `;
       break;
   }
@@ -322,7 +470,7 @@ export function renderRoseWindowSVG(accentColor = '#d4a853') {
 }
 
 /**
- * Render Wrought-Iron & Cathedral UI Icons (`viewBox="0 0 24 24"`)
+ * Render Wrought-Iron & War-Table UI Icons (`viewBox="0 0 24 24"`)
  */
 export function renderGothicIconSVG(name) {
   switch (name) {
@@ -342,6 +490,8 @@ export function renderGothicIconSVG(name) {
       return `<svg class="gothic-icon" viewBox="0 0 24 24"><path d="M3 7V13H9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M21 17A9 9 0 0 0 6 8.3L3 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
     case 'crown':
       return `<svg class="gothic-icon" viewBox="0 0 24 24"><polygon points="2,19 22,19 20,7 15,12 12,5 9,12 4,7" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>`;
+    case 'lock':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 11V7A4 4 0 0 1 16 7V11" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>`;
     default:
       return `<svg class="gothic-icon" viewBox="0 0 24 24"><polygon points="12,2 22,12 12,22 2,12" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>`;
   }

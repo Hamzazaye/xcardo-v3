@@ -1,5 +1,5 @@
 /**
- * XcardO III: Obsidian Sanctum
+ * XcardO: Warlords of the Obsidian Altar
  * Gothic Cathedral Audio Synthesizer (Stone Slam, Shatter Clatter, Bell Toll, Pipe Organ) + MP3 Player
  */
 

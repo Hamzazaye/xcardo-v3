@@ -1,20 +1,23 @@
 /**
- * XcardO III: Obsidian Sanctum
- * Interactive 3D Gothic Architecture, Wrought-Iron Framing & Stained-Glass HUD Stylesheet
+ * ============================================================================
+ * XcardO — Warlords of the Obsidian Altar
+ * Interactive 3D Dark-Fantasy War-Table, Hero Portraits & V1 Shop HUD Styles
+ * ============================================================================
  */
 
 :root {
   --bg-abyss: #07050a;
-  --panel-obsidian: rgba(16, 12, 23, 0.84);
-  --panel-obsidian-strong: rgba(12, 9, 18, 0.93);
-  --iron-border: rgba(212, 168, 83, 0.34);
+  --panel-obsidian: rgba(15, 11, 22, 0.86);
+  --panel-obsidian-strong: rgba(11, 8, 17, 0.94);
+  --iron-border: rgba(212, 168, 83, 0.36);
   --gold-reliquary: #d4a853;
   --gold-bright: #fde68a;
   --crimson-blood: #e11d48;
   --crimson-deep: #881337;
   --azure-sanctum: #38bdf8;
-  --text-parchment: #f3ece0;
-  --text-muted: #a89bb9;
+  --emerald-warden: #34d399;
+  --text-parchment: #f5efe4;
+  --text-muted: #b2a5c4;
   --font-display: 'Cinzel', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
   --font-body: 'Inter', system-ui, -apple-system, sans-serif;
 }
@@ -51,7 +54,7 @@ body {
   cursor: grabbing;
 }
 
-/* Peripheral Gothic UI Overlay Layer (pass-through on empty space so 3D Altar is always interactive!) */
+/* Peripheral War-Table UI Overlay Layer (pass-through on empty space so 3D Altar is always interactive) */
 #app-root {
   position: fixed;
   inset: 0;
@@ -59,19 +62,21 @@ body {
   pointer-events: none;
 }
 
+.gothic-ui-layer,
 .gothic-ui-frame {
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 14px 20px;
+  padding: 12px 18px;
   pointer-events: none;
 }
 
 .sanctum-topbar,
-.hub-hero-panel,
-.viewport-controls-floating,
+.hub-left-column,
+.hub-right-column,
+.hub-command-deck,
 .modal-screen-container,
 .battle-hud-topbar,
 .battle-hud-bottom,
@@ -83,68 +88,65 @@ body {
 /* Toast Notification Banner */
 .gothic-toast {
   position: fixed;
-  top: 84px;
+  top: 74px;
   left: 50%;
-  transform: translateX(-50%) translateY(-14px);
-  background: linear-gradient(180deg, rgba(28, 17, 38, 0.96), rgba(14, 9, 22, 0.96));
-  border: 1px solid var(--gold-reliquary);
-  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.85), 0 0 18px rgba(212, 168, 83, 0.35);
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, rgba(32, 19, 44, 0.97), rgba(14, 9, 22, 0.98));
+  border: 1px solid var(--gold-bright);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.88), 0 0 22px rgba(212, 168, 83, 0.42);
   color: var(--gold-bright);
   font-family: var(--font-display);
-  font-size: 0.92rem;
-  letter-spacing: 0.06em;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
   padding: 9px 22px;
-  border-radius: 6px;
-  opacity: 0;
-  transition: opacity 0.22s ease, transform 0.22s ease;
-  z-index: 90;
+  border-radius: 7px;
+  z-index: 95;
   pointer-events: none;
 }
 
-.gothic-toast.visible {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
-
-/* Top Sanctum Navigation Bar */
+/* ============================================================================
+   TOP WAR-TABLE NAVIGATION BAR
+   ============================================================================ */
 .sanctum-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 10px 18px;
-  background: var(--panel-obsidian);
-  backdrop-filter: blur(12px);
+  gap: 14px;
+  padding: 9px 16px;
+  background: var(--panel-obsidian-strong);
+  backdrop-filter: blur(14px);
   border: 1px solid var(--iron-border);
-  border-radius: 8px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.75);
 }
 
 .brand-cluster {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 11px;
   cursor: pointer;
 }
 
-.brand-crest-img {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-  filter: drop-shadow(0 0 8px rgba(212, 168, 83, 0.5));
+.brand-rose-mini {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 8px rgba(212, 168, 83, 0.55));
 }
 
 .brand-title {
   font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 1.15rem;
-  letter-spacing: 0.14em;
+  font-weight: 800;
+  font-size: 1.22rem;
+  letter-spacing: 0.16em;
   color: var(--gold-bright);
+  text-shadow: 0 0 12px rgba(212, 168, 83, 0.45);
 }
 
 .brand-subtitle {
-  font-size: 0.66rem;
-  letter-spacing: 0.16em;
+  font-size: 0.64rem;
+  letter-spacing: 0.15em;
   color: var(--text-muted);
 }
 
@@ -154,44 +156,66 @@ body {
   flex-wrap: wrap;
 }
 
+.nav-tab,
 .nav-tab-btn {
-  background: rgba(28, 22, 39, 0.75);
+  background: rgba(28, 21, 40, 0.82);
   color: var(--text-parchment);
-  border: 1px solid rgba(212, 168, 83, 0.22);
-  padding: 7px 14px;
-  border-radius: 5px;
+  border: 1px solid rgba(212, 168, 83, 0.25);
+  padding: 7px 13px;
+  border-radius: 6px;
   font-family: var(--font-display);
-  font-size: 0.78rem;
+  font-size: 0.76rem;
+  font-weight: 600;
   letter-spacing: 0.06em;
   cursor: pointer;
   transition: all 0.18s ease;
 }
 
+.nav-tab:hover,
+.nav-tab.active,
 .nav-tab-btn:hover,
 .nav-tab-btn.active {
-  background: linear-gradient(180deg, rgba(159, 18, 57, 0.55), rgba(68, 12, 30, 0.85));
-  border-color: var(--gold-reliquary);
+  background: linear-gradient(180deg, rgba(180, 24, 64, 0.65), rgba(76, 14, 34, 0.92));
+  border-color: var(--gold-bright);
   color: var(--gold-bright);
-  box-shadow: 0 0 14px rgba(225, 29, 72, 0.35);
+  box-shadow: 0 0 15px rgba(225, 29, 72, 0.4);
 }
 
-.sanctum-currency-bar {
+.sanctum-currencies {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
-.sigil-pill,
-.shatter-pill {
+.currency-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
   border-radius: 99px;
-  background: rgba(20, 15, 30, 0.9);
+  background: rgba(22, 16, 33, 0.92);
   border: 1px solid var(--iron-border);
-  font-size: 0.8rem;
+  font-family: var(--font-display);
+  font-size: 0.76rem;
   color: var(--gold-bright);
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  background: rgba(28, 21, 40, 0.9);
+  border: 1px solid var(--iron-border);
+  color: var(--gold-bright);
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  border-color: var(--gold-bright);
+  background: rgba(159, 18, 57, 0.45);
 }
 
 .gothic-icon {
@@ -200,14 +224,28 @@ body {
   flex-shrink: 0;
 }
 
-/* Sanctum Hub Split Layout (keeps right 55% open so the 3D Cathedral Altar shines!) */
-.hub-split-layout {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
+/* ============================================================================
+   MAIN MENU (WAR-TABLE HUB) — 3-COLUMN FANTASY CHARACTER CONFRONTATION
+   ============================================================================ */
+.hub-main-grid {
   flex: 1;
-  padding: 18px 0;
-  gap: 24px;
+  display: grid;
+  grid-template-columns: 375px 1fr 365px;
+  align-items: stretch;
+  gap: 16px;
+  margin-top: 10px;
+  min-height: 0;
+}
+
+.hub-left-column,
+.hub-right-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  overflow-y: auto;
+  max-height: calc(100vh - 86px);
+  padding-right: 2px;
 }
 
 .gothic-card-panel {
@@ -215,47 +253,395 @@ body {
   backdrop-filter: blur(14px);
   border: 1px solid var(--iron-border);
   border-radius: 10px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.82), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-
-.hub-hero-panel {
-  max-width: 520px;
-  padding: 26px 28px;
-  align-self: center;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.84), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .gothic-eyebrow {
   font-family: var(--font-display);
-  font-size: 0.7rem;
-  letter-spacing: 0.18em;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
   color: var(--gold-reliquary);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   text-transform: uppercase;
 }
 
-.gothic-hero-title {
+/* Fantasy War Hero & Enemy Warlord Confrontation Cards */
+.hero-confrontation-card {
+  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.player-hero-card {
+  border-left: 3px solid var(--gold-bright);
+}
+
+.enemy-boss-card {
+  border-right: 3px solid var(--crimson-blood);
+}
+
+.character-showcase-row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.character-portrait-frame {
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.1), rgba(8, 6, 14, 0.95));
+  border: 1.5px solid var(--char-color, var(--gold-reliquary));
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), 0 0 14px color-mix(in srgb, var(--char-color, #d4a853) 40%, transparent);
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.character-portrait-frame svg,
+.hero-portrait-svg,
+.boss-crest-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.character-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.char-class-badge {
   font-family: var(--font-display);
-  font-size: 1.95rem;
-  line-height: 1.16;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+}
+
+.char-class-badge.enemy-badge {
+  color: #fb7185;
+}
+
+.char-name {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 800;
   color: var(--text-parchment);
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.9);
-  margin-bottom: 12px;
+  line-height: 1.15;
 }
 
-.gothic-hero-desc {
-  font-size: 0.9rem;
-  line-height: 1.55;
+.char-title-sub {
+  font-size: 0.72rem;
   color: var(--text-muted);
-  margin-bottom: 20px;
 }
 
-.hub-cta-row {
+.char-passive-box {
+  margin-top: 4px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  background: rgba(24, 18, 36, 0.85);
+  border: 1px solid rgba(212, 168, 83, 0.28);
+  font-size: 0.71rem;
+  color: var(--gold-bright);
+  line-height: 1.3;
+}
+
+.char-passive-box.enemy-passive {
+  border-color: rgba(225, 29, 72, 0.38);
+  color: #fecdd3;
+}
+
+.char-battle-cry {
+  margin-top: 8px;
+  font-size: 0.72rem;
+  font-style: italic;
+  color: var(--text-muted);
+  border-left: 2px solid var(--gold-reliquary);
+  padding-left: 8px;
+}
+
+.char-battle-cry.enemy-cry {
+  border-left-color: var(--crimson-blood);
+}
+
+/* 6-Hero Quick Selector Bar on Main Menu */
+.hero-quick-roster-label {
+  margin-top: 10px;
+  margin-bottom: 5px;
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  color: var(--gold-reliquary);
+}
+
+.hero-quick-roster-strip {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 5px;
+}
+
+.hero-mini-Roster-btn {
+  background: rgba(22, 16, 34, 0.9);
+  border: 1px solid rgba(212, 168, 83, 0.25);
+  border-radius: 6px;
+  padding: 4px 3px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: 0.56rem;
+  transition: all 0.16s ease;
+}
+
+.hero-mini-Roster-btn:hover,
+.hero-mini-Roster-btn.active {
+  border-color: var(--gold-bright);
+  background: rgba(180, 83, 9, 0.32);
+  color: var(--gold-bright);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(212, 168, 83, 0.3);
+}
+
+.hero-mini-avatar {
+  width: 34px;
+  height: 34px;
+}
+
+/* Left Column Campaign Spotlight Card */
+.hub-campaign-spotlight {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.act-badge {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 3px 9px;
+  border-radius: 4px;
+  border: 1px solid var(--gold-reliquary);
+  background: rgba(28, 19, 40, 0.9);
+  font-family: var(--font-display);
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
+  color: var(--gold-bright);
+}
+
+.hub-spotlight-title {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--text-parchment);
+}
+
+.hub-lore-quote {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* v1 Rule Callout Banner (Levels 1-2 Pure Tactical vs Level 3+ Shop) */
+.v1-rule-callout {
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 0.73rem;
+  line-height: 1.35;
+}
+
+.v1-rule-callout.cards-sealed {
+  background: rgba(180, 83, 9, 0.22);
+  border: 1px solid rgba(251, 191, 36, 0.55);
+  color: var(--gold-bright);
+}
+
+.v1-rule-callout.cards-live {
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(52, 211, 153, 0.5);
+  color: #a7f3d0;
+}
+
+.hub-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.meta-stat {
+  background: rgba(20, 14, 30, 0.85);
+  border: 1px solid rgba(212, 168, 83, 0.2);
+  border-radius: 5px;
+  padding: 5px 8px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+}
+
+.meta-label {
+  color: var(--text-muted);
+}
+
+.meta-val {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--gold-bright);
+}
+
+.hub-cta-stack {
+  display: flex;
+  gap: 8px;
+}
+
+.hub-cta-stack > button {
+  flex: 1;
+}
+
+/* Center Medallion & Command Deck */
+.hub-center-medallion {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+  padding: 4px 0;
+}
+
+.rose-halo-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.92;
+  filter: drop-shadow(0 0 18px rgba(212, 168, 83, 0.35));
+}
+
+.medallion-caption {
+  font-family: var(--font-display);
+  font-size: 0.64rem;
+  letter-spacing: 0.16em;
+  color: var(--gold-bright);
+  background: rgba(11, 8, 18, 0.78);
+  border: 1px solid rgba(212, 168, 83, 0.32);
+  padding: 4px 12px;
+  border-radius: 99px;
+}
+
+.hub-command-deck {
+  width: 100%;
+  max-width: 520px;
+  padding: 12px 14px;
+}
+
+.command-deck-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.command-card-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 7px;
+  background: rgba(24, 18, 37, 0.9);
+  border: 1px solid rgba(212, 168, 83, 0.3);
+  color: var(--text-parchment);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.command-card-btn:hover,
+.command-card-btn.primary-cmd {
+  border-color: var(--gold-bright);
+  background: linear-gradient(135deg, rgba(159, 18, 57, 0.45), rgba(32, 20, 48, 0.92));
+  transform: translateY(-2px);
+}
+
+.cmd-icon {
+  font-size: 1.25rem;
+}
+
+.command-card-btn strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  color: var(--gold-bright);
+}
+
+.command-card-btn small {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+/* Right Column 3D Showcase Customizer */
+.hub-3d-showcase-card {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hub-customizer-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.customizer-label {
+  font-family: var(--font-display);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  color: var(--gold-reliquary);
+}
+
+.pill-group,
+.camera-pill-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 20px;
+  gap: 5px;
 }
 
+.cam-pill {
+  background: rgba(26, 20, 38, 0.88);
+  border: 1px solid rgba(212, 168, 83, 0.28);
+  color: var(--text-parchment);
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cam-pill:hover,
+.cam-pill.active {
+  background: rgba(159, 18, 57, 0.68);
+  border-color: var(--gold-bright);
+  color: var(--gold-bright);
+}
+
+.hub-card-actions-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.hub-card-actions-row > button {
+  flex: 1;
+}
+
+/* Buttons */
 .btn-gothic-primary,
 .btn-gothic-secondary,
 .btn-gothic-ghost,
@@ -263,9 +649,9 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 7px;
   font-family: var(--font-display);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.18s ease;
@@ -273,164 +659,292 @@ body {
 
 .btn-gothic-primary {
   background: linear-gradient(180deg, #be123c, #7f1d1d);
-  border: 1px solid var(--gold-reliquary);
+  border: 1px solid var(--gold-bright);
   color: var(--gold-bright);
-  padding: 11px 18px;
-  font-size: 0.86rem;
+  padding: 10px 15px;
+  font-size: 0.82rem;
   font-weight: 700;
-  box-shadow: 0 6px 20px rgba(225, 29, 72, 0.4);
+  box-shadow: 0 6px 18px rgba(225, 29, 72, 0.4);
 }
 
-.btn-gothic-primary:hover {
+.btn-gothic-primary:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 8px 25px rgba(225, 29, 72, 0.65);
+  box-shadow: 0 8px 24px rgba(225, 29, 72, 0.65);
+}
+
+.btn-gothic-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .btn-gothic-secondary {
-  background: rgba(36, 28, 50, 0.9);
+  background: rgba(36, 28, 50, 0.92);
   border: 1px solid var(--gold-reliquary);
   color: var(--text-parchment);
-  padding: 10px 16px;
-  font-size: 0.84rem;
+  padding: 9px 14px;
+  font-size: 0.8rem;
+}
+
+.btn-gothic-secondary:hover {
+  border-color: var(--gold-bright);
+  color: var(--gold-bright);
 }
 
 .btn-gothic-ghost {
-  background: rgba(20, 15, 30, 0.72);
+  background: rgba(20, 15, 30, 0.8);
   border: 1px solid rgba(212, 168, 83, 0.35);
   color: var(--gold-bright);
-  padding: 9px 14px;
-  font-size: 0.8rem;
+  padding: 8px 12px;
+  font-size: 0.76rem;
 }
 
 .btn-gothic-small {
   background: rgba(35, 26, 48, 0.92);
   border: 1px solid var(--iron-border);
   color: var(--gold-bright);
-  padding: 6px 12px;
-  font-size: 0.75rem;
-}
-
-.btn-gothic-small:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.hub-feature-strip {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
-  border-top: 1px solid rgba(212, 168, 83, 0.2);
-  padding-top: 14px;
-}
-
-.feature-badge {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 0.78rem;
-}
-
-.feature-badge strong {
-  color: var(--gold-bright);
-  font-family: var(--font-display);
-}
-
-.feature-badge span {
-  color: var(--text-muted);
-}
-
-.viewport-controls-floating {
-  background: var(--panel-obsidian);
-  border: 1px solid var(--iron-border);
-  border-radius: 8px;
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.viewport-hint-tag {
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
-  color: var(--gold-bright);
-  text-align: right;
-}
-
-.camera-preset-pills,
-.pill-group,
-.act-selector-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.cam-pill,
-.act-pill-btn {
-  background: rgba(26, 20, 38, 0.85);
-  border: 1px solid rgba(212, 168, 83, 0.28);
-  color: var(--text-parchment);
   padding: 6px 11px;
-  border-radius: 5px;
-  font-size: 0.75rem;
-  cursor: pointer;
+  font-size: 0.72rem;
 }
 
-.cam-pill.active,
-.act-pill-btn.active {
-  background: rgba(159, 18, 57, 0.65);
-  border-color: var(--gold-reliquary);
-  color: var(--gold-bright);
-}
-
-/* Modal Screen Container (Campaign, Crypt, Reliquary, Codex, Skirmish) */
+/* ============================================================================
+   MODAL SCREENS: 36-LEVEL CAMPAIGN, CHAOS TRIALS, HERO ROSTER & GRIMOIRE
+   ============================================================================ */
 .modal-screen-container {
   flex: 1;
-  margin-top: 12px;
-  padding: 20px 24px;
+  margin-top: 10px;
+  padding: 18px 22px;
   overflow-y: auto;
-  max-height: calc(100vh - 96px);
+  max-height: calc(100vh - 86px);
 }
 
 .screen-header-row {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .screen-header-row h2 {
   font-family: var(--font-display);
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   color: var(--gold-bright);
 }
 
-.act-banner-card {
+.screen-sub-note,
+.screen-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.act-selector-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.act-tab {
+  background: rgba(24, 18, 36, 0.9);
+  border: 1px solid rgba(212, 168, 83, 0.3);
+  border-radius: 6px;
+  padding: 6px 11px;
+  color: var(--text-parchment);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+}
+
+.act-tab small {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+}
+
+.act-tab.active {
+  background: rgba(159, 18, 57, 0.65);
+  border-color: var(--gold-bright);
+  color: var(--gold-bright);
+}
+
+.act-boss-banner {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 14px 18px;
-  background: rgba(28, 18, 38, 0.82);
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(32, 18, 42, 0.9), rgba(14, 10, 24, 0.95));
   border: 1px solid var(--iron-border);
   border-radius: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
-.boss-crest-svg {
-  width: 58px;
-  height: 58px;
+.act-boss-crest {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
 }
 
-.levels-grid {
+.act-boss-info h3 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--gold-bright);
+}
+
+.act-boss-quote {
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--text-muted);
+  margin: 3px 0;
+}
+
+.act-boss-passive {
+  font-size: 0.75rem;
+  color: #fecdd3;
+}
+
+.campaign-nodes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
   gap: 12px;
 }
 
-.level-node-card {
-  background: rgba(22, 16, 32, 0.9);
-  border: 1px solid rgba(212, 168, 83, 0.25);
+.campaign-node-card {
+  background: rgba(22, 16, 32, 0.92);
+  border: 1px solid rgba(212, 168, 83, 0.28);
+  border-radius: 8px;
+  padding: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.campaign-node-card.boss-node {
+  border-color: var(--crimson-blood);
+  box-shadow: inset 0 0 18px rgba(225, 29, 72, 0.22);
+}
+
+.node-top {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-display);
+  font-size: 0.74rem;
+  color: var(--gold-bright);
+}
+
+.node-lore {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.node-rule-tag {
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.node-rule-tag.pure-tactical {
+  background: rgba(180, 83, 9, 0.25);
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  color: var(--gold-bright);
+}
+
+.node-rule-tag.shop-open {
+  background: rgba(16, 185, 129, 0.16);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  color: #a7f3d0;
+}
+
+.node-specs {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* Heroes Roster & Forge */
+.reliquary-section-title {
+  font-family: var(--font-display);
+  font-size: 0.96rem;
+  color: var(--gold-bright);
+  margin: 16px 0 10px;
+  border-bottom: 1px solid rgba(212, 168, 83, 0.25);
+  padding-bottom: 5px;
+}
+
+.heroes-roster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(295px, 1fr));
+  gap: 12px;
+}
+
+.reliquary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+}
+
+.reliquary-item-card {
+  background: rgba(22, 16, 32, 0.92);
+  border: 1px solid rgba(212, 168, 83, 0.26);
+  border-radius: 8px;
+  padding: 13px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.reliquary-item-card.equipped {
+  border-color: var(--gold-bright);
+  background: rgba(62, 38, 16, 0.36);
+  box-shadow: 0 0 16px rgba(212, 168, 83, 0.25);
+}
+
+.hero-roster-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hero-roster-portrait {
+  width: 68px;
+  height: 68px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1.5px solid var(--char-color, var(--gold-reliquary));
+  background: rgba(10, 7, 16, 0.92);
+  padding: 3px;
+}
+
+.hero-lore-text {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  line-height: 1.38;
+}
+
+.mat-swatch {
+  width: 100%;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Crypt Trials & Codex */
+.crypt-trials-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.crypt-trial-card {
+  background: rgba(22, 16, 32, 0.92);
+  border: 1px solid var(--iron-border);
   border-radius: 8px;
   padding: 14px;
   display: flex;
@@ -438,103 +952,31 @@ body {
   gap: 8px;
 }
 
-.level-node-card.boss-node {
-  border-color: var(--crimson-blood);
-  box-shadow: inset 0 0 18px rgba(225, 29, 72, 0.2);
-}
-
-.level-node-top {
+.crypt-header {
   display: flex;
   justify-content: space-between;
-  font-size: 0.75rem;
-  color: var(--gold-reliquary);
-}
-
-.level-meta {
-  display: flex;
-  justify-content: space-between;
+  font-family: var(--font-display);
   font-size: 0.74rem;
-  color: var(--text-muted);
+  color: var(--gold-bright);
 }
 
-/* Crypt Trials & Reliquary */
-.crypt-trials-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
-  gap: 14px;
-}
-
-.crypt-trial-card {
-  background: rgba(22, 16, 32, 0.92);
-  border: 1px solid var(--iron-border);
-  border-radius: 8px;
-  padding: 16px;
+.crypt-boss-row {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 10px;
 }
 
-.crypt-card-header {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.74rem;
-  color: var(--gold-bright);
+.crypt-boss-avatar {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
 }
 
-.crypt-hint-box {
-  font-size: 0.78rem;
-  padding: 8px 10px;
-  background: rgba(12, 9, 18, 0.8);
-  border-left: 2px solid var(--gold-reliquary);
-  color: var(--text-muted);
-}
-
-.reliquary-columns {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 20px;
-}
-
-.reliquary-section h3 {
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  color: var(--gold-bright);
-  margin: 12px 0 8px;
-}
-
-.cosmetic-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.cosmetic-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  background: rgba(22, 16, 32, 0.86);
-  border: 1px solid rgba(212, 168, 83, 0.22);
-  border-radius: 6px;
-}
-
-.cosmetic-item.equipped {
-  border-color: var(--gold-bright);
-  background: rgba(58, 36, 18, 0.42);
-}
-
-.cosmetic-item p {
-  font-size: 0.76rem;
-  color: var(--text-muted);
-}
-
-/* Codex & Sacred Geometry */
-.sacred-geometry-strip {
+.codex-geometries-strip {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
   gap: 10px;
-  margin-bottom: 18px;
+  margin: 12px 0 16px;
 }
 
 .geometry-mini-card {
@@ -545,12 +987,12 @@ body {
   background: rgba(20, 15, 30, 0.9);
   border: 1px solid var(--iron-border);
   border-radius: 6px;
-  font-size: 0.76rem;
+  font-size: 0.75rem;
 }
 
 .geometry-blueprint-svg {
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   flex-shrink: 0;
 }
 
@@ -567,66 +1009,98 @@ body {
   padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 7px;
 }
 
 .codex-tarot-top {
   display: flex;
   justify-content: space-between;
   font-family: var(--font-display);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--gold-bright);
 }
 
 .tarot-svg {
   width: 100%;
-  height: 74px;
+  height: 70px;
 }
 
-/* 3D Battle HUD (Leaves the central 3D Altar completely unobstructed!) */
+/* ============================================================================
+   3D BATTLE HUD — COMMANDER PORTRAITS, V1 LEVEL 1-2 SEAL & LEVEL 3+ 3-SLOT SHOP
+   ============================================================================ */
 .battle-hud-topbar {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .hud-wing {
   background: var(--panel-obsidian);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
   border: 1px solid var(--iron-border);
-  border-radius: 8px;
-  padding: 10px 16px;
+  border-radius: 10px;
+  padding: 9px 14px;
 }
 
 .hud-wing.active-turn {
   border-color: var(--gold-bright);
-  box-shadow: 0 0 20px rgba(212, 168, 83, 0.32);
+  box-shadow: 0 0 20px rgba(212, 168, 83, 0.35);
+}
+
+.hud-commander-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.enemy-commander-row {
+  justify-content: flex-end;
+}
+
+.hud-commander-avatar {
+  width: 58px;
+  height: 58px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1.5px solid var(--char-color, var(--gold-reliquary));
+  background: rgba(10, 7, 16, 0.95);
+  padding: 2px;
+}
+
+.hud-commander-details {
+  flex: 1;
+  min-width: 0;
 }
 
 .wing-faction-tag {
   font-family: var(--font-display);
-  font-size: 0.7rem;
-  letter-spacing: 0.14em;
-  color: var(--gold-reliquary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--gold-bright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .wing-score-row {
   display: flex;
   align-items: baseline;
   gap: 6px;
-  margin: 2px 0 6px;
+  margin: 1px 0 4px;
 }
 
 .score-big {
   font-family: var(--font-display);
-  font-size: 1.65rem;
-  font-weight: 700;
+  font-size: 1.5rem;
+  font-weight: 800;
   color: var(--gold-bright);
 }
 
 .score-target {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
 }
 
@@ -636,7 +1110,7 @@ body {
   background: rgba(10, 8, 15, 0.9);
   border-radius: 99px;
   overflow: hidden;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .gothic-progress-fill {
@@ -655,7 +1129,7 @@ body {
 .wing-sub-row {
   display: flex;
   justify-content: space-between;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
 }
 
@@ -663,30 +1137,30 @@ body {
   background: var(--panel-obsidian-strong);
   border: 1px solid var(--gold-reliquary);
   border-radius: 10px;
-  padding: 10px 18px;
+  padding: 9px 16px;
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .turn-pill {
   font-family: var(--font-display);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   color: var(--gold-bright);
 }
 
 .battle-sub-title {
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
 }
 
 .hud-utility-strip {
   display: flex;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
 }
 
@@ -694,8 +1168,8 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 5px 10px;
-  font-size: 0.72rem;
+  padding: 4px 9px;
+  font-size: 0.7rem;
   border-radius: 4px;
   background: rgba(28, 22, 42, 0.9);
   border: 1px solid rgba(212, 168, 83, 0.3);
@@ -704,27 +1178,48 @@ body {
 }
 
 .hud-tool-btn.active,
-.hud-tool-btn:hover {
+.hud-tool-btn:hover:not(:disabled) {
   border-color: var(--gold-bright);
   color: var(--gold-bright);
 }
 
-/* Side Chronicle & Optional 2D Mini-Grid */
+/* Side Widgets: Tactical Tip, Mystery War-Chest Odds & Chronicle */
 .battle-side-widgets {
   position: fixed;
-  right: 20px;
-  top: 122px;
+  right: 18px;
+  top: 112px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-width: 245px;
+  gap: 8px;
+  max-width: 255px;
 }
 
 .chronicle-feed-panel {
-  background: rgba(12, 9, 18, 0.76);
-  border: 1px solid rgba(212, 168, 83, 0.24);
+  background: rgba(12, 9, 18, 0.82);
+  border: 1px solid rgba(212, 168, 83, 0.28);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 9px 11px;
+}
+
+.war-counsel-text {
+  font-size: 0.72rem;
+  color: var(--gold-bright);
+  line-height: 1.35;
+}
+
+.chest-odds-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.odds-chip {
+  font-size: 0.68rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(28, 20, 42, 0.9);
+  border: 1px solid rgba(212, 168, 83, 0.28);
+  color: var(--text-parchment);
 }
 
 .chronicle-list {
@@ -732,12 +1227,12 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
 }
 
 .mini-tactical-grid-panel {
-  padding: 10px;
+  padding: 9px;
 }
 
 .mini-grid-board {
@@ -753,7 +1248,7 @@ body {
   color: var(--text-parchment);
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   border-radius: 4px;
   cursor: pointer;
 }
@@ -768,61 +1263,240 @@ body {
   border-color: var(--crimson-blood);
 }
 
-/* Bottom Dark-Tarot Hand Dock */
+/* ============================================================================
+   BOTTOM BATTLE DOCK: V1 SEALED BANNER (LEVELS 1-2) OR 3-SLOT SHOP + HAND (LVL 3+)
+   ============================================================================ */
 .battle-hud-bottom {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
 }
 
 .bell-ultimate-btn {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
+  gap: 9px;
+  padding: 10px 14px;
   background: var(--panel-obsidian-strong);
   border: 1px solid var(--iron-border);
   border-radius: 8px;
   color: var(--text-muted);
   font-family: var(--font-display);
+  font-size: 0.74rem;
   cursor: pointer;
 }
 
 .bell-ultimate-btn.ready {
   border-color: var(--gold-bright);
   color: var(--gold-bright);
-  background: linear-gradient(180deg, rgba(180, 83, 9, 0.75), rgba(68, 26, 6, 0.92));
+  background: linear-gradient(180deg, rgba(180, 83, 9, 0.78), rgba(68, 26, 6, 0.94));
   box-shadow: 0 0 22px rgba(251, 191, 36, 0.55);
 }
 
+/* V1 Levels 1 & 2 Sealed War-Scroll Vault Banner */
+.v1-sealed-scrolls-banner {
+  flex: 1;
+  max-width: 720px;
+  padding: 11px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-color: rgba(251, 191, 36, 0.55);
+  background: linear-gradient(135deg, rgba(42, 26, 12, 0.92), rgba(16, 11, 24, 0.95));
+}
+
+.sealed-icon {
+  font-size: 1.85rem;
+  filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.5));
+}
+
+.sealed-copy h4 {
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  color: var(--gold-bright);
+  margin-bottom: 2px;
+}
+
+.sealed-copy p {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+/* V1 Level 3+ 3-Slot In-Battle Shop + Player Hand Zone */
+.v1-battle-cards-zone {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.v1-shop-strip {
+  padding: 8px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 340px;
+  max-width: 420px;
+}
+
+.v1-shop-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.shop-title {
+  font-family: var(--font-display);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--gold-bright);
+  display: block;
+}
+
+.shop-sub {
+  font-size: 0.63rem;
+  color: var(--text-muted);
+}
+
+.btn-shop-reroll {
+  background: rgba(34, 24, 50, 0.95);
+  border: 1px solid var(--gold-reliquary);
+  color: var(--gold-bright);
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  padding: 4px 9px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.btn-shop-reroll:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.v1-shop-slots {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.v1-shop-slot {
+  background: rgba(22, 16, 35, 0.95);
+  border: 1px solid rgba(212, 168, 83, 0.34);
+  border-radius: 6px;
+  padding: 6px 7px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 3px;
+}
+
+.v1-shop-slot.locked {
+  border-color: #38bdf8;
+}
+
+.v1-shop-slot.purchased {
+  opacity: 0.45;
+}
+
+.shop-slot-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  color: var(--gold-bright);
+}
+
+.shop-lock-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.72rem;
+}
+
+.shop-slot-name {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-parchment);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shop-slot-desc {
+  font-size: 0.61rem;
+  color: var(--text-muted);
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.btn-shop-buy {
+  margin-top: 2px;
+  background: linear-gradient(180deg, #b45309, #78350f);
+  border: 1px solid var(--gold-bright);
+  color: var(--gold-bright);
+  font-family: var(--font-display);
+  font-size: 0.64rem;
+  font-weight: 700;
+  padding: 3px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-shop-buy:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Player Hand */
 .dark-tarot-hand {
   display: flex;
   justify-content: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.empty-hand-hint {
+  background: rgba(16, 12, 24, 0.85);
+  border: 1px dashed rgba(212, 168, 83, 0.38);
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  max-width: 280px;
+  text-align: center;
 }
 
 .tarot-hand-card {
-  width: 146px;
-  background: linear-gradient(180deg, rgba(24, 18, 36, 0.95), rgba(11, 8, 18, 0.97));
-  border: 1px solid rgba(212, 168, 83, 0.38);
+  width: 126px;
+  background: linear-gradient(180deg, rgba(24, 18, 36, 0.96), rgba(11, 8, 18, 0.98));
+  border: 1px solid rgba(212, 168, 83, 0.4);
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 6px 8px;
   cursor: pointer;
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
 .tarot-hand-card:hover {
-  transform: translateY(-10px);
+  transform: translateY(-8px);
   border-color: var(--gold-bright);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.85);
 }
 
 .tarot-hand-card.selected {
-  transform: translateY(-14px) scale(1.03);
+  transform: translateY(-12px) scale(1.03);
   border-color: var(--crimson-blood);
-  box-shadow: 0 0 24px rgba(225, 29, 72, 0.65);
+  box-shadow: 0 0 22px rgba(225, 29, 72, 0.65);
 }
 
 .tarot-hand-card.unaffordable {
@@ -833,58 +1507,72 @@ body {
   display: flex;
   justify-content: space-between;
   font-family: var(--font-display);
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   color: var(--gold-bright);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .tarot-cost-gem {
-  background: rgba(159, 18, 57, 0.8);
-  border: 1px solid var(--gold-reliquary);
-  padding: 1px 6px;
+  background: rgba(16, 185, 129, 0.28);
+  border: 1px solid #34d399;
+  color: #a7f3d0;
+  padding: 0 5px;
   border-radius: 99px;
+  font-size: 0.6rem;
+  font-weight: 700;
+}
+
+.tarot-card-illustration .tarot-svg {
+  height: 44px;
 }
 
 .tarot-card-title {
   font-family: var(--font-display);
-  font-size: 0.76rem;
+  font-size: 0.7rem;
   font-weight: 700;
   color: var(--gold-bright);
-  margin: 4px 0 2px;
+  margin: 3px 0 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tarot-card-desc {
-  font-size: 0.68rem;
-  line-height: 1.32;
+  font-size: 0.62rem;
+  line-height: 1.25;
   color: var(--text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .camera-quick-dock {
   background: var(--panel-obsidian);
   border: 1px solid var(--iron-border);
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 7px 11px;
 }
 
 .dock-caption {
   font-family: var(--font-display);
-  font-size: 0.64rem;
+  font-size: 0.6rem;
   letter-spacing: 0.12em;
   color: var(--gold-reliquary);
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .dock-cam-buttons {
   display: flex;
-  gap: 5px;
+  gap: 4px;
 }
 
 .dock-cam-btn {
   background: rgba(24, 18, 36, 0.9);
   border: 1px solid rgba(212, 168, 83, 0.3);
   color: var(--text-parchment);
-  font-size: 0.7rem;
-  padding: 4px 8px;
+  font-size: 0.68rem;
+  padding: 4px 7px;
   border-radius: 4px;
   cursor: pointer;
 }
@@ -898,7 +1586,7 @@ body {
 .endgame-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(5, 3, 9, 0.78);
+  background: rgba(5, 3, 9, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -906,13 +1594,24 @@ body {
 }
 
 .endgame-modal-card {
-  max-width: 460px;
+  max-width: 480px;
   width: 92%;
-  padding: 28px;
+  padding: 26px;
   text-align: center;
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.unlock-callout {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid #34d399;
+  color: #a7f3d0;
+  font-weight: 700;
 }
 
 .endgame-actions {
@@ -922,216 +1621,20 @@ body {
   gap: 10px;
 }
 
-.skirmish-options-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin: 18px 0 24px;
+/* Responsive Adjustments */
+@media (max-width: 1180px) {
+  .hub-main-grid {
+    grid-template-columns: 330px 1fr 330px;
+  }
 }
 
-.skirmish-field label {
-  display: block;
-  font-family: var(--font-display);
-  font-size: 0.82rem;
-  color: var(--gold-bright);
-  margin-bottom: 6px;
+@media (max-width: 960px) {
+  .hub-main-grid {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+    pointer-events: auto;
+  }
+  .battle-side-widgets {
+    display: none;
+  }
 }
-
-/* ═══════════════════════════════════════════════════════════════════════
-   GOTHIC SANCTUM HUB (MAIN MENU) — ROSE WINDOW, BOSS & LIVE 3D ATELIER
-   ═══════════════════════════════════════════════════════════════════════ */
-
-@keyframes slowRoseSpin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.hub-hero-header-badge {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 10px;
-}
-
-.rose-medallion-wrap {
-  width: 58px;
-  height: 58px;
-  flex-shrink: 0;
-  filter: drop-shadow(0 0 12px rgba(212, 168, 83, 0.48));
-}
-
-.rose-window-svg {
-  width: 100%;
-  height: 100%;
-  animation: slowRoseSpin 38s linear infinite;
-}
-
-.hub-boss-and-tarot-showcase {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 12px 14px;
-  margin-bottom: 16px;
-  background: linear-gradient(135deg, rgba(28, 16, 36, 0.88), rgba(12, 8, 20, 0.92));
-  border: 1px solid rgba(212, 168, 83, 0.34);
-  border-radius: 8px;
-}
-
-.hub-boss-preview-box {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.hub-boss-crest {
-  width: 54px;
-  height: 54px;
-  flex-shrink: 0;
-  filter: drop-shadow(0 0 10px rgba(225, 29, 72, 0.45));
-}
-
-.hub-boss-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.boss-eyebrow {
-  font-family: var(--font-display);
-  font-size: 0.6rem;
-  letter-spacing: 0.14em;
-  color: var(--gold-reliquary);
-}
-
-.hub-boss-meta strong {
-  font-family: var(--font-display);
-  font-size: 0.88rem;
-  color: var(--gold-bright);
-}
-
-.hub-boss-meta small {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-}
-
-.hub-tarot-fan {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.hub-mini-tarot {
-  width: 78px;
-  padding: 5px 6px;
-  background: linear-gradient(180deg, rgba(24, 17, 36, 0.96), rgba(10, 7, 16, 0.98));
-  border: 1px solid rgba(212, 168, 83, 0.42);
-  border-radius: 6px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.hub-mini-tarot.tarot-fan-0 {
-  transform: rotate(-5deg) translateY(2px);
-}
-
-.hub-mini-tarot.tarot-fan-2 {
-  transform: rotate(5deg) translateY(2px);
-}
-
-.hub-mini-tarot:hover {
-  transform: translateY(-6px) scale(1.08) rotate(0deg) !important;
-  border-color: var(--gold-bright);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.85), 0 0 14px rgba(225, 29, 72, 0.45);
-  z-index: 4;
-}
-
-.hub-mini-tarot-top {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  font-family: var(--font-display);
-  font-size: 0.56rem;
-  color: var(--gold-bright);
-}
-
-.hub-mini-tarot-art .tarot-svg {
-  height: 40px;
-}
-
-.hub-mini-tarot-name {
-  font-family: var(--font-display);
-  font-size: 0.54rem;
-  color: var(--text-parchment);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  width: 100%;
-  text-align: center;
-}
-
-/* 4 Quick Mode Bento Portals in Left Hub Panel */
-.hub-bento-portals {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  border-top: 1px solid rgba(212, 168, 83, 0.22);
-  padding-top: 12px;
-}
-
-.hub-portal-tile {
-  padding: 9px 12px;
-  background: rgba(22, 16, 33, 0.85);
-  border: 1px solid rgba(212, 168, 83, 0.25);
-  border-radius: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  cursor: pointer;
-  transition: all 0.18s ease;
-}
-
-.hub-portal-tile:hover {
-  background: rgba(159, 18, 57, 0.35);
-  border-color: var(--gold-bright);
-  transform: translateY(-2px);
-}
-
-.portal-tile-tag {
-  font-family: var(--font-display);
-  font-size: 0.56rem;
-  letter-spacing: 0.14em;
-  color: var(--gold-reliquary);
-}
-
-.hub-portal-tile strong {
-  font-family: var(--font-display);
-  font-size: 0.84rem;
-  color: var(--gold-bright);
-}
-
-.hub-portal-tile small {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-}
-
-/* Right Live 3D Altar Atelier Dock on Main Menu */
-.hub-atelier-group {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding-top: 6px;
-  border-top: 1px solid rgba(212, 168, 83, 0.16);
-}
-
-.atelier-group-label {
-  font-family: var(--font-display);
-  font-size: 0.64rem;
-  letter-spacing: 0.12em;
-  color: var(--gold-reliquary);
-  text-transform: uppercase;
-}
-

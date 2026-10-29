@@ -1,5 +1,5 @@
 /**
- * XcardO III: Obsidian Sanctum
+ * XcardO: Warlords of the Obsidian Altar
  * Real-Time 3D Rigid-Body Stone Shatter & Weapon Impact Physics Engine
  */
 

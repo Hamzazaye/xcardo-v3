@@ -1,5 +1,5 @@
 /**
- * XcardO III: Obsidian Sanctum
+ * XcardO: Warlords of the Obsidian Altar
  * Sacred Gothic Geometry & Line Pattern Detection Engine
  */
 

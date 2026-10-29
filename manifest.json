@@ -1,7 +1,7 @@
 {
-  "name": "XcardO III: Obsidian Sanctum",
-  "short_name": "XcardO III",
-  "description": "Interactive 3D Gothic tactical board & Dark-Tarot card duel with sculpted pieces, rigid-body stone shatter physics, and single-player Inquisitor AI.",
+  "name": "XcardO: Warlords of the Obsidian Altar",
+  "short_name": "XcardO",
+  "description": "Interactive 3D Fantasy War-Table strategy & War-Scroll duel with 6 Playable Fantasy War Heroes, 6 Enemy Warlords, v1 Campaign Rules (No Cards until Level 3, 3-Slot In-Battle Shop), and rigid-body stone shatter physics.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#07050a",

@@ -1,5 +1,5 @@
 /**
- * XcardO III: Obsidian Sanctum
+ * XcardO: Warlords of the Obsidian Altar
  * Interactive 3D Gothic WebGL Scene, Cinematic Camera Director & Raycaster Controller
  */
 
