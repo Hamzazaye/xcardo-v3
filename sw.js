@@ -3,7 +3,7 @@
  * Offline-First PWA Service Worker
  */
 
-const CACHE_NAME = 'xcardo-v3-cache-v2';
+const CACHE_NAME = 'xcardo-v3-cache-v4';
 const PRECACHE_ASSETS = [
   './',
   './index.html',
@@ -11,6 +11,18 @@ const PRECACHE_ASSETS = [
   './styles/main.css',
   './assets/logo-xcardo-crest.png',
   './assets/logo-xcardo-nav.png',
+  './assets/portraits/hero_paladin.jpg',
+  './assets/portraits/hero_valkyrie.jpg',
+  './assets/portraits/hero_archmage.jpg',
+  './assets/portraits/hero_dragonknight.jpg',
+  './assets/portraits/hero_ranger.jpg',
+  './assets/portraits/hero_deathknight.jpg',
+  './assets/portraits/boss_malakor.jpg',
+  './assets/portraits/boss_vespera.jpg',
+  './assets/portraits/boss_vorn.jpg',
+  './assets/portraits/boss_thurible.jpg',
+  './assets/portraits/boss_carmilla.jpg',
+  './assets/portraits/boss_hollow_seraph.jpg',
   './src/main.js',
   './src/core/event-bus.js',
   './src/core/rng.js',

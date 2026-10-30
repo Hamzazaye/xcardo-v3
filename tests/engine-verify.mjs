@@ -325,16 +325,17 @@ runSuite('10. AppController Screen Navigation, 6 Fantasy Hero Portraits & V1 Bat
   assert.ok(mockRoot.innerHTML.includes('WAR-SCROLL SHOP'));
   assert.ok(mockRoot.innerHTML.includes('shop-slot-art'), '3-Slot Shop must display mini Tarot SVG art');
 
-  // Verify all 6 Playable Fantasy War Heroes render unique bespoke SVG portraits
+  // Verify all 6 Playable Fantasy War Heroes render unique Nano Banana HD portraits inside royal SVG frames
   const heroSVGs = new Set();
   for (const hero of FANTASY_HEROES) {
     const svg = renderFantasyHeroPortraitSVG(hero.id, hero.color);
     assert.ok(svg.includes('<svg'), `Hero ${hero.id} must render SVG portrait`);
+    assert.ok(svg.includes(`assets/portraits/${hero.id}.jpg`), `Hero ${hero.id} must embed Nano Banana portrait assets/portraits/${hero.id}.jpg`);
     heroSVGs.add(svg);
   }
   assert.equal(heroSVGs.size, 6, 'All 6 Playable Fantasy War Heroes must have unique SVG portraits');
 
-  // Verify all 40 War-Scroll Cards & 6 Warlord Boss Portraits render unique bespoke SVG art
+  // Verify all 40 War-Scroll Cards & 6 Warlord Boss Portraits render unique bespoke art
   const tarotSVGs = new Set();
   for (const card of ARCANA_CARDS) {
     const svg = renderTarotArtSVG(card).replace(/tarot_[a-z0-9_]+/g, 'ID');
@@ -347,6 +348,7 @@ runSuite('10. AppController Screen Navigation, 6 Fantasy Hero Portraits & V1 Bat
   for (const boss of INQUISITOR_BOSSES) {
     const svg = renderBossCrestSVG(boss.id, boss.color);
     assert.ok(svg.includes('<svg'));
+    assert.ok(svg.includes(`assets/portraits/${boss.id}.jpg`), `Boss ${boss.id} must embed Nano Banana portrait assets/portraits/${boss.id}.jpg`);
     bossSVGs.add(svg);
   }
   assert.equal(bossSVGs.size, 6, 'All 6 Enemy Warlord Commanders must have unique portraits');
