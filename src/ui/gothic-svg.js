@@ -678,29 +678,67 @@ export function renderRoseWindowSVG(accentColor = '#d4a853') {
 
 /**
  * Render Wrought-Iron & War-Table UI Icons (`viewBox="0 0 24 24"`)
+ * Unified 1.8px stroke vector icon family (`ui-ux-pro-max` compliant — zero structural emojis).
  */
 export function renderGothicIconSVG(name) {
   switch (name) {
     case 'sword':
-      return `<svg class="gothic-icon" viewBox="0 0 24 24"><path d="M14.5 4.5L19.5 9.5L9 20H4V15L14.5 4.5Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7L17 12" stroke="currentColor" stroke-width="1.8"/></svg>`;
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5L19.5 9.5L9 20H4V15L14.5 4.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 7L17 12M4 20L8 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+    case 'castle':
+    case 'home':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21H21V9L18 9V5H15V8H9V5H6V9L3 9V21Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 21V15A2 2 0 0 1 14 15V21" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>`;
+    case 'map':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="3,6 9,3 15,6 21,3 21,18 15,21 9,18 3,21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><line x1="9" y1="3" x2="9" y2="18" stroke="currentColor" stroke-width="1.8"/><line x1="15" y1="6" x2="15" y2="21" stroke="currentColor" stroke-width="1.8"/></svg>`;
+    case 'scroll':
+    case 'cards':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4H17A2 2 0 0 1 19 6V18A2 2 0 0 1 17 20H6A2 2 0 0 1 4 18V6A2 2 0 0 1 6 4Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 9H15M8 13H15M8 17H12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+    case 'dice':
+    case 'modes':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="8.5" cy="8.5" r="1.4" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.4" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.4" fill="currentColor"/></svg>`;
+    case 'book':
+    case 'story':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5C5 4 9 4 12 6C15 4 19 4 22 5V19C19 18 15 18 12 20C9 18 5 18 2 19V5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><line x1="12" y1="6" x2="12" y2="20" stroke="currentColor" stroke-width="1.8"/></svg>`;
+    case 'shop':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9L5 4H19L21 9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3 9C3 10.7 4.3 12 6 12C7.7 12 9 10.7 9 9C9 10.7 10.3 12 12 12C13.7 12 15 10.7 15 9C15 10.7 16.3 12 18 12C19.7 12 21 10.7 21 9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 12V20H19V12" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>`;
+    case 'leaf':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.4 19 2C19 7 18.5 13.5 11 20Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M5 21C7 17 10 14 14 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+    case 'coin':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><polygon points="12,6 15,12 12,18 9,12" fill="currentColor"/></svg>`;
+    case 'star':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,2 15,9 22,9.5 16.8,14.2 18.5,21.5 12,17.5 5.5,21.5 7.2,14.2 2,9.5 9,9" fill="currentColor" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>`;
+    case 'refresh':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 4V10H15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M20.49 15A9 9 0 1 1 18.36 5.64L21 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+    case 'chest':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="3" y1="11" x2="21" y2="11" stroke="currentColor" stroke-width="1.8"/><rect x="10" y="9" width="4" height="4" rx="1" fill="currentColor"/></svg>`;
+    case 'target':
+    case 'threat':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/><path d="M12 2V5M12 19V22M2 12H5M19 12H22" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+    case 'grid':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>`;
     case 'chalice':
-      return `<svg class="gothic-icon" viewBox="0 0 24 24"><path d="M6 4H18L16 12C15.5 14.5 13.5 16 12 16C10.5 16 8.5 14.5 8 12L6 4Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 16V20M8 20H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4H18L16 12C15.5 14.5 13.5 16 12 16C10.5 16 8.5 14.5 8 12L6 4Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 16V20M8 20H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
     case 'bell':
-      return `<svg class="gothic-icon" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M13.73 21A2 2 0 0 1 10.27 21" stroke="currentColor" stroke-width="1.8"/></svg>`;
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M13.73 21A2 2 0 0 1 10.27 21" stroke="currentColor" stroke-width="1.8"/></svg>`;
     case 'camera':
-      return `<svg class="gothic-icon" viewBox="0 0 24 24"><path d="M23 19A2 2 0 0 1 21 21H3A2 2 0 0 1 1 19V8A2 2 0 0 1 3 6H7L9 3H15L17 6H21A2 2 0 0 1 23 8V19Z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="13" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>`;
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M23 19A2 2 0 0 1 21 21H3A2 2 0 0 1 1 19V8A2 2 0 0 1 3 6H7L9 3H15L17 6H21A2 2 0 0 1 23 8V19Z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="13" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>`;
     case 'shatter':
-      return `<svg class="gothic-icon" viewBox="0 0 24 24"><polygon points="12,2 19,8 16,15 21,21 11,18 6,22 8,13 3,7" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>`;
+    case 'spark':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,2 15,9 22,12 15,15 12,22 9,15 2,12 9,9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
     case 'eye':
-      return `<svg class="gothic-icon" viewBox="0 0 24 24"><path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>`;
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12S5 4 12 4S23 12 23 12S19 20 12 20S1 12 1 12Z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>`;
     case 'undo':
-      return `<svg class="gothic-icon" viewBox="0 0 24 24"><path d="M3 7V13H9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M21 17A9 9 0 0 0 6 8.3L3 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7V13H9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M21 17A9 9 0 0 0 6 8.3L3 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
     case 'crown':
-      return `<svg class="gothic-icon" viewBox="0 0 24 24"><polygon points="2,19 22,19 20,7 15,12 12,5 9,12 4,7" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>`;
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="2,19 22,19 20,7 15,12 12,5 9,12 4,7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
     case 'lock':
-      return `<svg class="gothic-icon" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 11V7A4 4 0 0 1 16 7V11" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>`;
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 11V7A4 4 0 0 1 16 7V11" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>`;
+    case 'unlock':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 11V7A4 4 0 0 1 15.5 5.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+    case 'close':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+    case 'sigil':
     default:
-      return `<svg class="gothic-icon" viewBox="0 0 24 24"><polygon points="12,2 22,12 12,22 2,12" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>`;
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,2 21,12 12,22 3,12" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>`;
   }
 }
 

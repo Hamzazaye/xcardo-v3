@@ -281,6 +281,8 @@ runSuite('10. AppController Screen Navigation, 6 Fantasy Hero Portraits & V1 Bat
   assert.equal(mockRoot.innerHTML.includes('XCARDO III'), false, 'UI must not render XCARDO III');
   assert.ok(mockRoot.innerHTML.includes('hub-comfort-layout'), 'Main Menu must use the calm comfort layout');
   assert.ok(mockRoot.innerHTML.includes('story-chronicle-card'), 'Main Menu must show the Story Chronicle card');
+  assert.ok(mockRoot.innerHTML.includes('hub-camera-bar'), 'Main Menu must include the 1-click 3D camera bar');
+  assert.ok(mockRoot.innerHTML.includes('aria-live="polite"'), 'Toast banner must expose aria-live="polite"');
 
   app.navigate('campaign');
   assert.ok(mockRoot.innerHTML.includes('Story Chapters & Strongholds'));
@@ -291,10 +293,12 @@ runSuite('10. AppController Screen Navigation, 6 Fantasy Hero Portraits & V1 Bat
   // Level 1 Battle HUD must display the v1 Sealed War-Scroll Banner (No Cards until Level 3)
   app.startCampaignLevel(1);
   assert.ok(mockRoot.innerHTML.includes('WAR-SCROLL SHOP & CARDS UNLOCK AT LEVEL 3'));
+  assert.ok(mockRoot.innerHTML.includes('tactical-action-prompt'), 'Battle HUD must display the contextual Tactical Action Prompt');
 
-  // Level 3 Battle HUD must display the 3-Slot War-Scroll Shop
+  // Level 3 Battle HUD must display the 3-Slot War-Scroll Shop with mini Tarot SVG art
   app.startCampaignLevel(3);
   assert.ok(mockRoot.innerHTML.includes('WAR-SCROLL SHOP'));
+  assert.ok(mockRoot.innerHTML.includes('shop-slot-art'), '3-Slot Shop must display mini Tarot SVG art');
 
   // Verify all 6 Playable Fantasy War Heroes render unique bespoke SVG portraits
   const heroSVGs = new Set();

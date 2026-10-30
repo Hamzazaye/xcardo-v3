@@ -53,6 +53,7 @@ export class AppController {
     this.seerHintCoord = null;
     this.showThreatScan = false;
     this.showMiniTacticalGrid = false;
+    this.showTacticalIntel = true;
     this.showStoryModal = false;
     this.toastMessage = null;
     this.toastTimer = null;
@@ -169,18 +170,44 @@ export class AppController {
 
     if (typeof window !== 'undefined') {
       window.addEventListener('keydown', (e) => {
-        if (this.currentScreen !== 'battle' || !this.engine) return;
         if (e.key === 'Escape') {
-          this.engine.selectedCardIndex = null;
-          this.engine.pendingTargets = [];
-          this.render();
-        } else if (['1', '2', '3', '4', '5'].includes(e.key)) {
+          if (this.showStoryModal) {
+            this.showStoryModal = false;
+            this.render();
+            return;
+          }
+          if (this.currentScreen === 'battle' && this.engine) {
+            if (this.engine.selectedCardIndex !== null) {
+              this.engine.selectedCardIndex = null;
+              this.engine.pendingTargets = [];
+              this.showToast('War-Scroll selection cancelled.');
+              this.render();
+            }
+            return;
+          }
+          if (this.currentScreen !== 'hub') {
+            this.navigate('hub');
+            return;
+          }
+        }
+        if (e.key === 'c' || e.key === 'C') {
+          this.cycleCameraPreset();
+          return;
+        }
+        if (this.currentScreen !== 'battle' || !this.engine) return;
+        if (['1', '2', '3', '4', '5'].includes(e.key)) {
           const idx = Number(e.key) - 1;
           if (this.engine.hands.X[idx]) {
             this.selectHandCard(idx);
           }
-        } else if (e.key === 'c' || e.key === 'C') {
-          this.cycleCameraPreset();
+        } else if (e.key === 'h' || e.key === 'H') {
+          this.requestSeerHint();
+        } else if ((e.key === 'z' || e.key === 'Z') && !e.ctrlKey && !e.metaKey) {
+          if (this.engine.canUndo?.() ?? true) {
+            const res = this.engine.undoLastAction();
+            if (!res.ok) this.showToast(res.reason);
+            this.render();
+          }
         }
       });
     }
@@ -562,7 +589,7 @@ export class AppController {
 
     this.rootEl.innerHTML = `
       <div class="gothic-ui-frame ${this.currentScreen === 'battle' ? 'mode-battle' : 'mode-menu'}">
-        <div id="gothic-toast-banner" class="gothic-toast ${this.toastMessage ? 'visible' : ''}">
+        <div id="gothic-toast-banner" role="status" aria-live="polite" class="gothic-toast ${this.toastMessage ? 'visible' : ''}">
           ${this.toastMessage || ''}
         </div>
         ${screenHTML}
@@ -579,34 +606,52 @@ export class AppController {
     const totalStars = Object.values(state.completedLevels || {}).reduce((a, b) => a + b, 0);
     return `
       <header class="sanctum-topbar">
-        <div class="brand-cluster" data-action="nav" data-screen="hub" title="XcardO Home">
+        <div class="brand-cluster" data-action="nav" data-screen="hub" role="button" tabindex="0" aria-label="XcardO Home" title="XcardO Home">
           <img src="assets/logo-xcardo-nav.png" alt="XCARDO" class="brand-logo-nav" />
           <span class="sr-only">XCARDO</span>
         </div>
 
         <nav class="sanctum-nav-tabs" aria-label="Main Navigation">
-          <button class="nav-tab-btn nav-play-cta" data-action="start-level" data-level="${nextLvlNum}" title="Start Battle Stage #${nextLvlNum}">⚔️ Play</button>
-          <button class="nav-tab-btn ${activeTab === 'hub' ? 'active' : ''}" data-action="nav" data-screen="hub">🏰 Home</button>
-          <button class="nav-tab-btn ${activeTab === 'campaign' ? 'active' : ''}" data-action="nav" data-screen="campaign">🗺️ Map</button>
-          <button class="nav-tab-btn ${activeTab === 'reliquary' ? 'active' : ''}" data-action="nav" data-screen="reliquary">👑 Heroes</button>
-          <button class="nav-tab-btn ${activeTab === 'codex' ? 'active' : ''}" data-action="nav" data-screen="codex">📜 Cards</button>
-          <button class="nav-tab-btn ${activeTab === 'skirmish' || activeTab === 'crypt' ? 'active' : ''}" data-action="nav" data-screen="skirmish">🎲 Modes</button>
+          <button class="nav-tab-btn nav-play-cta" data-action="start-level" data-level="${nextLvlNum}" title="Start Battle Stage #${nextLvlNum}">
+            ${renderGothicIconSVG('sword')}
+            <span>Play</span>
+          </button>
+          <button class="nav-tab-btn ${activeTab === 'hub' ? 'active' : ''}" ${activeTab === 'hub' ? 'aria-current="page"' : ''} data-action="nav" data-screen="hub">
+            ${renderGothicIconSVG('castle')}
+            <span>Home</span>
+          </button>
+          <button class="nav-tab-btn ${activeTab === 'campaign' ? 'active' : ''}" ${activeTab === 'campaign' ? 'aria-current="page"' : ''} data-action="nav" data-screen="campaign">
+            ${renderGothicIconSVG('map')}
+            <span>Map</span>
+          </button>
+          <button class="nav-tab-btn ${activeTab === 'reliquary' ? 'active' : ''}" ${activeTab === 'reliquary' ? 'aria-current="page"' : ''} data-action="nav" data-screen="reliquary">
+            ${renderGothicIconSVG('crown')}
+            <span>Heroes</span>
+          </button>
+          <button class="nav-tab-btn ${activeTab === 'codex' ? 'active' : ''}" ${activeTab === 'codex' ? 'aria-current="page"' : ''} data-action="nav" data-screen="codex">
+            ${renderGothicIconSVG('scroll')}
+            <span>Cards</span>
+          </button>
+          <button class="nav-tab-btn ${activeTab === 'skirmish' || activeTab === 'crypt' ? 'active' : ''}" ${activeTab === 'skirmish' || activeTab === 'crypt' ? 'aria-current="page"' : ''} data-action="nav" data-screen="skirmish">
+            ${renderGothicIconSVG('dice')}
+            <span>Modes</span>
+          </button>
         </nav>
 
         <div class="sanctum-currencies">
-          <div class="currency-pill" title="${hero.name}">
-            <span>👑</span>
+          <div class="currency-pill" title="Active Champion: ${hero.name}">
+            ${renderGothicIconSVG('crown')}
             <span>${hero.shortName.split(' ').pop()}</span>
           </div>
-          <div class="currency-pill" title="Stars">
-            <span>★</span>
-            <span>${totalStars}</span>
+          <div class="currency-pill" title="Campaign Stars Earned">
+            ${renderGothicIconSVG('star')}
+            <span class="tabular-num">${totalStars}</span>
           </div>
-          <div class="currency-pill" title="Sigils">
+          <div class="currency-pill" title="Reliquary Sigils">
             ${renderGothicIconSVG('sigil')}
-            <span>${state.reliquarySigils}</span>
+            <span class="tabular-num">${state.reliquarySigils}</span>
           </div>
-          <button class="icon-btn" data-action="cycle-camera" title="Switch 3D Camera (C)">
+          <button class="icon-btn" data-action="cycle-camera" aria-label="Switch 3D Camera (Shortcut: C)" title="Switch 3D Camera (C)">
             ${renderGothicIconSVG('camera')}
           </button>
         </div>
@@ -638,7 +683,8 @@ export class AppController {
               CHAPTER ${currentAct.roman} • ${shortActTitle.toUpperCase()}
             </span>
             <button class="ribbon-story-btn" data-action="toggle-story-modal" title="View Chapter Storyboard">
-              📖 Story
+              ${renderGothicIconSVG('book')}
+              <span>Story</span>
             </button>
           </div>
         </section>
@@ -654,14 +700,14 @@ export class AppController {
               <div class="visual-char-info">
                 <span class="visual-role-pill" style="color:${hero.accent}">YOUR CHAMPION</span>
                 <h2 class="visual-char-name">${hero.shortName}</h2>
-                <span class="visual-passive-chip">${hero.shortPassive || '☀️ +1 Start Gold'}</span>
+                <span class="visual-passive-chip">${hero.shortPassive || '+1 Start Gold'}</span>
               </div>
             </div>
 
-            <div class="visual-avatar-strip" aria-label="Switch Champion">
+            <div class="visual-avatar-strip" role="radiogroup" aria-label="Switch Champion">
               ${FANTASY_HEROES.map(
                 (h) => `
-                  <button class="visual-avatar-btn ${h.id === hero.id ? 'active' : ''}" data-action="select-hero" data-hero="${h.id}" title="${h.name} — ${h.shortPassive || h.passiveDesc}" style="--char-color:${h.color}">
+                  <button class="visual-avatar-btn ${h.id === hero.id ? 'active' : ''}" role="radio" aria-checked="${h.id === hero.id}" aria-label="${h.name}" data-action="select-hero" data-hero="${h.id}" title="${h.name} — ${h.shortPassive || h.passiveDesc}" style="--char-color:${h.color}">
                     ${renderFantasyHeroPortraitSVG(h.id, h.color)}
                   </button>
                 `
@@ -669,13 +715,13 @@ export class AppController {
             </div>
           </div>
 
-          <!-- CENTER: ICONIC PLAY STAGE BUTTON & 3 QUICK TILES -->
+          <!-- CENTER: ICONIC PLAY STAGE BUTTON, CAMERA PILLS & 4 QUICK TILES -->
           <div class="hub-center-action-pod">
             <div class="stage-visual-chips">
               <span class="stage-chip">STAGE #${nextLevel.level}</span>
               <span class="stage-chip">${nextLevel.boardSize}×${nextLevel.boardSize}</span>
               <span class="stage-chip ${nextLevel.cardsEnabled ? 'chip-shop' : 'chip-pure'}">
-                ${nextLevel.cardsEnabled ? '🏪 Shop Open' : '🌱 Pure Board'}
+                ${nextLevel.cardsEnabled ? `${renderGothicIconSVG('shop')} <span>Shop Open</span>` : `${renderGothicIconSVG('leaf')} <span>Pure Board</span>`}
               </span>
             </div>
 
@@ -685,22 +731,33 @@ export class AppController {
             </button>
 
             <div class="hub-mini-tiles-row">
-              <button class="mini-visual-tile" data-action="nav" data-screen="campaign">
-                <span>🗺️</span>
+              <button class="mini-visual-tile" data-action="nav" data-screen="campaign" title="Campaign Map">
+                <span class="tile-svg-icon">${renderGothicIconSVG('map')}</span>
                 <small>Map</small>
               </button>
-              <button class="mini-visual-tile" data-action="nav" data-screen="skirmish">
-                <span>🎲</span>
+              <button class="mini-visual-tile" data-action="nav" data-screen="skirmish" title="Game Modes & Puzzles">
+                <span class="tile-svg-icon">${renderGothicIconSVG('dice')}</span>
                 <small>Modes</small>
               </button>
-              <button class="mini-visual-tile" data-action="nav" data-screen="reliquary">
-                <span>👑</span>
+              <button class="mini-visual-tile" data-action="nav" data-screen="reliquary" title="Heroes & 3D Relics">
+                <span class="tile-svg-icon">${renderGothicIconSVG('crown')}</span>
                 <small>Forge</small>
               </button>
-              <button class="mini-visual-tile" data-action="demo-shatter" title="Test 3D Stone Shatter">
-                <span>✨</span>
+              <button class="mini-visual-tile" data-action="demo-shatter" title="Test 3D Stone Shatter Physics">
+                <span class="tile-svg-icon">${renderGothicIconSVG('spark')}</span>
                 <small>Shatter</small>
               </button>
+            </div>
+
+            <div class="hub-camera-bar" role="group" aria-label="3D Camera Presets">
+              <span class="hub-cam-label">${renderGothicIconSVG('camera')} View:</span>
+              ${CAMERA_PRESETS.map(
+                (p) => `
+                  <button class="hub-cam-pill ${state.cameraPreset === p.id ? 'active' : ''}" data-action="set-camera" data-cam="${p.id}" title="${p.name}">
+                    ${p.name.split(' ')[0]}
+                  </button>
+                `
+              ).join('')}
             </div>
           </div>
 
@@ -710,7 +767,7 @@ export class AppController {
               <div class="visual-char-info boss-char-info">
                 <span class="visual-role-pill enemy-pill">CHAPTER RIVAL</span>
                 <h2 class="visual-char-name">${currentBoss.name}</h2>
-                <span class="visual-passive-chip enemy-chip">⚔️ ${nextLevel.name}</span>
+                <span class="visual-passive-chip enemy-chip">${renderGothicIconSVG('sword')} <span>${nextLevel.name}</span></span>
               </div>
               <div class="visual-portrait-big boss-frame" style="--char-color:${currentBoss.color}">
                 ${renderBossCrestSVG(currentBoss.id, currentBoss.color)}
@@ -730,11 +787,11 @@ export class AppController {
         ${
           this.showStoryModal
             ? `
-              <div class="story-modal-backdrop" data-action="toggle-story-modal">
+              <div class="story-modal-backdrop" role="dialog" aria-modal="true" aria-label="Chapter Story Chronicle" data-action="toggle-story-modal">
                 <div class="story-storyboard-modal gothic-card-panel" onclick="event.stopPropagation()">
                   <div class="storyboard-header">
-                    <span class="gothic-eyebrow">📖 VISUAL STORY CHRONICLE • CHAPTER ${currentAct.roman}</span>
-                    <button class="icon-btn" data-action="toggle-story-modal">✕</button>
+                    <span class="gothic-eyebrow">${renderGothicIconSVG('book')} VISUAL STORY CHRONICLE • CHAPTER ${currentAct.roman}</span>
+                    <button class="icon-btn" data-action="toggle-story-modal" aria-label="Close Story Modal">${renderGothicIconSVG('close')}</button>
                   </div>
                   <div class="storyboard-cards-grid">
                     <div class="storyboard-card">
@@ -750,7 +807,7 @@ export class AppController {
                     <div class="storyboard-card">
                       <div class="storyboard-art" style="--char-color:${currentBoss.color}">${renderBossCrestSVG(currentBoss.id, currentBoss.color)}</div>
                       <h4>III. Rival: ${currentBoss.name}</h4>
-                      <p>🎯 ${currentAct.storyGoal}</p>
+                      <p>${currentAct.storyGoal}</p>
                     </div>
                   </div>
                 </div>
@@ -1134,6 +1191,37 @@ export class AppController {
     const oPct = Math.min(100, Math.round((snap.scores.O / snap.targetScore) * 100));
     const bellReady = !snap.bellUsedThisMatch.X && snap.bellCharge.X >= 100;
 
+    const selectedInst =
+      this.engine.selectedCardIndex !== null
+        ? snap.hands.X[this.engine.selectedCardIndex]
+        : null;
+    const selectedCard = selectedInst ? selectedInst.card : null;
+
+    let actionPromptHTML = '';
+    if (selectedCard) {
+      actionPromptHTML = `
+        <div class="tactical-action-prompt prompt-targeting">
+          <span class="prompt-pulse-dot targeting-dot"></span>
+          <span><strong>Targeting ${selectedCard.name}:</strong> Click a glowing tile on the 3D War-Table</span>
+          <button class="prompt-cancel-chip" data-action="cancel-card">Cancel [Esc]</button>
+        </div>
+      `;
+    } else if (snap.activePlayer === 'X') {
+      actionPromptHTML = `
+        <div class="tactical-action-prompt prompt-player">
+          <span class="prompt-pulse-dot player-dot"></span>
+          <span><strong>Your Turn:</strong> Click any empty stone tile on the 3D War-Table to deploy your Champion</span>
+        </div>
+      `;
+    } else {
+      actionPromptHTML = `
+        <div class="tactical-action-prompt prompt-enemy">
+          <span class="prompt-pulse-dot enemy-dot"></span>
+          <span><strong>${boss.name}</strong> is commanding forces across the War-Table...</span>
+        </div>
+      `;
+    }
+
     return `
       <header class="battle-hud-topbar">
         <!-- PLAYER FANTASY WAR HERO WING -->
@@ -1145,21 +1233,21 @@ export class AppController {
             <div class="hud-commander-details">
               <div class="wing-faction-tag">${hero.name.toUpperCase()} (${hero.classTitle})</div>
               <div class="wing-score-row">
-                <span class="score-big">${snap.scores.X}</span>
-                <span class="score-target">/ ${snap.targetScore} VP</span>
+                <span class="score-big tabular-num">${snap.scores.X}</span>
+                <span class="score-target tabular-num">/ ${snap.targetScore} VP</span>
               </div>
-              <div class="gothic-progress-track">
+              <div class="gothic-progress-track" role="progressbar" aria-valuenow="${snap.scores.X}" aria-valuemin="0" aria-valuemax="${snap.targetScore}">
                 <div class="gothic-progress-fill player-fill" style="width:${xPct}%"></div>
               </div>
               <div class="wing-sub-row">
                 <span class="tithe-readout">
                   ${
                     snap.cardsEnabled
-                      ? `🪙 Gold Coins: <strong>${snap.tithe.X}</strong>/${GAME_CONFIG.MAX_BLOOD_TITHE}`
-                      : `🌱 Warmup Stage: <strong>Shop Unlocks Lvl 3</strong>`
+                      ? `${renderGothicIconSVG('coin')} Gold: <strong class="tabular-num">${snap.tithe.X}</strong>/${GAME_CONFIG.MAX_BLOOD_TITHE}`
+                      : `${renderGothicIconSVG('leaf')} Warmup: <strong>Shop Unlocks Lvl 3</strong>`
                   }
                 </span>
-                <span class="placements-readout">Moves: <strong>${snap.placementsRemaining}</strong></span>
+                <span class="placements-readout">Moves: <strong class="tabular-num">${snap.placementsRemaining}</strong></span>
               </div>
             </div>
           </div>
@@ -1168,7 +1256,7 @@ export class AppController {
         <!-- CENTER BATTLE MEDALLION -->
         <div class="hud-center-medallion">
           <div class="turn-pill ${snap.activePlayer === 'X' ? 'turn-x' : 'turn-o'}">
-            ${snap.activePlayer === 'X' ? `${hero.shortName.toUpperCase()}'S TURN` : `${boss.name.split(' ')[0].toUpperCase()} MOVING`} • TURN ${snap.turnNumber}
+            ${snap.activePlayer === 'X' ? `${hero.shortName.toUpperCase()}'S TURN` : `${boss.name.split(' ')[0].toUpperCase()} MOVING`} • TURN <span class="tabular-num">${snap.turnNumber}</span>
           </div>
           <div class="battle-sub-title">
             ${
@@ -1179,31 +1267,35 @@ export class AppController {
                 : `${boss.name} (${boss.title})`
             }
           </div>
-          <div class="hud-utility-strip">
+          <div class="hud-utility-strip" role="toolbar" aria-label="Battle Controls">
             ${
               this.engine.selectedCardIndex !== null
-                ? `<button class="hud-tool-btn active" data-action="cancel-card" title="Cancel Selected War-Scroll (Esc / Right-Click)">✕ Cancel Scroll</button>`
+                ? `<button class="hud-tool-btn active" data-action="cancel-card" title="Cancel Selected War-Scroll (Esc / Right-Click)">${renderGothicIconSVG('close')} <span>Cancel</span></button>`
                 : ''
             }
-            <button class="hud-tool-btn" data-action="cycle-camera" title="Switch 3D Camera Angle (C)">
-              ${renderGothicIconSVG('camera')} <span>Camera</span>
+            <button class="hud-tool-btn" data-action="cycle-camera" title="Switch 3D Camera Angle (Shortcut: C)">
+              ${renderGothicIconSVG('camera')} <span>Camera</span> <kbd class="hud-kbd">C</kbd>
             </button>
-            <button class="hud-tool-btn" data-action="seer-hint" title="Ask Companion for Best Move Hint">
-              ${renderGothicIconSVG('eye')} <span>Hint</span>
+            <button class="hud-tool-btn" data-action="seer-hint" title="Ask Companion for Best Move Hint (Shortcut: H)">
+              ${renderGothicIconSVG('eye')} <span>Hint</span> <kbd class="hud-kbd">H</kbd>
             </button>
             <button class="hud-tool-btn ${this.showThreatScan ? 'active' : ''}" data-action="toggle-threat" title="Highlight Enemy Scoring Threats">
-              <span>Threats</span>
+              ${renderGothicIconSVG('target')} <span>Threats</span>
             </button>
             <button class="hud-tool-btn ${this.showMiniTacticalGrid ? 'active' : ''}" data-action="toggle-minigrid" title="Toggle 2D Tactical Grid Overlay">
-              <span>2D View</span>
+              ${renderGothicIconSVG('grid')} <span>2D View</span>
             </button>
-            <button class="hud-tool-btn" ${snap.canUndo ? '' : 'disabled'} data-action="undo-move" title="Undo Last Action">
-              ${renderGothicIconSVG('undo')}
+            <button class="hud-tool-btn ${this.showTacticalIntel ? 'active' : ''}" data-action="toggle-intel" title="Toggle Tactical Intel & Battle Log">
+              ${renderGothicIconSVG('book')} <span>Intel</span>
+            </button>
+            <button class="hud-tool-btn" ${snap.canUndo ? '' : 'disabled'} data-action="undo-move" title="Undo Last Action (Shortcut: Z)">
+              ${renderGothicIconSVG('undo')} <kbd class="hud-kbd">Z</kbd>
             </button>
             <button class="hud-tool-btn" data-action="nav" data-screen="hub" title="Return to Sanctuary Menu">
-              <span>Menu</span>
+              ${renderGothicIconSVG('castle')} <span>Menu</span>
             </button>
           </div>
+          ${actionPromptHTML}
         </div>
 
         <!-- ENEMY WARLORD COMMANDER WING -->
@@ -1212,15 +1304,15 @@ export class AppController {
             <div class="hud-commander-details enemy-details">
               <div class="wing-faction-tag">${boss.name.toUpperCase()} (${boss.classTitle || 'COMMANDER'})</div>
               <div class="wing-score-row">
-                <span class="score-big">${snap.scores.O}</span>
-                <span class="score-target">/ ${snap.targetScore} VP</span>
+                <span class="score-big tabular-num">${snap.scores.O}</span>
+                <span class="score-target tabular-num">/ ${snap.targetScore} VP</span>
               </div>
-              <div class="gothic-progress-track">
+              <div class="gothic-progress-track" role="progressbar" aria-valuenow="${snap.scores.O}" aria-valuemin="0" aria-valuemax="${snap.targetScore}">
                 <div class="gothic-progress-fill enemy-fill" style="width:${oPct}%"></div>
               </div>
               <div class="wing-sub-row">
-                <span>${snap.cardsEnabled ? `🪙 Enemy Gold: <strong>${snap.tithe.O}</strong>` : `⚔️ Board Tactics AI`}</span>
-                <span>Shattered: <strong>${snap.stonesShatteredThisMatch}</strong></span>
+                <span>${snap.cardsEnabled ? `${renderGothicIconSVG('coin')} Enemy Gold: <strong class="tabular-num">${snap.tithe.O}</strong>` : `${renderGothicIconSVG('sword')} Board Tactics AI`}</span>
+                <span>Shattered: <strong class="tabular-num">${snap.stonesShatteredThisMatch}</strong></span>
               </div>
             </div>
             <div class="hud-commander-avatar enemy-avatar" style="--char-color:${boss.color}">
@@ -1231,7 +1323,7 @@ export class AppController {
       </header>
 
       <!-- RIGHT SIDE WIDGETS: 2D MATRIX, HERO STORY COUNSEL, CHEST ODDS & CHRONICLE -->
-      <aside class="battle-side-widgets">
+      <aside class="battle-side-widgets ${this.showTacticalIntel ? 'intel-open' : 'intel-collapsed'}" aria-label="Tactical Intel">
         ${
           this.showMiniTacticalGrid
             ? `
@@ -1245,7 +1337,7 @@ export class AppController {
                           (cell) => `
                             <button class="mini-grid-cell ${cell.symbol ? `sym-${cell.symbol}` : ''} ${
                             cell.obstacle ? 'has-obstacle' : ''
-                          }" data-action="board-cell" data-r="${cell.r}" data-c="${cell.c}">
+                          }" data-action="board-cell" data-r="${cell.r}" data-c="${cell.c}" aria-label="Row ${cell.r + 1} Column ${cell.c + 1}">
                               ${
                                 cell.symbol ||
                                 (cell.obstacle === 'reliquary_coffer'
@@ -1268,36 +1360,42 @@ export class AppController {
             : ''
         }
 
-        <div class="chronicle-feed-panel war-counsel-box">
-          <div class="gothic-eyebrow">👑 ${hero.shortName.toUpperCase()}'S STORY COUNSEL</div>
-          ${
-            snap.levelData?.lore
-              ? `<p class="war-story-whisper">"${snap.levelData.lore}"</p>`
-              : ''
-          }
-          <p class="war-counsel-text">
-            💡 ${snap.levelData?.tip || hero.storyCounsel || 'Hold the center tiles and build intersecting lines to score rapidly.'}
-          </p>
-        </div>
+        ${
+          this.showTacticalIntel
+            ? `
+              <div class="chronicle-feed-panel war-counsel-box">
+                <div class="gothic-eyebrow">${renderGothicIconSVG('crown')} ${hero.shortName.toUpperCase()}'S STORY COUNSEL</div>
+                ${
+                  snap.levelData?.lore
+                    ? `<p class="war-story-whisper">"${snap.levelData.lore}"</p>`
+                    : ''
+                }
+                <p class="war-counsel-text">
+                  ${snap.levelData?.tip || hero.storyCounsel || 'Hold the center tiles and build intersecting lines to score rapidly.'}
+                </p>
+              </div>
 
-        <div class="chronicle-feed-panel chest-odds-panel">
-          <div class="gothic-eyebrow">📦 MYSTERY CHEST REWARDS</div>
-          <div class="chest-odds-badges">
-            ${V1_BOX_ODDS.map(
-              (o) => `<span class="odds-chip" title="${o.label}">${o.icon} ${o.pct}%</span>`
-            ).join('')}
-          </div>
-        </div>
+              <div class="chronicle-feed-panel chest-odds-panel">
+                <div class="gothic-eyebrow">${renderGothicIconSVG('chest')} MYSTERY CHEST REWARDS</div>
+                <div class="chest-odds-badges">
+                  ${V1_BOX_ODDS.map(
+                    (o) => `<span class="odds-chip" title="${o.label}">${o.icon} <span class="tabular-num">${o.pct}%</span></span>`
+                  ).join('')}
+                </div>
+              </div>
 
-        <div class="chronicle-feed-panel">
-          <div class="gothic-eyebrow">BATTLE LOG</div>
-          <ul class="chronicle-list">
-            ${snap.battleChronicle
-              .slice(0, 4)
-              .map((entry) => `<li class="chron-${entry.type}">[T${entry.turn}] ${entry.text}</li>`)
-              .join('')}
-          </ul>
-        </div>
+              <div class="chronicle-feed-panel">
+                <div class="gothic-eyebrow">BATTLE LOG</div>
+                <ul class="chronicle-list">
+                  ${snap.battleChronicle
+                    .slice(0, 4)
+                    .map((entry) => `<li class="chron-${entry.type}">[T${entry.turn}] ${entry.text}</li>`)
+                    .join('')}
+                </ul>
+              </div>
+            `
+            : ''
+        }
       </aside>
 
       <!-- BOTTOM DOCK: V1 LEVEL 1-2 SEALED BANNER OR LEVEL 3+ 3-SLOT SHOP & HAND -->
@@ -1309,7 +1407,7 @@ export class AppController {
             ${renderGothicIconSVG('bell')}
             <div>
               <div class="bell-label">WAR-HORN ULTIMATE</div>
-              <div class="bell-pct">${
+              <div class="bell-pct tabular-num">${
                 snap.bellUsedThisMatch.X ? 'UNLEASHED' : `${Math.floor(snap.bellCharge.X)}%`
               }</div>
             </div>
@@ -1320,7 +1418,7 @@ export class AppController {
           !snap.cardsEnabled
             ? `
               <div class="v1-sealed-scrolls-banner gothic-card-panel">
-                <div class="sealed-icon">🌱</div>
+                <div class="sealed-icon">${renderGothicIconSVG('leaf')}</div>
                 <div class="sealed-copy">
                   <div class="gothic-eyebrow">RELAXED WARMUP STAGE • LEVELS 1 & 2</div>
                   <h4>WAR-SCROLL SHOP & CARDS UNLOCK AT LEVEL 3</h4>
@@ -1334,13 +1432,13 @@ export class AppController {
                 <div class="v1-shop-strip gothic-card-panel">
                   <div class="v1-shop-header">
                     <div>
-                      <span class="shop-title">🏪 WAR-SCROLL SHOP</span>
-                      <span class="shop-sub">Buy with 🪙 Gold • Bought Scrolls Cast FREE</span>
+                      <span class="shop-title">${renderGothicIconSVG('shop')} WAR-SCROLL SHOP</span>
+                      <span class="shop-sub">Buy with Gold • Bought Scrolls Cast FREE</span>
                     </div>
                     <button class="btn-shop-reroll" data-action="reroll-shop" ${
                       snap.tithe.X >= snap.shopRerollCost ? '' : 'disabled'
                     }>
-                      🔄 Reroll (${snap.shopRerollCost}🪙)
+                      ${renderGothicIconSVG('refresh')} Reroll (${snap.shopRerollCost})
                     </button>
                   </div>
                   <div class="v1-shop-slots">
@@ -1357,17 +1455,22 @@ export class AppController {
                         return `
                           <div class="v1-shop-slot ${slot.locked ? 'locked' : ''}">
                             <div class="shop-slot-top">
-                              <span class="shop-slot-price">🪙 ${price}</span>
-                              <button class="shop-lock-btn" data-action="lock-shop-slot" data-slot="${sIdx}" title="Lock/Unlock Slot">
-                                ${slot.locked ? '🔒' : '🔓'}
+                              <span class="shop-slot-price tabular-num">${renderGothicIconSVG('coin')} ${price}</span>
+                              <button class="shop-lock-btn" data-action="lock-shop-slot" data-slot="${sIdx}" aria-label="${slot.locked ? 'Unlock Shop Slot' : 'Lock Shop Slot'}" title="Lock/Unlock Slot">
+                                ${renderGothicIconSVG(slot.locked ? 'lock' : 'unlock')}
                               </button>
                             </div>
-                            <div class="shop-slot-name">${c.name}</div>
-                            <div class="shop-slot-desc">${c.desc}</div>
+                            <div class="shop-slot-body">
+                              <div class="shop-slot-art">${renderTarotArtSVG(c)}</div>
+                              <div class="shop-slot-copy">
+                                <div class="shop-slot-name">${c.name}</div>
+                                <div class="shop-slot-desc">${c.desc}</div>
+                              </div>
+                            </div>
                             <button class="btn-shop-buy" ${
                               canBuy ? '' : 'disabled'
                             } data-action="buy-shop-card" data-slot="${sIdx}">
-                              BUY (${price}🪙)
+                              BUY (${price})
                             </button>
                           </div>
                         `;
@@ -1379,7 +1482,7 @@ export class AppController {
                 <div class="dark-tarot-hand" role="list" aria-label="War-Scroll Hand">
                   ${
                     snap.hands.X.length === 0
-                      ? `<div class="empty-hand-hint">Hand Empty — Buy War-Scrolls from the Shop (Left) or Claim 📦 Mystery Chests!</div>`
+                      ? `<div class="empty-hand-hint">Hand Empty — Buy War-Scrolls from the Shop (Left) or Claim Mystery Chests on the 3D Board!</div>`
                       : snap.hands.X.map((inst, idx) => {
                           const card = inst.card;
                           if (!card) return '';
@@ -1390,11 +1493,11 @@ export class AppController {
                           return `
                             <div class="tarot-hand-card ${selected ? 'selected' : ''} ${
                             affordable ? 'affordable' : 'unaffordable'
-                          }" data-action="select-card" data-index="${idx}">
+                          }" role="listitem" tabindex="0" data-action="select-card" data-index="${idx}" title="Hotkey [${idx + 1}] — ${card.name}">
                               <div class="tarot-card-header">
-                                <span class="tarot-roman">${card.numeral}</span>
-                                <span class="tarot-cost-gem">${
-                                  inst.paidInShop ? 'FREE' : `${card.cost}🪙`
+                                <span class="tarot-roman">[${idx + 1}] ${card.numeral}</span>
+                                <span class="tarot-cost-gem tabular-num">${
+                                  inst.paidInShop ? 'FREE' : `${card.cost}G`
                                 }</span>
                               </div>
                               <div class="tarot-card-illustration">
@@ -1411,7 +1514,7 @@ export class AppController {
             `
         }
 
-        <div class="camera-quick-dock">
+        <div class="camera-quick-dock" role="group" aria-label="3D Camera View">
           <div class="dock-caption">3D CAMERA VIEW</div>
           <div class="dock-cam-buttons">
             ${CAMERA_PRESETS.map(
@@ -1440,16 +1543,16 @@ export class AppController {
         : null;
 
     return `
-      <div class="endgame-modal-backdrop">
+      <div class="endgame-modal-backdrop" role="dialog" aria-modal="true" aria-label="Battle Result">
         <div class="endgame-modal-card gothic-card-panel">
-          <div class="gothic-eyebrow">${isWin ? '📖 STORY CHRONICLE ADVANCED' : '⚔️ THE WAR-TABLE AWAITS YOUR RETURN'}</div>
+          <div class="gothic-eyebrow">${isWin ? `${renderGothicIconSVG('book')} STORY CHRONICLE ADVANCED` : `${renderGothicIconSVG('sword')} THE WAR-TABLE AWAITS YOUR RETURN`}</div>
           <h2>${isWin ? 'VICTORY ON THE STAR-ALTAR' : 'REGROUP & TRY AGAIN'}</h2>
           <p class="endgame-score-summary">
             Final Score: <strong>${hero.shortName} ${snap.scores.X} VP</strong> — <strong>Commander ${snap.scores.O} VP</strong>
             <br/>Stones Shattered: <strong>${snap.stonesShatteredThisMatch}</strong>
             ${
               unlockedLvl3
-                ? `<br/><span class="unlock-callout">🔓 STORY MILESTONE UNLOCKED: The Ancient Scroll Vault is open! Level 3+ features Gold Coins and the 3-Slot War-Scroll Shop!</span>`
+                ? `<br/><span class="unlock-callout">STORY MILESTONE UNLOCKED: The Ancient Scroll Vault is open! Level 3+ features Gold Coins and the 3-Slot War-Scroll Shop!</span>`
                 : ''
             }
           </p>
@@ -1593,6 +1696,10 @@ export class AppController {
             break;
           case 'toggle-minigrid':
             this.showMiniTacticalGrid = !this.showMiniTacticalGrid;
+            this.render();
+            break;
+          case 'toggle-intel':
+            this.showTacticalIntel = !this.showTacticalIntel;
             this.render();
             break;
           case 'undo-move':

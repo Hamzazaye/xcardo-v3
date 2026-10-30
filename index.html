@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>XcardO — Warlords of the Obsidian Altar (Interactive 3D Edition)</title>
     <meta
       name="description"
@@ -14,14 +14,18 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles/main.css" />
   </head>
   <body>
     <!-- Full-Screen Interactive 3D WebGL Fantasy War-Table Viewport -->
-    <canvas id="gothic-3d-canvas" aria-label="Interactive 3D Fantasy War-Table"></canvas>
+    <canvas
+      id="gothic-3d-canvas"
+      role="img"
+      aria-label="Interactive 3D Fantasy War-Table. Drag to orbit camera, scroll to zoom, click tiles to deploy Champions."
+    ></canvas>
 
     <!-- Peripheral Wrought-Iron & Stained-Glass HUD Layer -->
     <div id="app-root"></div>

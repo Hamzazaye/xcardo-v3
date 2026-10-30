@@ -78,6 +78,17 @@ export class GothicScene3D {
     this.renderer = null;
     this._rafId = null;
     this._lastTime = 0;
+    this.reducedMotion = false;
+
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+      this.reducedMotion = Boolean(mq.matches);
+      if (typeof mq.addEventListener === 'function') {
+        mq.addEventListener('change', (e) => {
+          this.reducedMotion = Boolean(e.matches);
+        });
+      }
+    }
 
     this._setupLighting();
     this.rebuildAltar(5, 'obsidian_nave', null);
@@ -766,6 +777,7 @@ export class GothicScene3D {
           this.orbitVelocity.theta = dTheta * 0.55;
           this.orbitVelocity.phi = dPhi * 0.55;
           this.lastDragPos = { x: e.clientX, y: e.clientY };
+          if (this.canvas.style) this.canvas.style.cursor = 'grabbing';
           return;
         }
       }
@@ -773,15 +785,19 @@ export class GothicScene3D {
       // Raycast against Altar Stone Tiles & Pieces for hover preview + subtle cursor parallax
       this.pointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       this.pointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-      this.pointerParallax.x = this.pointerNDC.x * 0.024;
-      this.pointerParallax.y = this.pointerNDC.y * 0.016;
+      this.pointerParallax.x = this.reducedMotion ? 0 : this.pointerNDC.x * 0.024;
+      this.pointerParallax.y = this.reducedMotion ? 0 : this.pointerNDC.y * 0.016;
       const hitTile = this._raycastAltarTile();
+      if (this.canvas.style) {
+        this.canvas.style.cursor = hitTile ? 'pointer' : 'grab';
+      }
       this.bus.emit('3d:tileHover', hitTile);
     });
 
     window.addEventListener('pointerup', (e) => {
       if (!this.isPointerDownOnCanvas) return;
       this.isPointerDownOnCanvas = false;
+      if (this.canvas.style) this.canvas.style.cursor = 'grab';
 
       const clickDuration = performance.now() - this.pointerDownTime;
       const totalDist = Math.hypot(
@@ -1118,6 +1134,11 @@ export class GothicScene3D {
     if (this._rafId) return;
     this._lastTime = performance.now();
     const tick = (now) => {
+      if (typeof document !== 'undefined' && document.hidden) {
+        this._lastTime = now;
+        this._rafId = requestAnimationFrame(tick);
+        return;
+      }
       const dt = Math.min(0.05, (now - this._lastTime) / 1000);
       this._lastTime = now;
       this.stepFrame(dt, now / 1000);
