@@ -53,6 +53,7 @@ export class AppController {
     this.seerHintCoord = null;
     this.showThreatScan = false;
     this.showMiniTacticalGrid = false;
+    this.showStoryModal = false;
     this.toastMessage = null;
     this.toastTimer = null;
 
@@ -79,11 +80,11 @@ export class AppController {
       INQUISITOR_BOSSES.find((b) => b.id === currentAct.bossId) || INQUISITOR_BOSSES[0];
 
     this.scene3d.rebuildAltar(5, state.equippedHall || 'obsidian_nave', currentBoss);
+    // Strictly 2 stone types on the War-Table: Your Golden Champion (X) vs Enemy Crimson Warlord (O)
     this.scene3d.placePieceImmediate(2, 2, 'X', 0);
     this.scene3d.placePieceImmediate(1, 2, 'O', 0);
     this.scene3d.placePieceImmediate(2, 1, 'O', 0);
     this.scene3d.placePieceImmediate(3, 3, 'X', 0);
-    this.scene3d.placePieceImmediate(1, 3, 'W', 0);
   }
 
   _bindEvents() {
@@ -523,35 +524,35 @@ export class AppController {
     const totalStars = Object.values(state.completedLevels || {}).reduce((a, b) => a + b, 0);
     return `
       <header class="sanctum-topbar">
-        <div class="brand-cluster" data-action="nav" data-screen="hub">
-          <div class="brand-rose-mini">${renderRoseWindowSVG(36)}</div>
-          <div>
-            <div class="brand-title">XCARDO</div>
-            <div class="brand-subtitle">CHRONICLE OF THE STAR-STONES</div>
-          </div>
+        <div class="brand-cluster" data-action="nav" data-screen="hub" title="XcardO Home">
+          <img src="assets/logo-xcardo-nav.jpg" alt="XCARDO" class="brand-logo-nav" />
+          <span class="sr-only">XCARDO</span>
         </div>
 
         <nav class="sanctum-nav-tabs" aria-label="Main Navigation">
-          <button class="nav-tab-btn ${activeTab === 'hub' ? 'active' : ''}" data-action="nav" data-screen="hub">🏰 Sanctuary</button>
-          <button class="nav-tab-btn ${activeTab === 'campaign' ? 'active' : ''}" data-action="nav" data-screen="campaign">📖 Story Map</button>
-          <button class="nav-tab-btn ${activeTab === 'reliquary' ? 'active' : ''}" data-action="nav" data-screen="reliquary">👑 Heroes & Forge</button>
-          <button class="nav-tab-btn ${activeTab === 'codex' ? 'active' : ''}" data-action="nav" data-screen="codex">📜 Scroll Guide</button>
-          <button class="nav-tab-btn ${activeTab === 'skirmish' || activeTab === 'crypt' ? 'active' : ''}" data-action="nav" data-screen="skirmish">🎲 Free Play</button>
+          <button class="nav-tab-btn ${activeTab === 'hub' ? 'active' : ''}" data-action="nav" data-screen="hub">🏰 Play</button>
+          <button class="nav-tab-btn ${activeTab === 'campaign' ? 'active' : ''}" data-action="nav" data-screen="campaign">🗺️ Map</button>
+          <button class="nav-tab-btn ${activeTab === 'reliquary' ? 'active' : ''}" data-action="nav" data-screen="reliquary">👑 Heroes</button>
+          <button class="nav-tab-btn ${activeTab === 'codex' ? 'active' : ''}" data-action="nav" data-screen="codex">📜 Cards</button>
+          <button class="nav-tab-btn ${activeTab === 'skirmish' || activeTab === 'crypt' ? 'active' : ''}" data-action="nav" data-screen="skirmish">🎲 Modes</button>
         </nav>
 
         <div class="sanctum-currencies">
-          <div class="currency-pill" title="Active Companion Hero">
+          <div class="currency-pill" title="${hero.name}">
             <span>👑</span>
-            <span>${hero.shortName}</span>
+            <span>${hero.shortName.split(' ').pop()}</span>
           </div>
-          <div class="currency-pill" title="Story Stars Earned">
+          <div class="currency-pill" title="Stars">
             <span>★</span>
-            <span>${totalStars} Stars</span>
+            <span>${totalStars}</span>
           </div>
-          <div class="currency-pill" title="Royal Sigils">
+          <div class="currency-pill" title="Sigils">
             ${renderGothicIconSVG('sigil')}
             <span>${state.reliquarySigils}</span>
           </div>
+          <button class="icon-btn" data-action="cycle-camera" title="Switch 3D Camera (C)">
+            ${renderGothicIconSVG('camera')}
+          </button>
         </div>
       </header>
     `;
@@ -566,135 +567,141 @@ export class AppController {
     const currentBoss =
       INQUISITOR_BOSSES.find((b) => b.id === currentAct.bossId) || INQUISITOR_BOSSES[0];
     const hero = getFantasyHeroById(state.selectedHeroId);
-    const totalStars = Object.values(state.completedLevels || {}).reduce((a, b) => a + b, 0);
+    const shortActTitle = currentAct.name.replace(/^Chapter [IVX]+:\s*/i, '');
 
     return `
       ${this._renderTopNav('hub')}
-      <main class="hub-comfort-layout">
-        <!-- LEFT CARD: THE LIVING STORY CHRONICLE & YOUR COMPANION HERO -->
-        <section class="hub-story-column">
-          <div class="gothic-card-panel story-chronicle-card">
-            <div class="story-chapter-pill" style="--act-color:${currentAct.themeColor}">
-              📖 CHAPTER ${currentAct.roman} OF VI • ${currentAct.name.toUpperCase()}
-            </div>
-            <h2 class="story-chapter-heading">${currentAct.subtitle}</h2>
-            <p class="story-chapter-narrative">
-              ${currentAct.storySummary || currentAct.lore}
-            </p>
-            <div class="story-goal-banner">
-              <span>🎯 <strong>Chapter Goal:</strong> ${currentAct.storyGoal || 'Defeat the Chapter Warlord to reclaim the Star-Stone.'}</span>
-            </div>
+      <main class="hub-comfort-layout hub-visual-max">
+        <!-- TOP-CENTER FLOATING NANO BANANA MASTER LOGO CREST & VISUAL STORY TRIGGER -->
+        <section class="hub-logo-centerpiece">
+          <div class="master-logo-crest-frame">
+            <img src="assets/logo-xcardo-crest.jpg" alt="XcardO Master Crest" class="master-logo-crest-img" />
+          </div>
+          <div class="chapter-visual-ribbon">
+            <span class="ribbon-chapter-tag" style="--act-color:${currentAct.themeColor}">
+              CHAPTER ${currentAct.roman} • ${shortActTitle.toUpperCase()}
+            </span>
+            <button class="ribbon-story-btn" data-action="toggle-story-modal" title="View Chapter Storyboard">
+              📖 Story
+            </button>
+          </div>
+        </section>
 
-            <div class="story-divider"></div>
-
-            <!-- ACTIVE HERO COMPANION & COUNSEL -->
-            <div class="gothic-eyebrow">YOUR CHAMPION & STORY COMPANION</div>
-            <div class="character-showcase-row">
-              <div class="character-portrait-frame hero-frame" style="--char-color:${hero.color}">
+        <!-- BOTTOM DOCK: PURE VISUAL DUEL & 3-BUTTON ACTION DECK (MINIMAL TEXT, MAX ART) -->
+        <section class="hub-bottom-visual-dock">
+          <!-- LEFT: YOUR CHAMPION VISUAL MEDALLION + 6-AVATAR SWITCHER -->
+          <div class="gothic-card-panel story-chronicle-card visual-hero-card">
+            <div class="visual-duel-row">
+              <div class="visual-portrait-big hero-frame" style="--char-color:${hero.color}">
                 ${renderFantasyHeroPortraitSVG(hero.id, hero.color)}
               </div>
-              <div class="character-meta">
-                <span class="char-class-badge" style="color:${hero.accent}">${hero.classTitle}</span>
-                <h3 class="char-name">${hero.name}</h3>
-                <div class="char-title-sub">${hero.title} · <em>${hero.weapon}</em></div>
-                <p class="hero-counsel-quote">"${hero.storyCounsel || hero.lore}"</p>
-                <div class="char-passive-box">
-                  <strong>✨ Hero Blessing:</strong> ${hero.passiveDesc}
-                </div>
+              <div class="visual-char-info">
+                <span class="visual-role-pill" style="color:${hero.accent}">YOUR CHAMPION</span>
+                <h2 class="visual-char-name">${hero.shortName}</h2>
+                <span class="visual-passive-chip">${hero.shortPassive || '☀️ +1 Start Gold'}</span>
               </div>
             </div>
 
-            <div class="hero-quick-roster-label">SWITCH COMPANION HERO:</div>
-            <div class="hero-quick-roster-strip">
+            <div class="visual-avatar-strip" aria-label="Switch Champion">
               ${FANTASY_HEROES.map(
                 (h) => `
-                  <button class="hero-mini-Roster-btn ${h.id === hero.id ? 'active' : ''}" data-action="select-hero" data-hero="${h.id}" title="${h.name} (${h.classTitle}) — ${h.passiveDesc}">
-                    <div class="hero-mini-avatar">${renderFantasyHeroPortraitSVG(h.id, h.color)}</div>
-                    <span>${h.shortName.split(' ').pop()}</span>
+                  <button class="visual-avatar-btn ${h.id === hero.id ? 'active' : ''}" data-action="select-hero" data-hero="${h.id}" title="${h.name} — ${h.shortPassive || h.passiveDesc}" style="--char-color:${h.color}">
+                    ${renderFantasyHeroPortraitSVG(h.id, h.color)}
                   </button>
                 `
               ).join('')}
             </div>
           </div>
-        </section>
 
-        <!-- CENTER: OPEN, PEACEFUL 3D WAR-TABLE VIEWPORT PILL -->
-        <section class="hub-center-open">
-          <div class="table-floating-pill">
-            <span>✨ Interactive 3D War-Table — Drag to Orbit</span>
-            <div class="table-pill-actions">
-              <button class="pill-mini-btn" data-action="cycle-camera" title="Change 3D Camera Angle">
-                📷 Camera Angle
+          <!-- CENTER: ICONIC PLAY STAGE BUTTON & 3 QUICK TILES -->
+          <div class="hub-center-action-pod">
+            <div class="stage-visual-chips">
+              <span class="stage-chip">STAGE #${nextLevel.level}</span>
+              <span class="stage-chip">${nextLevel.boardSize}×${nextLevel.boardSize}</span>
+              <span class="stage-chip ${nextLevel.cardsEnabled ? 'chip-shop' : 'chip-pure'}">
+                ${nextLevel.cardsEnabled ? '🏪 Shop Open' : '🌱 Pure Board'}
+              </span>
+            </div>
+
+            <button class="btn-gothic-primary btn-play-monumental" data-action="start-level" data-level="${nextLevel.level}">
+              ${renderGothicIconSVG('sword')}
+              <span>PLAY STAGE #${nextLevel.level}</span>
+            </button>
+
+            <div class="hub-mini-tiles-row">
+              <button class="mini-visual-tile" data-action="nav" data-screen="campaign">
+                <span>🗺️</span>
+                <small>Map</small>
               </button>
-              <button class="pill-mini-btn" data-action="demo-shatter" title="Preview 3D Stone Shatter Physics">
-                ✨ Test Shatter
+              <button class="mini-visual-tile" data-action="nav" data-screen="skirmish">
+                <span>🎲</span>
+                <small>Modes</small>
+              </button>
+              <button class="mini-visual-tile" data-action="nav" data-screen="reliquary">
+                <span>👑</span>
+                <small>Forge</small>
+              </button>
+              <button class="mini-visual-tile" data-action="demo-shatter" title="Test 3D Stone Shatter">
+                <span>✨</span>
+                <small>Shatter</small>
               </button>
             </div>
           </div>
-        </section>
 
-        <!-- RIGHT CARD: CALM, STRESS-FREE JOURNEY & PLAY MENU -->
-        <section class="hub-play-column">
-          <div class="gothic-card-panel hub-journey-card">
-            <div class="journey-stage-top">
-              <span class="journey-stage-badge">STAGE #${nextLevel.level} OF 36</span>
-              <span class="journey-stars-badge">★ ${totalStars} / 108 Stars</span>
-            </div>
-
-            <h2 class="hub-spotlight-title">${nextLevel.name}</h2>
-            <p class="hub-lore-quote">"${nextLevel.lore}"</p>
-
-            <!-- RIVAL COMMANDER MINI PREVIEW -->
-            <div class="rival-mini-banner">
-              <div class="rival-mini-avatar" style="--char-color:${currentBoss.color}">
+          <!-- RIGHT: RIVAL WARLORD VISUAL MEDALLION -->
+          <div class="gothic-card-panel hub-journey-card visual-boss-card">
+            <div class="visual-duel-row boss-duel-row">
+              <div class="visual-char-info boss-char-info">
+                <span class="visual-role-pill enemy-pill">CHAPTER RIVAL</span>
+                <h2 class="visual-char-name">${currentBoss.name}</h2>
+                <span class="visual-passive-chip enemy-chip">⚔️ ${nextLevel.name}</span>
+              </div>
+              <div class="visual-portrait-big boss-frame" style="--char-color:${currentBoss.color}">
                 ${renderBossCrestSVG(currentBoss.id, currentBoss.color)}
               </div>
-              <div class="rival-mini-info">
-                <div class="rival-mini-label">OPPOSING CHAPTER COMMANDER</div>
-                <div class="rival-mini-name">${currentBoss.name} <span>· ${currentBoss.title}</span></div>
-                <div class="rival-mini-specs">${nextLevel.boardSize}×${nextLevel.boardSize} Board • First to ${nextLevel.targetScore} VP</div>
-              </div>
             </div>
-
-            <!-- REASSURING V1 RULES COMFORT GUIDE -->
-            <div class="v1-rule-callout ${nextLevel.cardsEnabled ? 'cards-live' : 'cards-sealed'}">
-              ${
-                nextLevel.cardsEnabled
-                  ? `<span>🏪 <strong>3-Slot Scroll Shop Active:</strong> Earn Gold Coins as you score and buy helpful War-Scrolls during battle!</span>`
-                  : `<span>🌱 <strong>Relaxed Warmup (Levels 1 & 2):</strong> Pure board strategy — align 3 stones to score! No cards or shop to worry about until Level 3.</span>`
-              }
-            </div>
-
-            <!-- 3 CALM, CLEAR PRIMARY ACTIONS -->
-            <div class="hub-calm-actions">
-              <button class="btn-gothic-primary btn-play-heroic" data-action="start-level" data-level="${nextLevel.level}">
-                ${renderGothicIconSVG('sword')}
-                <div class="btn-play-text">
-                  <strong>Continue Story — Level #${nextLevel.level}</strong>
-                  <small>${nextLevel.name} (${nextLevel.boardSize}×${nextLevel.boardSize} Table)</small>
-                </div>
-              </button>
-
-              <div class="hub-secondary-row">
-                <button class="btn-gothic-secondary" data-action="nav" data-screen="campaign">
-                  📖 Story Map (36 Levels)
-                </button>
-                <button class="btn-gothic-secondary" data-action="nav" data-screen="skirmish">
-                  🎲 Free Play & Puzzles
-                </button>
-              </div>
-
-              <div class="hub-quiet-links">
-                <button class="btn-quiet-link" data-action="nav" data-screen="reliquary">
-                  👑 Customize Heroes & 3D Board
-                </button>
-                <button class="btn-quiet-link" data-action="nav" data-screen="codex">
-                  📜 View 20 War-Scrolls
-                </button>
-              </div>
+            <div class="boss-progress-dots" title="Chapter Progress">
+              ${Array.from({ length: 6 }, (_, i) => {
+                const stg = (currentAct.id - 1) * 6 + i + 1;
+                const done = Boolean(state.completedLevels && state.completedLevels[stg]);
+                const curr = stg === nextLevel.level;
+                return `<span class="chapter-dot ${done ? 'done' : ''} ${curr ? 'current' : ''}"></span>`;
+              }).join('')}
             </div>
           </div>
         </section>
+
+        ${
+          this.showStoryModal
+            ? `
+              <div class="story-modal-backdrop" data-action="toggle-story-modal">
+                <div class="story-storyboard-modal gothic-card-panel" onclick="event.stopPropagation()">
+                  <div class="storyboard-header">
+                    <span class="gothic-eyebrow">📖 VISUAL STORY CHRONICLE • CHAPTER ${currentAct.roman}</span>
+                    <button class="icon-btn" data-action="toggle-story-modal">✕</button>
+                  </div>
+                  <div class="storyboard-cards-grid">
+                    <div class="storyboard-card">
+                      <div class="storyboard-art">${renderRoseWindowSVG(88)}</div>
+                      <h4>I. ${shortActTitle}</h4>
+                      <p>${currentAct.storySummary}</p>
+                    </div>
+                    <div class="storyboard-card">
+                      <div class="storyboard-art" style="--char-color:${hero.color}">${renderFantasyHeroPortraitSVG(hero.id, hero.color)}</div>
+                      <h4>II. ${hero.shortName}'s Counsel</h4>
+                      <p>"${hero.storyCounsel}"</p>
+                    </div>
+                    <div class="storyboard-card">
+                      <div class="storyboard-art" style="--char-color:${currentBoss.color}">${renderBossCrestSVG(currentBoss.id, currentBoss.color)}</div>
+                      <h4>III. Rival: ${currentBoss.name}</h4>
+                      <p>🎯 ${currentAct.storyGoal}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `
+            : ''
+        }
       </main>
     `;
   }
@@ -1430,6 +1437,11 @@ export class AppController {
             break;
           case 'select-act':
             this.selectedActId = Number(el.getAttribute('data-act') || 1);
+            this.render();
+            break;
+          case 'toggle-story-modal':
+            this.showStoryModal = !this.showStoryModal;
+            this.sound?.playUIHover();
             this.render();
             break;
           case 'select-hero': {

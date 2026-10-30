@@ -1987,11 +1987,461 @@ body {
   color: var(--text-parchment);
 }
 
+/* ============================================================================
+   NANO BANANA MASTER LOGO & MAX-DESIGN / MIN-TEXT MAIN MENU
+   ============================================================================ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.brand-logo-nav {
+  height: 44px;
+  width: auto;
+  border-radius: 6px;
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.45));
+  display: block;
+}
+
+.hub-visual-max {
+  flex: 1;
+  display: flex !important;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0 6px;
+  pointer-events: none;
+}
+
+/* Top-Center Floating Master Logo Crest */
+.hub-logo-centerpiece {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: -2px;
+  pointer-events: none;
+}
+
+.master-logo-crest-frame {
+  width: min(390px, 46vw);
+  max-height: 185px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.92)) drop-shadow(0 0 26px rgba(245, 158, 11, 0.35));
+}
+
+.master-logo-crest-img {
+  width: 100%;
+  height: auto;
+  max-height: 185px;
+  object-fit: contain;
+  mix-blend-mode: screen;
+  -webkit-mask-image: radial-gradient(ellipse 78% 76% at 50% 50%, #000 68%, transparent 100%);
+  mask-image: radial-gradient(ellipse 78% 76% at 50% 50%, #000 68%, transparent 100%);
+}
+
+.chapter-visual-ribbon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 4px 14px;
+  border-radius: 99px;
+  background: rgba(14, 10, 24, 0.88);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(245, 196, 105, 0.42);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.78);
+  pointer-events: auto;
+}
+
+.ribbon-chapter-tag {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--gold-bright);
+}
+
+.ribbon-story-btn {
+  background: linear-gradient(180deg, rgba(245, 158, 11, 0.3), rgba(180, 83, 9, 0.45));
+  border: 1px solid var(--gold-bright);
+  color: #fffbeb;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.ribbon-story-btn:hover {
+  background: linear-gradient(180deg, #f59e0b, #b45309);
+  transform: scale(1.04);
+}
+
+/* Bottom Visual Dock: Left Hero Medallion • Center Play Pod • Right Boss Medallion */
+.hub-bottom-visual-dock {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 340px 1fr 320px;
+  align-items: end;
+  gap: 18px;
+  pointer-events: none;
+}
+
+.visual-hero-card,
+.visual-boss-card,
+.hub-center-action-pod,
+.story-modal-backdrop {
+  pointer-events: auto;
+}
+
+.visual-hero-card,
+.visual-boss-card {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: linear-gradient(165deg, rgba(20, 15, 32, 0.9), rgba(10, 8, 18, 0.95));
+  border: 1.5px solid rgba(245, 196, 105, 0.42);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.85);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.visual-boss-card {
+  border-color: rgba(225, 29, 72, 0.45);
+}
+
+.visual-duel-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.boss-duel-row {
+  justify-content: space-between;
+}
+
+.visual-portrait-big {
+  width: 86px;
+  height: 86px;
+  flex-shrink: 0;
+  border-radius: 14px;
+  background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.14), rgba(8, 6, 14, 0.96));
+  border: 2px solid var(--char-color, var(--gold-bright));
+  box-shadow: 0 0 22px color-mix(in srgb, var(--char-color, #f59e0b) 45%, transparent);
+  padding: 3px;
+}
+
+.visual-portrait-big svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.visual-char-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.boss-char-info {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.visual-role-pill {
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--gold-bright);
+}
+
+.visual-role-pill.enemy-pill {
+  color: #fb7185;
+}
+
+.visual-char-name {
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+  font-weight: 800;
+  color: #fffbeb;
+  line-height: 1.15;
+}
+
+.visual-passive-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  color: var(--gold-bright);
+  font-family: var(--font-display);
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.visual-passive-chip.enemy-chip {
+  background: rgba(225, 29, 72, 0.18);
+  border-color: rgba(244, 63, 94, 0.45);
+  color: #fda4af;
+}
+
+/* 6-Avatar Pure Portrait Switcher Strip (Zero Text Clutter) */
+.visual-avatar-strip {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(212, 168, 83, 0.2);
+}
+
+.visual-avatar-btn {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  background: rgba(24, 18, 38, 0.9);
+  border: 1.5px solid rgba(212, 168, 83, 0.28);
+  padding: 2px;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.visual-avatar-btn svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.visual-avatar-btn:hover,
+.visual-avatar-btn.active {
+  border-color: var(--char-color, var(--gold-bright));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--char-color, #f59e0b) 65%, transparent);
+  transform: translateY(-3px) scale(1.05);
+}
+
+/* Center Action Pod: Big Play Button + 4 Visual Icon Tiles */
+.hub-center-action-pod {
+  justify-self: center;
+  width: 100%;
+  max-width: 350px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+}
+
+.stage-visual-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.stage-chip {
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: rgba(14, 10, 24, 0.88);
+  border: 1px solid rgba(212, 168, 83, 0.38);
+  font-family: var(--font-display);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--gold-bright);
+}
+
+.stage-chip.chip-pure {
+  border-color: rgba(56, 189, 248, 0.55);
+  color: #bae6fd;
+}
+
+.stage-chip.chip-shop {
+  border-color: rgba(52, 211, 153, 0.55);
+  color: #a7f3d0;
+}
+
+.btn-play-monumental {
+  width: 100%;
+  padding: 15px 24px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f59e0b 0%, #b45309 100%);
+  border: 2px solid #fef08a;
+  color: #fffbeb;
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  box-shadow: 0 12px 32px rgba(245, 158, 11, 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.btn-play-monumental:hover:not(:disabled) {
+  background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 14px 36px rgba(251, 191, 36, 0.72);
+}
+
+.hub-mini-tiles-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+}
+
+.mini-visual-tile {
+  background: rgba(18, 13, 30, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(212, 168, 83, 0.34);
+  border-radius: 10px;
+  padding: 7px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  color: var(--text-parchment);
+  transition: all 0.16s ease;
+}
+
+.mini-visual-tile span {
+  font-size: 1.05rem;
+}
+
+.mini-visual-tile small {
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--gold-bright);
+}
+
+.mini-visual-tile:hover {
+  border-color: var(--gold-bright);
+  background: rgba(245, 158, 11, 0.22);
+  transform: translateY(-2px);
+}
+
+/* Chapter Progress Dots on Boss Card */
+.boss-progress-dots {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(225, 29, 72, 0.22);
+}
+
+.chapter-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(212, 168, 83, 0.4);
+}
+
+.chapter-dot.done {
+  background: #34d399;
+  border-color: #a7f3d0;
+  box-shadow: 0 0 8px #34d399;
+}
+
+.chapter-dot.current {
+  background: #f59e0b;
+  border-color: #fef08a;
+  box-shadow: 0 0 10px #f59e0b;
+  transform: scale(1.2);
+}
+
+/* On-Demand Visual 3-Card Storyboard Modal */
+.story-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 4, 12, 0.84);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 90;
+}
+
+.story-storyboard-modal {
+  width: min(860px, 94vw);
+  padding: 22px 24px;
+  border-radius: 16px;
+  border: 1.5px solid var(--gold-bright);
+}
+
+.storyboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.storyboard-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.storyboard-card {
+  background: rgba(22, 16, 36, 0.92);
+  border: 1px solid rgba(212, 168, 83, 0.35);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.storyboard-art {
+  width: 84px;
+  height: 84px;
+  border-radius: 12px;
+  padding: 4px;
+  border: 1.5px solid var(--char-color, var(--gold-bright));
+  background: rgba(10, 8, 18, 0.9);
+}
+
+.storyboard-art svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.storyboard-card h4 {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  color: var(--gold-bright);
+}
+
+.storyboard-card p {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-parchment);
+}
+
 /* Responsive Adjustments */
 @media (max-width: 1180px) {
   .hub-main-grid,
   .hub-comfort-layout {
     grid-template-columns: 340px 1fr 340px;
+  }
+  .hub-bottom-visual-dock {
+    grid-template-columns: 300px 1fr 290px;
   }
   .act-story-showcase {
     grid-template-columns: 1fr;
@@ -2000,7 +2450,9 @@ body {
 
 @media (max-width: 960px) {
   .hub-main-grid,
-  .hub-comfort-layout {
+  .hub-comfort-layout,
+  .hub-bottom-visual-dock,
+  .storyboard-cards-grid {
     grid-template-columns: 1fr;
     overflow-y: auto;
     pointer-events: auto;
