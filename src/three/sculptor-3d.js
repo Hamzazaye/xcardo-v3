@@ -71,269 +71,557 @@ export function createPieceSculpture3D(symbol, sculptId, materialId, options = {
     opacity: isGhost ? 0.75 : 1.0,
   });
 
-  // 1. Stepped Octagonal War-Table Plinth Base (shared across all war miniatures)
-  const baseLower = new THREE.Mesh(new THREE.CylinderGeometry(0.41, 0.45, 0.12, 8), primaryMat);
+  // 1. Stepped Octagonal War-Table Plinth Base with Corner Rivets & Faction Aura Ring
+  const baseLower = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.46, 0.12, 8), primaryMat);
   baseLower.position.y = 0.06;
   baseLower.castShadow = !isGhost;
   baseLower.receiveShadow = !isGhost;
   group.add(baseLower);
 
-  const baseUpper = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.39, 0.1, 8), primaryMat);
+  const baseUpper = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.4, 0.1, 8), primaryMat);
   baseUpper.position.y = 0.16;
   baseUpper.castShadow = !isGhost;
   baseUpper.receiveShadow = !isGhost;
   group.add(baseUpper);
 
-  const baseCollar = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.026, 8, 16), trimMat);
+  const baseCollar = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.028, 8, 20), trimMat);
   baseCollar.rotation.x = Math.PI / 2;
   baseCollar.position.y = 0.21;
   group.add(baseCollar);
 
-  // 2. Sculpted Fantasy War Character Upper Geometry
+  const baseAuraRing = new THREE.Mesh(new THREE.TorusGeometry(0.44, 0.015, 6, 24), glowMat);
+  baseAuraRing.rotation.x = Math.PI / 2;
+  baseAuraRing.position.y = 0.03;
+  group.add(baseAuraRing);
+
+  for (let rIdx = 0; rIdx < 4; rIdx++) {
+    const rAngle = (rIdx / 4) * Math.PI * 2 + Math.PI / 4;
+    const rivet = new THREE.Mesh(new THREE.OctahedronGeometry(0.032, 0), trimMat);
+    rivet.position.set(Math.cos(rAngle) * 0.39, 0.13, Math.sin(rAngle) * 0.39);
+    group.add(rivet);
+  }
+
+  // 2. Sculpted Fantasy War Character Upper Geometry (All 6 Heroes + 3 Enemy Types + Wild Idol)
   if (symbol === 'W') {
-    // Wild Joker Idol: Winged Valkyrie Trophy with Levitating Sunburst Halo
-    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.23, 0.34, 8), trimMat);
-    stem.position.y = 0.36;
+    // Wild Joker Idol: Winged Valkyrie Trophy with Levitating Double Sunburst Halo
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.24, 0.36, 8), trimMat);
+    stem.position.y = 0.37;
     stem.castShadow = !isGhost;
     group.add(stem);
 
     for (const dir of [-1, 1]) {
-      const wing = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.34, 0.18), trimMat);
-      wing.position.set(dir * 0.22, 0.62, -0.02);
+      const wing = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.38, 0.2), trimMat);
+      wing.position.set(dir * 0.24, 0.64, -0.02);
       wing.rotation.z = dir * -0.42;
       group.add(wing);
     }
 
-    const haloOuter = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.035, 10, 24), trimMat);
-    haloOuter.position.y = 0.68;
+    const haloOuter = new THREE.Mesh(new THREE.TorusGeometry(0.29, 0.036, 10, 24), trimMat);
+    haloOuter.position.y = 0.7;
+    haloOuter.userData.spinSpeed = 1.1;
     group.add(haloOuter);
 
     const haloInner = new THREE.Mesh(new THREE.TorusGeometry(0.21, 0.025, 8, 20), glowMat);
     haloInner.rotation.y = Math.PI / 4;
-    haloInner.position.y = 0.68;
-    haloInner.userData.spinSpeed = 1.8;
+    haloInner.position.y = 0.7;
+    haloInner.userData.spinSpeed = -2.0;
     group.add(haloInner);
 
     const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(0.15, 0), glowMat);
-    crystal.position.y = 0.68;
-    crystal.userData.spinSpeed = -2.4;
+    crystal.position.y = 0.7;
+    crystal.userData = { spinSpeed: 2.6, floatAmplitude: 0.04, baseY: 0.7 };
     group.add(crystal);
-  } else if (sculptId === 'templar_knight') {
-    // Valkyrie / Crusader War-Champion: Cuirass, Winged Great-Helm, Kite Shield & Sky-Lance
-    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.29, 0.36, 8), primaryMat);
-    torso.position.y = 0.38;
+  } else if (sculptId === 'templar_knight' && symbol !== 'O') {
+    // HERO 2 — Shieldmaiden Freya (Storm Valkyrie): Winged Silver Great-Helm, Valhallan Buckler & Gungnir Sky-Lance
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.29, 0.38, 8), primaryMat);
+    torso.position.y = 0.39;
     torso.castShadow = !isGhost;
     group.add(torso);
 
-    // Armored Shoulder Pauldrons & Helm Wings
+    const cape = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.42, 0.05), trimMat);
+    cape.position.set(0, 0.4, -0.18);
+    cape.rotation.x = 0.14;
+    group.add(cape);
+
+    // Armored Shoulder Pauldrons & Swept Valkyrie Helm Feather-Wings
     for (const dir of [-1, 1]) {
-      const pauldron = new THREE.Mesh(new THREE.DodecahedronGeometry(0.14, 0), primaryMat);
-      pauldron.position.set(dir * 0.25, 0.49, 0);
-      pauldron.scale.set(1.15, 0.85, 1.2);
+      const pauldron = new THREE.Mesh(new THREE.DodecahedronGeometry(0.145, 0), primaryMat);
+      pauldron.position.set(dir * 0.26, 0.51, 0);
+      pauldron.scale.set(1.18, 0.88, 1.2);
       pauldron.castShadow = !isGhost;
       group.add(pauldron);
 
-      const helmWing = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.26, 4), trimMat);
-      helmWing.position.set(dir * 0.19, 0.79, -0.02);
-      helmWing.rotation.z = dir * -0.45;
-      helmWing.rotation.x = -0.2;
-      group.add(helmWing);
+      const pauldronRim = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.018, 6, 12), trimMat);
+      pauldronRim.position.set(dir * 0.26, 0.51, 0);
+      pauldronRim.rotation.y = Math.PI / 2;
+      group.add(pauldronRim);
+
+      // Multi-feathered Valkyrie Wing on Helm
+      const wingPrimary = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.34, 4), trimMat);
+      wingPrimary.position.set(dir * 0.21, 0.84, -0.03);
+      wingPrimary.rotation.z = dir * -0.48;
+      wingPrimary.rotation.x = -0.22;
+      group.add(wingPrimary);
+
+      const wingSecondary = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.25, 4), glowMat);
+      wingSecondary.position.set(dir * 0.27, 0.76, -0.06);
+      wingSecondary.rotation.z = dir * -0.68;
+      wingSecondary.rotation.x = -0.25;
+      group.add(wingSecondary);
     }
 
-    // Great-Helm
+    // Great-Helm & Crowned Visor
     const helm = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.28, 8), primaryMat);
-    helm.position.y = 0.67;
+    helm.position.y = 0.69;
     helm.castShadow = !isGhost;
     group.add(helm);
 
-    const helmCrown = new THREE.Mesh(new THREE.ConeGeometry(0.17, 0.14, 8), trimMat);
-    helmCrown.position.y = 0.88;
+    const helmCrown = new THREE.Mesh(new THREE.ConeGeometry(0.17, 0.15, 8), trimMat);
+    helmCrown.position.y = 0.9;
     helmCrown.castShadow = !isGhost;
     group.add(helmCrown);
 
-    // Glowing Royal V-Visor & Forehead Star Gem (No Crosses)
     for (const dir of [-1, 1]) {
-      const eyeSlit = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.03, 0.06), glowMat);
-      eyeSlit.position.set(dir * 0.06, 0.69, 0.16);
+      const eyeSlit = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.032, 0.06), glowMat);
+      eyeSlit.position.set(dir * 0.06, 0.71, 0.16);
       eyeSlit.rotation.z = dir * -0.22;
       group.add(eyeSlit);
     }
-    const browGem = new THREE.Mesh(new THREE.OctahedronGeometry(0.045, 0), glowMat);
-    browGem.position.set(0, 0.76, 0.17);
+    const browGem = new THREE.Mesh(new THREE.OctahedronGeometry(0.05, 0), glowMat);
+    browGem.position.set(0, 0.78, 0.17);
     group.add(browGem);
 
-    // Upright Sky-Lance at right side
-    const lanceShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.028, 0.78, 6), trimMat);
-    lanceShaft.position.set(0.28, 0.56, 0.1);
+    // Left-Hand Round Valhallan Sun-Buckler Shield
+    const buckler = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.04, 12), trimMat);
+    buckler.rotation.z = Math.PI / 2;
+    buckler.rotation.y = 0.35;
+    buckler.position.set(-0.29, 0.46, 0.12);
+    group.add(buckler);
+
+    const bucklerBoss = new THREE.Mesh(new THREE.OctahedronGeometry(0.06, 0), glowMat);
+    bucklerBoss.position.set(-0.31, 0.46, 0.15);
+    group.add(bucklerBoss);
+
+    // Right-Hand Gungnir Sky-Lance with Storm Ring
+    const lanceShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.028, 0.84, 6), trimMat);
+    lanceShaft.position.set(0.29, 0.58, 0.1);
     group.add(lanceShaft);
-    const lanceTip = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.22, 4), glowMat);
-    lanceTip.position.set(0.28, 1.0, 0.1);
+
+    const lanceTip = new THREE.Mesh(new THREE.ConeGeometry(0.068, 0.25, 4), glowMat);
+    lanceTip.position.set(0.29, 1.06, 0.1);
     group.add(lanceTip);
-  } else if (sculptId === 'gargoyle_warden') {
-    // Dragon-Lord Sentinel: Armored Wyrm-Knight with Swept Dragon Wings, Horns & Halberd
-    const pedestal = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.26, 0.38), primaryMat);
-    pedestal.position.y = 0.33;
+
+    const stormRing = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.015, 6, 16), glowMat);
+    stormRing.position.set(0.29, 0.94, 0.1);
+    stormRing.userData.spinSpeed = 3.2;
+    group.add(stormRing);
+  } else if (sculptId === 'astral_archmage' && symbol !== 'O') {
+    // HERO 3 — Arch-Magus Kaelen (Astral Battle-Mage): Arcane Hooded Crown, Orbiting Runestones, Grimoire & Astrolabe Staff
+    const robe = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.32, 0.42, 8), primaryMat);
+    robe.position.y = 0.41;
+    robe.castShadow = !isGhost;
+    group.add(robe);
+
+    // High Gold Astral Mantle Collar
+    const collar = new THREE.Mesh(
+      new THREE.TorusGeometry(0.22, 0.035, 8, 16, Math.PI * 1.2),
+      trimMat
+    );
+    collar.rotation.x = Math.PI / 2 + 0.35;
+    collar.rotation.z = -Math.PI * 0.1;
+    collar.position.set(0, 0.62, -0.04);
+    group.add(collar);
+
+    for (const dir of [-1, 1]) {
+      const shoulder = new THREE.Mesh(new THREE.OctahedronGeometry(0.13, 0), trimMat);
+      shoulder.position.set(dir * 0.24, 0.53, 0);
+      group.add(shoulder);
+    }
+
+    // Hooded Arch-Mage Head & Glowing Arcane Eyes
+    const hood = new THREE.Mesh(new THREE.ConeGeometry(0.19, 0.32, 7), primaryMat);
+    hood.position.set(0, 0.74, 0);
+    hood.castShadow = !isGhost;
+    group.add(hood);
+
+    const crownCirclet = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.022, 6, 16), trimMat);
+    crownCirclet.rotation.x = Math.PI / 2;
+    crownCirclet.position.set(0, 0.72, 0.02);
+    group.add(crownCirclet);
+
+    for (const dir of [-1, 1]) {
+      const eye = new THREE.Mesh(new THREE.OctahedronGeometry(0.038, 0), glowMat);
+      eye.position.set(dir * 0.055, 0.68, 0.14);
+      group.add(eye);
+    }
+
+    // Orbiting Astral Runestone Ring (3 floating crystals)
+    const runeOrbit = new THREE.Group();
+    runeOrbit.position.set(0, 0.68, 0);
+    runeOrbit.userData.spinSpeed = 1.9;
+    for (let k = 0; k < 3; k++) {
+      const a = (k / 3) * Math.PI * 2;
+      const rune = new THREE.Mesh(new THREE.OctahedronGeometry(0.055, 0), glowMat);
+      rune.position.set(Math.cos(a) * 0.34, Math.sin(a * 2) * 0.05, Math.sin(a) * 0.34);
+      runeOrbit.add(rune);
+    }
+    group.add(runeOrbit);
+
+    // Left-Hand Levitating Open Spellbook Grimoire
+    const tome = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.12, 0.04), trimMat);
+    tome.position.set(-0.26, 0.54, 0.14);
+    tome.rotation.set(0.4, 0.3, -0.2);
+    tome.userData = { floatAmplitude: 0.035, baseY: 0.54, floatPhase: 1.2 };
+    group.add(tome);
+
+    // Right-Hand Staff of the Dawn-Star with Spinning Astrolabe
+    const staffShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.026, 0.84, 6), trimMat);
+    staffShaft.position.set(0.28, 0.58, 0.08);
+    group.add(staffShaft);
+
+    const astrolabe = new THREE.Mesh(new THREE.TorusGeometry(0.095, 0.016, 6, 16), trimMat);
+    astrolabe.position.set(0.28, 1.04, 0.08);
+    astrolabe.userData.spinSpeed = -2.4;
+    group.add(astrolabe);
+
+    const starCore = new THREE.Mesh(new THREE.OctahedronGeometry(0.055, 0), glowMat);
+    starCore.position.set(0.28, 1.04, 0.08);
+    starCore.userData.spinSpeed = 3.0;
+    group.add(starCore);
+  } else if (sculptId === 'gargoyle_warden' && symbol !== 'O') {
+    // HERO 4 — Dragon-Lord Draven (Dragon-Knight Warlord): Wyrm-Scale Armor, Swept Dragon Wings, Curved Horns & Ember Halberd
+    const pedestal = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.24, 0.38), primaryMat);
+    pedestal.position.y = 0.32;
     pedestal.castShadow = !isGhost;
     group.add(pedestal);
 
-    const body = new THREE.Mesh(new THREE.DodecahedronGeometry(0.23, 0), primaryMat);
-    body.position.set(0, 0.56, 0.03);
-    body.scale.set(1.05, 1.25, 0.95);
+    const body = new THREE.Mesh(new THREE.DodecahedronGeometry(0.24, 0), primaryMat);
+    body.position.set(0, 0.56, 0.02);
+    body.scale.set(1.08, 1.26, 0.96);
     body.castShadow = !isGhost;
     group.add(body);
 
-    const head = new THREE.Mesh(new THREE.OctahedronGeometry(0.16, 0), primaryMat);
-    head.position.set(0, 0.79, 0.08);
+    const chestDragonHeart = new THREE.Mesh(new THREE.OctahedronGeometry(0.085, 0), glowMat);
+    chestDragonHeart.position.set(0, 0.55, 0.22);
+    chestDragonHeart.userData.spinSpeed = 2.0;
+    group.add(chestDragonHeart);
+
+    const head = new THREE.Mesh(new THREE.OctahedronGeometry(0.17, 0), primaryMat);
+    head.position.set(0, 0.8, 0.06);
     head.castShadow = !isGhost;
     group.add(head);
 
-    // Swept Dragon Wings & Curved Wyrm Horns
+    // Swept Articulated Dragon Wings & Curved Wyrm Horns
     for (const dir of [-1, 1]) {
-      const wing = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.44, 0.28), trimMat);
-      wing.position.set(dir * 0.25, 0.68, -0.08);
-      wing.rotation.z = dir * -0.4;
-      wing.rotation.y = dir * 0.25;
-      wing.castShadow = !isGhost;
-      group.add(wing);
+      const wingUpper = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.48, 0.28), trimMat);
+      wingUpper.position.set(dir * 0.27, 0.72, -0.09);
+      wingUpper.rotation.z = dir * -0.44;
+      wingUpper.rotation.y = dir * 0.28;
+      wingUpper.castShadow = !isGhost;
+      group.add(wingUpper);
 
-      const horn = new THREE.Mesh(new THREE.ConeGeometry(0.048, 0.25, 5), trimMat);
-      horn.position.set(dir * 0.11, 0.94, 0.02);
-      horn.rotation.z = dir * -0.38;
-      horn.rotation.x = -0.3;
+      const wingSpur = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.22, 4), glowMat);
+      wingSpur.position.set(dir * 0.36, 0.96, -0.1);
+      wingSpur.rotation.z = dir * -0.35;
+      group.add(wingSpur);
+
+      const horn = new THREE.Mesh(new THREE.ConeGeometry(0.052, 0.28, 6), trimMat);
+      horn.position.set(dir * 0.12, 0.96, 0.02);
+      horn.rotation.z = dir * -0.42;
+      horn.rotation.x = -0.28;
       group.add(horn);
 
-      const eye = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.028, 0.04), glowMat);
-      eye.position.set(dir * 0.055, 0.8, 0.19);
+      const eye = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.03, 0.04), glowMat);
+      eye.position.set(dir * 0.06, 0.81, 0.19);
       group.add(eye);
     }
+
+    // Right-Hand Ember-Wyrm Halberd
+    const halberdShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.028, 0.86, 6), trimMat);
+    halberdShaft.position.set(0.3, 0.58, 0.08);
+    group.add(halberdShaft);
+
+    const halberdBlade = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.26, 4), glowMat);
+    halberdBlade.position.set(0.3, 1.02, 0.08);
+    group.add(halberdBlade);
+  } else if (sculptId === 'sylvan_ranger' && symbol !== 'O') {
+    // HERO 5 — Sylvan Warden Lyra (Elven War-Ranger): Golden Stag Antlers, Hooded Cloak & Starlight Whisper-Bow
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.28, 0.38, 8), primaryMat);
+    torso.position.y = 0.39;
+    torso.castShadow = !isGhost;
+    group.add(torso);
+
+    const cloak = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.46, 7), primaryMat);
+    cloak.position.set(0, 0.44, -0.05);
+    group.add(cloak);
+
+    const hood = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.3, 7), primaryMat);
+    hood.position.set(0, 0.73, 0.02);
+    hood.castShadow = !isGhost;
+    group.add(hood);
+
+    // Royal Golden Stag Antlers & Glowing Emerald Eyes
+    for (const dir of [-1, 1]) {
+      const antlerMain = new THREE.Mesh(new THREE.ConeGeometry(0.038, 0.3, 5), trimMat);
+      antlerMain.position.set(dir * 0.15, 0.9, 0.02);
+      antlerMain.rotation.z = dir * -0.48;
+      group.add(antlerMain);
+
+      const antlerTine = new THREE.Mesh(new THREE.ConeGeometry(0.028, 0.18, 4), trimMat);
+      antlerTine.position.set(dir * 0.22, 0.96, 0.04);
+      antlerTine.rotation.z = dir * -0.85;
+      group.add(antlerTine);
+
+      const eye = new THREE.Mesh(new THREE.BoxGeometry(0.048, 0.026, 0.04), glowMat);
+      eye.position.set(dir * 0.055, 0.69, 0.15);
+      group.add(eye);
+    }
+
+    // Curved Starlight Whisper-Bow & Drawn Glowing Arrow
+    const bowArc = new THREE.Mesh(
+      new THREE.TorusGeometry(0.26, 0.024, 6, 16, Math.PI * 1.15),
+      trimMat
+    );
+    bowArc.rotation.y = Math.PI / 2;
+    bowArc.rotation.z = -Math.PI * 0.57;
+    bowArc.position.set(0.24, 0.62, 0.12);
+    group.add(bowArc);
+
+    const starArrow = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.28, 4), glowMat);
+    starArrow.rotation.x = Math.PI / 2;
+    starArrow.position.set(0.24, 0.62, 0.24);
+    group.add(starArrow);
+  } else if (sculptId === 'frost_runeblade' && symbol !== 'O') {
+    // HERO 6 — Runeblade Arthos (Glacial Runeblade): Jagged Ice-Crown Helm, Spiked Dread-Plate & Winter-Star Greatsword
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.31, 0.38, 8), primaryMat);
+    torso.position.y = 0.39;
+    torso.castShadow = !isGhost;
+    group.add(torso);
+
+    for (const dir of [-1, 1]) {
+      const pauldron = new THREE.Mesh(new THREE.DodecahedronGeometry(0.15, 0), primaryMat);
+      pauldron.position.set(dir * 0.27, 0.52, 0);
+      pauldron.castShadow = !isGhost;
+      group.add(pauldron);
+
+      const iceSpike = new THREE.Mesh(new THREE.ConeGeometry(0.048, 0.22, 4), glowMat);
+      iceSpike.position.set(dir * 0.31, 0.66, 0);
+      iceSpike.rotation.z = dir * -0.4;
+      group.add(iceSpike);
+    }
+
+    const helm = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.26, 8), primaryMat);
+    helm.position.y = 0.68;
+    helm.castShadow = !isGhost;
+    group.add(helm);
+
+    // 5-Spire Jagged Glacial Ice-Crown
+    for (let s = -2; s <= 2; s++) {
+      const crownSpike = new THREE.Mesh(
+        new THREE.ConeGeometry(0.036, 0.18 - Math.abs(s) * 0.025, 4),
+        s === 0 ? glowMat : trimMat
+      );
+      crownSpike.position.set(s * 0.06, 0.88 - Math.abs(s) * 0.02, 0.04);
+      crownSpike.rotation.z = s * -0.14;
+      group.add(crownSpike);
+    }
+
+    for (const dir of [-1, 1]) {
+      const eye = new THREE.Mesh(new THREE.OctahedronGeometry(0.042, 0), glowMat);
+      eye.position.set(dir * 0.06, 0.69, 0.16);
+      group.add(eye);
+    }
+
+    // Two-Handed Winter-Star Runeblade Greatsword
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.72, 0.025), glowMat);
+    blade.position.set(0.29, 0.66, 0.1);
+    group.add(blade);
+
+    const crossguard = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.04, 0.05), trimMat);
+    crossguard.position.set(0.29, 0.36, 0.1);
+    group.add(crossguard);
   } else if (sculptId === 'ossuary_skull') {
-    // Necromancer Lich Warlord: Crowned Skull Bust, Pauldrons & Soul-Fire Eyes
-    const column = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.29, 0.26, 8), primaryMat);
-    column.position.y = 0.32;
+    // ENEMY 2 — Necromancer Lich Warlord: Ribbed Bone-Armor, Crowned Skull Bust, Orbiting Soul-Orbs & Soul-Fire Eyes
+    const column = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.29, 0.28, 8), primaryMat);
+    column.position.y = 0.33;
     column.castShadow = !isGhost;
     group.add(column);
 
+    for (const dir of [-1, 1]) {
+      const boneHorn = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.24, 5), trimMat);
+      boneHorn.position.set(dir * 0.25, 0.52, 0);
+      boneHorn.rotation.z = dir * -0.45;
+      group.add(boneHorn);
+    }
+
     const cranium = new THREE.Mesh(new THREE.IcosahedronGeometry(0.24, 1), primaryMat);
-    cranium.position.set(0, 0.62, 0);
+    cranium.position.set(0, 0.64, 0);
     cranium.scale.set(0.92, 1.08, 1.05);
     cranium.castShadow = !isGhost;
     group.add(cranium);
 
     const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.14, 0.22), primaryMat);
-    jaw.position.set(0, 0.44, 0.06);
+    jaw.position.set(0, 0.45, 0.06);
     jaw.castShadow = !isGhost;
     group.add(jaw);
 
+    // Spiked Lich Crown
+    for (let k = -2; k <= 2; k++) {
+      const spike = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.18, 4), trimMat);
+      spike.position.set(k * 0.065, 0.89, 0.02);
+      spike.rotation.z = k * -0.15;
+      group.add(spike);
+    }
+
     // Glowing Eye Sockets
     for (const dir of [-1, 1]) {
-      const socket = new THREE.Mesh(new THREE.OctahedronGeometry(0.058, 0), glowMat);
-      socket.position.set(dir * 0.085, 0.61, 0.21);
+      const socket = new THREE.Mesh(new THREE.OctahedronGeometry(0.06, 0), glowMat);
+      socket.position.set(dir * 0.085, 0.63, 0.21);
       group.add(socket);
     }
 
     // Spiked Necromancer Crown Halo
-    const crownHalo = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.028, 8, 16), trimMat);
-    crownHalo.position.set(0, 0.65, -0.05);
+    const crownHalo = new THREE.Mesh(new THREE.TorusGeometry(0.29, 0.028, 8, 16), trimMat);
+    crownHalo.position.set(0, 0.66, -0.05);
     crownHalo.rotation.x = 0.35;
+    crownHalo.userData.spinSpeed = -1.5;
     group.add(crownHalo);
   } else if (sculptId === 'abyssal_obelisk') {
-    // Abyssal Demon General Monolith + Orbiting Hell-Iron Chains
-    const obelisk = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.27, 0.62, 4), primaryMat);
-    obelisk.position.y = 0.52;
+    // ENEMY 3 — Abyssal Demon General: Horned Obsidian Monolith + Counter-Rotating Hell-Iron Chains
+    const obelisk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.28, 0.64, 4), primaryMat);
+    obelisk.position.y = 0.53;
     obelisk.rotation.y = Math.PI / 4;
     obelisk.castShadow = !isGhost;
     group.add(obelisk);
 
-    const cap = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.22, 4), glowMat);
-    cap.position.y = 0.94;
+    for (const dir of [-1, 1]) {
+      const demonHorn = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.28, 5), trimMat);
+      demonHorn.position.set(dir * 0.2, 0.78, 0);
+      demonHorn.rotation.z = dir * -0.52;
+      group.add(demonHorn);
+    }
+
+    const cap = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.24, 4), glowMat);
+    cap.position.y = 0.96;
     cap.rotation.y = Math.PI / 4;
-    cap.userData.spinSpeed = 1.6;
+    cap.userData.spinSpeed = 1.8;
     group.add(cap);
 
-    const shackle = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.025, 6, 16), trimMat);
-    shackle.position.y = 0.58;
-    shackle.rotation.x = Math.PI / 2.4;
-    shackle.userData.spinSpeed = -1.2;
-    group.add(shackle);
+    const shackle1 = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.026, 6, 16), trimMat);
+    shackle1.position.y = 0.58;
+    shackle1.rotation.x = Math.PI / 2.4;
+    shackle1.userData.spinSpeed = -1.4;
+    group.add(shackle1);
+
+    const shackle2 = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.02, 6, 16), glowMat);
+    shackle2.position.y = 0.58;
+    shackle2.rotation.x = -Math.PI / 2.4;
+    shackle2.userData.spinSpeed = 2.1;
+    group.add(shackle2);
   } else if (symbol === 'O' || sculptId === 'iron_torus') {
-    // Enemy Warlord 'O' (`iron_torus`): Horned Dread-Warlord Juggernaut + Spiked Iron Crown
-    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.29, 0.3, 8), primaryMat);
-    torso.position.y = 0.34;
+    // ENEMY 1 — Dread-Iron Warlord Juggernaut (`iron_torus`): Armored Torso, Spiked Pauldrons, War-Axe & 8-Spike Iron Crown
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 0.34, 8), primaryMat);
+    torso.position.y = 0.36;
     torso.castShadow = !isGhost;
     group.add(torso);
 
-    // Spiked Warlord Pauldrons
+    // Spiked Warlord Pauldrons & Back War-Spikes
     for (const dir of [-1, 1]) {
-      const pauldron = new THREE.Mesh(new THREE.DodecahedronGeometry(0.13, 0), primaryMat);
-      pauldron.position.set(dir * 0.24, 0.45, 0);
+      const pauldron = new THREE.Mesh(new THREE.DodecahedronGeometry(0.14, 0), primaryMat);
+      pauldron.position.set(dir * 0.25, 0.48, 0);
       pauldron.castShadow = !isGhost;
       group.add(pauldron);
+
+      const pSpike = new THREE.Mesh(new THREE.ConeGeometry(0.042, 0.18, 5), trimMat);
+      pSpike.position.set(dir * 0.29, 0.6, 0);
+      pSpike.rotation.z = dir * -0.38;
+      group.add(pSpike);
     }
 
-    const torus = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.07, 12, 24), primaryMat);
-    torus.position.y = 0.66;
-    torus.rotation.x = 0.28;
+    const torus = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.072, 12, 24), primaryMat);
+    torus.position.y = 0.68;
+    torus.rotation.x = 0.26;
     torus.castShadow = !isGhost;
     group.add(torus);
 
     // 8 Radial Iron Spikes around the Warlord Crown
     for (let i = 0; i < 8; i++) {
       const angle = (i / 8) * Math.PI * 2;
-      const spike = new THREE.Mesh(new THREE.ConeGeometry(0.036, 0.14, 5), trimMat);
+      const spike = new THREE.Mesh(new THREE.ConeGeometry(0.038, 0.15, 5), trimMat);
       spike.position.set(
         Math.cos(angle) * 0.33,
-        0.66 + Math.sin(angle) * 0.31,
+        0.68 + Math.sin(angle) * 0.31,
         Math.sin(angle) * -0.09
       );
       spike.rotation.z = angle - Math.PI / 2;
       group.add(spike);
     }
 
-    const eyeCore = new THREE.Mesh(new THREE.OctahedronGeometry(0.11, 0), glowMat);
-    eyeCore.position.y = 0.66;
-    eyeCore.userData.spinSpeed = 2.0;
+    const eyeCore = new THREE.Mesh(new THREE.OctahedronGeometry(0.12, 0), glowMat);
+    eyeCore.position.y = 0.68;
+    eyeCore.userData.spinSpeed = 2.2;
     group.add(eyeCore);
   } else {
-    // Player Hero 'X' (`seraph_cross`): Solar Paladin Champion with Armored Cuirass, Crown, Star-Shield & Upright Sun-Spear
-    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.29, 0.34, 8), primaryMat);
-    torso.position.y = 0.36;
+    // HERO 1 — High Paladin Aurelius (`seraph_cross`): Sunforged Cuirass, Royal Cape, Lion Pauldrons, Heater Shield, Solar Halo & Dawnbreaker Sun-Spear
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.3, 0.38, 8), primaryMat);
+    torso.position.y = 0.39;
     torso.castShadow = !isGhost;
     group.add(torso);
 
-    // Royal Pauldrons
+    const royalCape = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.44, 0.05), trimMat);
+    royalCape.position.set(0, 0.41, -0.18);
+    royalCape.rotation.x = 0.15;
+    group.add(royalCape);
+
+    // Royal Lion Pauldrons
     for (const dir of [-1, 1]) {
-      const pauldron = new THREE.Mesh(new THREE.DodecahedronGeometry(0.13, 0), trimMat);
-      pauldron.position.set(dir * 0.24, 0.48, 0);
+      const pauldron = new THREE.Mesh(new THREE.DodecahedronGeometry(0.145, 0), trimMat);
+      pauldron.position.set(dir * 0.26, 0.51, 0);
       pauldron.castShadow = !isGhost;
       group.add(pauldron);
     }
 
-    // Crowned Solar Helm
-    const helm = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.17, 0.24, 8), primaryMat);
-    helm.position.y = 0.64;
+    // Crowned Solar Great-Helm & Glowing V-Visor
+    const helm = new THREE.Mesh(new THREE.CylinderGeometry(0.155, 0.175, 0.26, 8), primaryMat);
+    helm.position.y = 0.67;
     helm.castShadow = !isGhost;
     group.add(helm);
 
-    const crown = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.15, 6), trimMat);
-    crown.position.y = 0.83;
+    const crown = new THREE.Mesh(new THREE.ConeGeometry(0.17, 0.16, 6), trimMat);
+    crown.position.y = 0.87;
     group.add(crown);
 
+    for (const dir of [-1, 1]) {
+      const visorEye = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.028, 0.05), glowMat);
+      visorEye.position.set(dir * 0.055, 0.69, 0.155);
+      visorEye.rotation.z = dir * -0.2;
+      group.add(visorEye);
+    }
+
     // Sunforged Gold Halo Ring & Star-Crest Gem
-    const halo = new THREE.Mesh(new THREE.TorusGeometry(0.26, 0.028, 8, 24), trimMat);
-    halo.position.set(0, 0.64, -0.06);
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(0.27, 0.03, 8, 24), trimMat);
+    halo.position.set(0, 0.68, -0.07);
     group.add(halo);
 
-    const heart = new THREE.Mesh(new THREE.OctahedronGeometry(0.11, 0), glowMat);
-    heart.position.set(0, 0.45, 0.22);
-    heart.userData.spinSpeed = 1.6;
+    const heart = new THREE.Mesh(new THREE.OctahedronGeometry(0.1, 0), glowMat);
+    heart.position.set(0, 0.47, 0.22);
+    heart.userData.spinSpeed = 1.8;
     group.add(heart);
 
-    // Upright Sun-Spear at Right Hand
-    const spearShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.028, 0.76, 6), trimMat);
-    spearShaft.position.set(0.27, 0.56, 0.08);
+    // Left-Hand Sunforged Heater Shield
+    const shieldPlate = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.09, 0.3, 6), trimMat);
+    shieldPlate.position.set(-0.28, 0.46, 0.12);
+    shieldPlate.rotation.y = 0.4;
+    shieldPlate.scale.set(1.0, 1.0, 0.35);
+    group.add(shieldPlate);
+
+    // Right-Hand Dawnbreaker Sun-Spear
+    const spearShaft = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.028, 0.82, 6), trimMat);
+    spearShaft.position.set(0.28, 0.58, 0.08);
     group.add(spearShaft);
-    const spearTip = new THREE.Mesh(new THREE.OctahedronGeometry(0.075, 0), glowMat);
-    spearTip.position.set(0.27, 0.98, 0.08);
+    const spearTip = new THREE.Mesh(new THREE.OctahedronGeometry(0.085, 0), glowMat);
+    spearTip.position.set(0.28, 1.03, 0.08);
+    spearTip.userData.spinSpeed = 2.4;
     group.add(spearTip);
   }
 
@@ -819,96 +1107,208 @@ export function createCathedralAltar3D(boardSize = 5, hallConfig = {}) {
 
 /**
  * Build the 3D Enemy Fantasy War Commander across the North edge of the War-Table
+ * Features Boss-specific 3D armor, crowns, wings, weapons, and animated double halos for all 6 Warlords
  */
 export function createInquisitorAutomaton3D(boss = null) {
   const group = new THREE.Group();
   group.name = 'InquisitorAutomaton3D';
 
+  const bossId = boss?.id || 'boss_malakor';
   const armorColor = boss?.color || '#b91c1c';
-  const obsidianMat = createStoneMaterial('blood_obsidian', { color: 0x18131e });
+  const obsidianMat = createStoneMaterial('blood_obsidian', { color: 0x1a1423 });
   const trimMat = new THREE.MeshStandardMaterial({
     color: new THREE.Color(armorColor),
-    roughness: 0.28,
-    metalness: 0.82,
+    roughness: 0.24,
+    metalness: 0.85,
     emissive: new THREE.Color(armorColor),
-    emissiveIntensity: 0.38,
+    emissiveIntensity: 0.45,
   });
+  const goldMat = createStoneMaterial('gilded_reliquary');
   const eyeMat = new THREE.MeshStandardMaterial({
-    color: 0xff2a55,
-    emissive: 0xff1e42,
-    emissiveIntensity: 2.5,
+    color: 0xffd166,
+    emissive: new THREE.Color(armorColor),
+    emissiveIntensity: 2.8,
   });
 
-  // 1. Armored Warlord Cuirass & Breastplate Crest
-  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.78, 1.08, 1.75, 8), obsidianMat);
-  torso.position.y = 0.42;
+  // 0. Stepped Warlord Throne Plinth Base
+  const throneBase = new THREE.Mesh(new THREE.CylinderGeometry(1.32, 1.52, 0.35, 8), obsidianMat);
+  throneBase.position.y = -0.25;
+  throneBase.receiveShadow = true;
+  group.add(throneBase);
+
+  const throneRim = new THREE.Mesh(new THREE.TorusGeometry(1.36, 0.055, 8, 24), goldMat);
+  throneRim.rotation.x = Math.PI / 2;
+  throneRim.position.y = -0.08;
+  group.add(throneRim);
+
+  // 1. Breathing Armored Warlord Body Group (`bodyGroup`)
+  const bodyGroup = new THREE.Group();
+  group.add(bodyGroup);
+
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.84, 1.12, 1.82, 8), obsidianMat);
+  torso.position.y = 0.45;
   torso.castShadow = true;
-  group.add(torso);
+  bodyGroup.add(torso);
 
-  const chestCrest = new THREE.Mesh(new THREE.OctahedronGeometry(0.28, 0), trimMat);
-  chestCrest.position.set(0, 0.72, 0.75);
-  group.add(chestCrest);
+  // Ribbed Breastplate & Glowing Warlord Core Gem
+  const chestPlate = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.92, 0.38), obsidianMat);
+  chestPlate.position.set(0, 0.65, 0.58);
+  bodyGroup.add(chestPlate);
 
-  // Heavy Layered Shoulder Pauldrons, Horns & Flanking War-Halberds
+  const chestCrest = new THREE.Mesh(new THREE.OctahedronGeometry(0.32, 0), eyeMat);
+  chestCrest.position.set(0, 0.72, 0.82);
+  bodyGroup.add(chestCrest);
+
+  const chestRing = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.04, 6, 16), goldMat);
+  chestRing.position.set(0, 0.72, 0.79);
+  bodyGroup.add(chestRing);
+
+  // Flowing Royal Warlord Back Mantle
+  const backMantle = new THREE.Mesh(new THREE.BoxGeometry(1.75, 1.85, 0.14), trimMat);
+  backMantle.position.set(0, 0.48, -0.68);
+  backMantle.rotation.x = 0.12;
+  bodyGroup.add(backMantle);
+
+  // Heavy Layered Shoulder Pauldrons, Articulated Arms, Gauntlets & Flanking War-Weapons
   for (const dir of [-1, 1]) {
-    const pauldron = new THREE.Mesh(new THREE.DodecahedronGeometry(0.55, 0), obsidianMat);
-    pauldron.position.set(dir * 0.98, 0.98, 0);
+    const pauldron = new THREE.Mesh(new THREE.DodecahedronGeometry(0.58, 0), obsidianMat);
+    pauldron.position.set(dir * 1.04, 1.02, 0);
+    pauldron.scale.set(1.12, 0.95, 1.12);
     pauldron.castShadow = true;
-    group.add(pauldron);
+    bodyGroup.add(pauldron);
 
-    const pauldronTrim = new THREE.Mesh(new THREE.TorusGeometry(0.46, 0.05, 6, 12), trimMat);
-    pauldronTrim.position.set(dir * 0.98, 0.98, 0);
+    const pauldronTrim = new THREE.Mesh(new THREE.TorusGeometry(0.49, 0.055, 6, 14), goldMat);
+    pauldronTrim.position.set(dir * 1.04, 1.02, 0);
     pauldronTrim.rotation.y = Math.PI / 2;
-    group.add(pauldronTrim);
+    bodyGroup.add(pauldronTrim);
 
-    const spike = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.54, 5), trimMat);
-    spike.position.set(dir * 1.08, 1.44, 0);
-    spike.rotation.z = dir * -0.35;
-    group.add(spike);
+    const spike = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.58, 5), trimMat);
+    spike.position.set(dir * 1.15, 1.5, 0);
+    spike.rotation.z = dir * -0.36;
+    bodyGroup.add(spike);
 
-    // Flanking War-Halberd
-    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 2.8, 6), trimMat);
-    shaft.position.set(dir * 1.55, 0.95, 0.25);
-    group.add(shaft);
+    // Sculpted Armored Forearm & Gauntlet
+    const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.95, 6), obsidianMat);
+    forearm.position.set(dir * 1.28, 0.45, 0.22);
+    forearm.rotation.z = dir * 0.18;
+    forearm.rotation.x = -0.25;
+    bodyGroup.add(forearm);
 
-    const axeBlade = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.65, 4), trimMat);
-    axeBlade.position.set(dir * 1.55, 2.25, 0.25);
-    group.add(axeBlade);
+    // Flanking Signature Boss Weapon
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.065, 3.05, 6), goldMat);
+    shaft.position.set(dir * 1.62, 1.02, 0.28);
+    bodyGroup.add(shaft);
+
+    if (bossId === 'boss_malakor') {
+      // Twin Siege Warhammers
+      const hammerHead = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.38, 0.42), trimMat);
+      hammerHead.position.set(dir * 1.62, 2.38, 0.28);
+      bodyGroup.add(hammerHead);
+    } else if (bossId === 'boss_vespera' || bossId === 'boss_thurible') {
+      // Twin Necrotic / Brimstone War-Staves with Floating Orbs
+      const staffRing = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.04, 6, 16), goldMat);
+      staffRing.position.set(dir * 1.62, 2.45, 0.28);
+      bodyGroup.add(staffRing);
+      const staffOrb = new THREE.Mesh(new THREE.OctahedronGeometry(0.18, 0), eyeMat);
+      staffOrb.position.set(dir * 1.62, 2.45, 0.28);
+      bodyGroup.add(staffOrb);
+    } else {
+      // Twin Royal Warlord Halberds
+      const axeBlade = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.72, 4), trimMat);
+      axeBlade.position.set(dir * 1.62, 2.38, 0.28);
+      bodyGroup.add(axeBlade);
+    }
   }
 
-  // 2. Articulated Warlord Head, Horned Great-Helm & Crown (rotates to watch board actions)
-  const headGroup = new THREE.Group();
-  headGroup.position.set(0, 1.65, 0.1);
+  // 1b. Boss-Specific Swept Wings / Seraph Pinions (`wingGroup`)
+  const wingGroup = new THREE.Group();
+  wingGroup.position.set(0, 1.15, -0.55);
+  if (bossId === 'boss_hollow_seraph') {
+    // 6 Majestic Fallen Seraph Wings fanned out behind the Abyssal War-God
+    for (const dir of [-1, 1]) {
+      for (let w = 0; w < 3; w++) {
+        const seraphWing = new THREE.Mesh(
+          new THREE.ConeGeometry(0.24, 1.95 - w * 0.22, 4),
+          w % 2 === 0 ? goldMat : trimMat
+        );
+        seraphWing.position.set(dir * (0.95 + w * 0.42), 0.45 - w * 0.32, -0.1 * w);
+        seraphWing.rotation.z = dir * -(0.52 + w * 0.28);
+        wingGroup.add(seraphWing);
+      }
+    }
+  } else if (bossId === 'boss_vorn' || bossId === 'boss_carmilla') {
+    // Swept Wyrm / Vampiric Pinions
+    for (const dir of [-1, 1]) {
+      const pinion = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.65, 0.62), trimMat);
+      pinion.position.set(dir * 1.18, 0.42, 0);
+      pinion.rotation.z = dir * -0.46;
+      pinion.rotation.y = dir * 0.28;
+      wingGroup.add(pinion);
+    }
+  }
+  bodyGroup.add(wingGroup);
 
-  const skullHelm = new THREE.Mesh(new THREE.IcosahedronGeometry(0.45, 0), obsidianMat);
-  skullHelm.scale.set(0.92, 1.22, 1.02);
+  // 2. Articulated Warlord Head, Great-Helm & Boss-Specific Crown (`headGroup`)
+  const headGroup = new THREE.Group();
+  headGroup.position.set(0, 1.72, 0.12);
+
+  const skullHelm = new THREE.Mesh(new THREE.IcosahedronGeometry(0.47, 1), obsidianMat);
+  skullHelm.scale.set(0.94, 1.22, 1.04);
   skullHelm.castShadow = true;
   headGroup.add(skullHelm);
 
-  const hoodCowl = new THREE.Mesh(new THREE.ConeGeometry(0.58, 0.68, 6), trimMat);
-  hoodCowl.position.set(0, 0.4, -0.05);
-  headGroup.add(hoodCowl);
+  const faceplate = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.28, 0.52, 6), obsidianMat);
+  faceplate.position.set(0, -0.05, 0.18);
+  headGroup.add(faceplate);
 
-  // Curved Warlord Horns on Helm
+  // Boss-Specific Crown / Helm Silhouette
+  if (bossId === 'boss_vespera') {
+    // 5-Spire Necromancer Empress Crown
+    for (let s = -2; s <= 2; s++) {
+      const spire = new THREE.Mesh(
+        new THREE.ConeGeometry(0.08, 0.58 - Math.abs(s) * 0.08, 5),
+        goldMat
+      );
+      spire.position.set(s * 0.16, 0.62 - Math.abs(s) * 0.04, 0.05);
+      spire.rotation.z = s * -0.12;
+      headGroup.add(spire);
+    }
+  } else if (bossId === 'boss_carmilla') {
+    // High Crimson Vampiric Collar & Ruby Tiara
+    const tiara = new THREE.Mesh(new THREE.OctahedronGeometry(0.24, 0), trimMat);
+    tiara.position.set(0, 0.58, 0.18);
+    headGroup.add(tiara);
+  } else {
+    const hoodCowl = new THREE.Mesh(new THREE.ConeGeometry(0.58, 0.72, 6), trimMat);
+    hoodCowl.position.set(0, 0.44, -0.04);
+    headGroup.add(hoodCowl);
+  }
+
+  // Curved Warlord Horns & Blazing Eyes
   for (const dir of [-1, 1]) {
-    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.62, 6), trimMat);
-    horn.position.set(dir * 0.42, 0.36, 0.05);
+    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.68, 6), goldMat);
+    horn.position.set(dir * 0.44, 0.4, 0.05);
     horn.rotation.z = dir * -0.48;
     horn.rotation.x = 0.22;
     headGroup.add(horn);
 
-    const eye = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.055, 0.08), eyeMat);
-    eye.position.set(dir * 0.14, 0.05, 0.4);
+    const eye = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.06, 0.09), eyeMat);
+    eye.position.set(dir * 0.15, 0.05, 0.42);
+    eye.rotation.z = dir * -0.15;
     headGroup.add(eye);
   }
 
-  // Floating Iron Warlord Halo behind the Commander
-  const halo = new THREE.Mesh(new THREE.TorusGeometry(0.88, 0.055, 8, 24), trimMat);
-  halo.position.set(0, 0.25, -0.38);
+  // Counter-Rotating Outer & Inner Warlord Halos behind the Commander
+  const halo = new THREE.Mesh(new THREE.TorusGeometry(0.94, 0.055, 8, 28), trimMat);
+  halo.position.set(0, 0.25, -0.4);
   headGroup.add(halo);
 
+  const innerHalo = new THREE.Mesh(new THREE.TorusGeometry(0.68, 0.035, 8, 24), goldMat);
+  innerHalo.position.set(0, 0.25, -0.36);
+  headGroup.add(innerHalo);
+
   group.add(headGroup);
-  group.userData = { headGroup, halo, eyeMat };
+  group.userData = { headGroup, bodyGroup, wingGroup, halo, innerHalo, eyeMat };
 
   return group;
 }

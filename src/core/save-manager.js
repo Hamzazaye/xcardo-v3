@@ -15,7 +15,7 @@ export class SaveManager {
 
   _defaultState() {
     return {
-      version: 3,
+      version: 4,
       commanderTitle: 'High Paladin',
       selectedHeroId: 'hero_paladin',
       reliquarySigils: 300,
@@ -36,9 +36,9 @@ export class SaveManager {
       equippedPlayerMaterial: 'alabaster_marble',
       equippedEnemyMaterial: 'blood_obsidian',
 
-      // Cathedral Hall & Camera Preset
+      // Cathedral Hall & Camera Preset (Default: Isometric View)
       equippedHall: 'obsidian_nave',
-      cameraPreset: 'commander_angle',
+      cameraPreset: 'high_cathedral',
       cinematicCamera: true,
 
       // Blood Oaths & Penitence Bell
@@ -71,7 +71,12 @@ export class SaveManager {
       if (!parsed || !parsed.data) return def;
       const expected = computeSaveChecksum(parsed.data);
       if (parsed.checksum !== expected) return def;
-      return { ...def, ...parsed.data };
+      const merged = { ...def, ...parsed.data };
+      if ((parsed.data.version || 0) < 4) {
+        merged.version = 4;
+        merged.cameraPreset = 'high_cathedral';
+      }
+      return merged;
     } catch {
       return def;
     }

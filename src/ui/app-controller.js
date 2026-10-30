@@ -81,7 +81,7 @@ export class AppController {
 
     this.scene3d.idleOrbitActive = true;
     this.scene3d.rebuildAltar(5, state.equippedHall || 'obsidian_nave', currentBoss);
-    this.scene3d.playCinematicFlyIn?.(state.cameraPreset || 'commander_angle', 2.65);
+    this.scene3d.playCinematicFlyIn?.(state.cameraPreset || 'high_cathedral', 2.35);
 
     // Strictly 2 stone types on the War-Table: Your Golden Champion (X) vs Enemy Crimson Warlord (O)
     // Slam down cinematically onto the board as the camera sweeps in!
@@ -239,7 +239,7 @@ export class AppController {
     this.currentScreen = 'battle';
     if (this.scene3d) {
       this.scene3d.idleOrbitActive = false;
-      this.scene3d.playBattleZoomIn?.(state.cameraPreset || 'commander_angle', 1.85);
+      this.scene3d.playBattleZoomIn?.(state.cameraPreset || 'high_cathedral', 1.65);
     }
     this.sound?.startMusic(levelNumber % 13);
     if (levelNumber < GAME_CONFIG.CARDS_UNLOCK_LEVEL) {
@@ -266,7 +266,7 @@ export class AppController {
     this.currentScreen = 'battle';
     if (this.scene3d) {
       this.scene3d.idleOrbitActive = false;
-      this.scene3d.playBattleZoomIn?.(state.cameraPreset || 'commander_angle', 1.85);
+      this.scene3d.playBattleZoomIn?.(state.cameraPreset || 'high_cathedral', 1.65);
     }
     this.sound?.startMusic(3);
     this.render();
@@ -289,7 +289,7 @@ export class AppController {
     this.currentScreen = 'battle';
     if (this.scene3d) {
       this.scene3d.idleOrbitActive = false;
-      this.scene3d.playBattleZoomIn?.(state.cameraPreset || 'commander_angle', 1.85);
+      this.scene3d.playBattleZoomIn?.(state.cameraPreset || 'high_cathedral', 1.65);
     }
     this.sound?.startMusic(1);
     this.render();

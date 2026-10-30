@@ -228,173 +228,221 @@ export function renderTarotArtSVG(card) {
 
 /**
  * Render 6 Playable Fantasy War Hero Character Bust Portraits (`viewBox="0 0 100 100"`)
- * AAA Multi-Layered Shaded Vector Art with metallic gradients, glowing halos, and detailed armor/weapons (Zero Crosses).
+ * AAA Multi-Layered Shaded Vector Art with metallic gradients, specular rim-lighting, shields, weapons, and glowing halos (Zero Crosses).
  */
 export function renderFantasyHeroPortraitSVG(heroId = 'hero_paladin', color = '#f59e0b') {
   const uid = `hero_${heroId}`;
   let bust = '';
   switch (heroId) {
     case 'hero_valkyrie':
-      // Shieldmaiden Freya: Silver Valkyrie Winged Diadem, Dragon-Scale Pauldrons & Sky-Lance
+      // Shieldmaiden Freya: Silver Valkyrie Winged Diadem, Dragon-Scale Pauldrons, Valhallan Buckler & Gungnir Sky-Lance
       bust = `
         <!-- Storm Halo & Lightning Arcs -->
-        <circle cx="50" cy="42" r="33" fill="none" stroke="#38bdf8" stroke-width="1.4" stroke-dasharray="6 3" opacity="0.75"/>
-        <path d="M18,24 L26,32 L22,38 M82,24 L74,32 L78,38" fill="none" stroke="#bae6fd" stroke-width="1.5" stroke-linecap="round"/>
-        <!-- Royal Azure Cloak -->
-        <path d="M14,93 C17,60 83,60 86,93 Z" fill="url(#${uid}_cloak)" stroke="#38bdf8" stroke-width="2"/>
+        <circle cx="50" cy="40" r="35" fill="none" stroke="#38bdf8" stroke-width="1.6" stroke-dasharray="6 3" opacity="0.85"/>
+        <circle cx="50" cy="40" r="30" fill="none" stroke="#bae6fd" stroke-width="0.9" stroke-dasharray="2 4" opacity="0.6"/>
+        <path d="M16,22 L24,30 L20,36 L27,42 M84,22 L76,30 L80,36 L73,42" fill="none" stroke="#e0f2fe" stroke-width="1.5" stroke-linecap="round"/>
+        <!-- Royal Azure Cloak & Fur Mantle -->
+        <path d="M12,93 C16,58 84,58 88,93 Z" fill="url(#${uid}_cloak)" stroke="#38bdf8" stroke-width="2.2"/>
         <!-- Layered Winged Pauldrons -->
-        <path d="M7,82 Q14,56 38,64 L33,90 Z M93,82 Q86,56 62,64 L67,90 Z" fill="url(#${uid}_armor)" stroke="url(#${uid}_gold)" stroke-width="2.2"/>
-        <path d="M12,74 Q20,62 34,68 M88,74 Q80,62 66,68" fill="none" stroke="#e0f2fe" stroke-width="1.4"/>
+        <path d="M6,82 Q13,54 39,62 L33,91 Z M94,82 Q87,54 61,62 L67,91 Z" fill="url(#${uid}_armor)" stroke="url(#${uid}_gold)" stroke-width="2.3"/>
+        <path d="M11,72 Q20,60 35,66 M89,72 Q80,60 65,66" fill="none" stroke="#e0f2fe" stroke-width="1.5"/>
+        <path d="M14,80 Q22,70 33,74 M86,80 Q78,70 67,74" fill="none" stroke="#38bdf8" stroke-width="1.2"/>
         <!-- Valkyrie Cuirass & Star-Crest -->
-        <polygon points="33,64 67,64 61,93 39,93" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="2.2"/>
-        <polygon points="50,69 56,79 50,89 44,79" fill="#38bdf8" stroke="#ffffff" stroke-width="1.2"/>
-        <!-- Swept Feather-Wings on Helm -->
-        <path d="M9,26 Q20,16 34,36 L30,48 Q16,38 9,26 Z M91,26 Q80,16 66,36 L70,48 Q84,38 91,26 Z" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.4"/>
-        <path d="M14,32 L28,40 M86,32 L72,40" stroke="#38bdf8" stroke-width="1.4"/>
-        <!-- Silver Great-Helm & Crowned Visor -->
-        <path d="M32,32 C32,15 68,15 68,32 L64,59 L50,66 L36,59 Z" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="2.4"/>
-        <polygon points="36,24 43,13 50,21 57,13 64,24" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.2"/>
+        <polygon points="32,62 68,62 61,93 39,93" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="2.3"/>
+        <polygon points="37,65 63,65 58,89 42,89" fill="none" stroke="#bae6fd" stroke-width="0.9" opacity="0.65"/>
+        <polygon points="50,67 57,78 50,89 43,78" fill="#38bdf8" stroke="#ffffff" stroke-width="1.3"/>
+        <circle cx="50" cy="78" r="2.6" fill="#ffffff"/>
+        <!-- Left-Hand Round Valhallan Buckler Shield Rim -->
+        <circle cx="20" cy="82" r="13" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="2.2"/>
+        <circle cx="20" cy="82" r="5" fill="#38bdf8" stroke="#ffffff" stroke-width="1.2"/>
+        <!-- Double-Tiered Swept Feather-Wings on Helm -->
+        <path d="M7,24 Q19,12 34,34 L30,48 Q15,36 7,24 Z M93,24 Q81,12 66,34 L70,48 Q85,36 93,24 Z" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.5"/>
+        <path d="M12,17 Q23,19 33,31 M88,17 Q77,19 67,31" fill="none" stroke="#fef08a" stroke-width="1.6"/>
+        <path d="M13,31 L29,40 M87,31 L71,40" stroke="#38bdf8" stroke-width="1.5"/>
+        <!-- Silver Great-Helm, Nasal Guard & Crowned Visor -->
+        <path d="M31,31 C31,14 69,14 69,31 L64,59 L50,67 L36,59 Z" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="2.5"/>
+        <polygon points="35,23 42,11 50,20 58,11 65,23" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.3"/>
+        <line x1="50" y1="34" x2="50" y2="62" stroke="url(#${uid}_gold)" stroke-width="2"/>
         <!-- Glowing Cyan Eyes & Forehead Star Sapphire -->
-        <polygon points="50,18 55,28 50,37 45,28" fill="#38bdf8" stroke="#ffffff" stroke-width="1.3"/>
-        <polygon points="37,41 47,44 38,47" fill="#7dd3fc"/>
-        <polygon points="63,41 53,44 62,47" fill="#7dd3fc"/>
-        <circle cx="42" cy="44" r="1.6" fill="#ffffff"/>
-        <circle cx="58" cy="44" r="1.6" fill="#ffffff"/>
-        <!-- Gungnir Sky-Lance -->
-        <line x1="83" y1="14" x2="75" y2="92" stroke="url(#${uid}_gold)" stroke-width="3.4"/>
-        <polygon points="85,4 93,23 83,18 75,23" fill="#38bdf8" stroke="#ffffff" stroke-width="1.5"/>
+        <polygon points="50,17 55,27 50,36 45,27" fill="#38bdf8" stroke="#ffffff" stroke-width="1.3"/>
+        <polygon points="36,40 47,43 37,47" fill="#7dd3fc" filter="url(#${uid}_glow)"/>
+        <polygon points="64,40 53,43 63,47" fill="#7dd3fc" filter="url(#${uid}_glow)"/>
+        <circle cx="42" cy="43.5" r="1.7" fill="#ffffff"/>
+        <circle cx="58" cy="43.5" r="1.7" fill="#ffffff"/>
+        <!-- Gungnir Sky-Lance with Storm Ring -->
+        <circle cx="83" cy="21" r="7.5" fill="none" stroke="#7dd3fc" stroke-width="1.3" stroke-dasharray="3 2"/>
+        <line x1="83" y1="14" x2="75" y2="92" stroke="url(#${uid}_gold)" stroke-width="3.5"/>
+        <polygon points="85,3 94,23 83,18 74,23" fill="#38bdf8" stroke="#ffffff" stroke-width="1.5"/>
       `;
       break;
 
     case 'hero_archmage':
-      // Arch-Magus Kaelen: Deep Astral Hooded Cowl, Floating Runestones & Dawn-Star Staff
+      // Arch-Magus Kaelen: Deep Astral Hooded Cowl, High Gold Collar, Floating Runestones, Open Grimoire & Dawn-Star Staff
       bust = `
-        <!-- Astral Constellation Halo -->
-        <circle cx="50" cy="40" r="34" fill="none" stroke="#c084fc" stroke-width="1.4" stroke-dasharray="4 3" opacity="0.8"/>
-        <circle cx="24" cy="22" r="2" fill="#e9d5ff"/>
-        <circle cx="76" cy="18" r="2" fill="#fde68a"/>
+        <!-- Astral Constellation Halo & Orbiting Stars -->
+        <circle cx="50" cy="39" r="35" fill="none" stroke="#c084fc" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.85"/>
+        <circle cx="50" cy="39" r="29" fill="none" stroke="#fde68a" stroke-width="0.9" stroke-dasharray="2 3" opacity="0.6"/>
+        <circle cx="23" cy="20" r="2.2" fill="#e9d5ff"/>
+        <circle cx="77" cy="17" r="2.2" fill="#fde68a"/>
+        <!-- High Arcane Gold Collar -->
+        <path d="M22,46 Q50,28 78,46 L72,64 L28,64 Z" fill="url(#${uid}_armor)" stroke="url(#${uid}_gold)" stroke-width="2.2"/>
         <!-- Velvet Arcane Mantle & Gold-Runed Pauldrons -->
-        <path d="M11,93 C15,58 85,58 89,93 Z" fill="url(#${uid}_cloak)" stroke="#c084fc" stroke-width="2.2"/>
-        <polygon points="10,74 36,61 31,89 8,89" fill="url(#${uid}_armor)" stroke="url(#${uid}_gold)" stroke-width="2"/>
-        <polygon points="90,74 64,61 69,89 92,89" fill="url(#${uid}_armor)" stroke="url(#${uid}_gold)" stroke-width="2"/>
-        <polygon points="50,67 57,78 50,89 43,78" fill="#c084fc" stroke="#fef08a" stroke-width="1.4"/>
-        <!-- Sculpted Arch-Mage Hood & Inner Shadow -->
-        <path d="M50,10 L76,33 L69,64 L31,64 L24,33 Z" fill="url(#${uid}_armor)" stroke="url(#${uid}_gold)" stroke-width="2.4"/>
-        <path d="M35,33 L50,19 L65,33 L61,59 L39,59 Z" fill="#080312" stroke="#a855f7" stroke-width="1.6"/>
+        <path d="M10,93 C14,57 86,57 90,93 Z" fill="url(#${uid}_cloak)" stroke="#c084fc" stroke-width="2.2"/>
+        <polygon points="8,74 36,60 31,90 7,90" fill="url(#${uid}_armor)" stroke="url(#${uid}_gold)" stroke-width="2.2"/>
+        <polygon points="92,74 64,60 69,90 93,90" fill="url(#${uid}_armor)" stroke="url(#${uid}_gold)" stroke-width="2.2"/>
+        <polygon points="50,66 58,78 50,90 42,78" fill="#c084fc" stroke="#fef08a" stroke-width="1.5"/>
+        <circle cx="50" cy="78" r="3" fill="#ffffff"/>
+        <!-- Levitating Open Spell Grimoire (Left Foreground) -->
+        <polygon points="10,77 25,72 28,86 13,90" fill="#fef3c7" stroke="url(#${uid}_gold)" stroke-width="1.6"/>
+        <polygon points="25,72 38,76 36,89 28,86" fill="#fde68a" stroke="url(#${uid}_gold)" stroke-width="1.6"/>
+        <circle cx="24" cy="79" r="2.5" fill="#c084fc"/>
+        <!-- Sculpted Arch-Mage Hood & Deep Void Inner Shadow -->
+        <path d="M50,9 L77,32 L69,64 L31,64 L23,32 Z" fill="url(#${uid}_armor)" stroke="url(#${uid}_gold)" stroke-width="2.5"/>
+        <path d="M34,33 L50,18 L66,33 L61,59 L39,59 Z" fill="#070210" stroke="#a855f7" stroke-width="1.7"/>
         <!-- Glowing Arcane Eyes & Astral Crown -->
-        <polygon points="50,14 54,23 50,31 46,23" fill="#fde68a" stroke="#ffffff" stroke-width="1"/>
-        <polygon points="39,42 47,40 45,46" fill="#f3e8ff"/>
-        <polygon points="61,42 53,40 55,46" fill="#f3e8ff"/>
-        <circle cx="43" cy="43" r="1.6" fill="#ffffff"/>
-        <circle cx="57" cy="43" r="1.6" fill="#ffffff"/>
-        <!-- Floating Crystal Runestone & Dawn-Star Staff -->
-        <polygon points="18,28 24,18 30,28 24,38" fill="#c084fc" stroke="#ffffff" stroke-width="1.4"/>
-        <polygon points="84,10 92,22 84,34 76,22" fill="#38bdf8" stroke="#fef08a" stroke-width="1.6"/>
-        <circle cx="84" cy="22" r="3.5" fill="#ffffff"/>
-        <line x1="84" y1="34" x2="77" y2="92" stroke="url(#${uid}_gold)" stroke-width="3.2"/>
+        <polygon points="36,21 44,12 50,19 56,12 64,21" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.2"/>
+        <polygon points="50,14 54,23 50,31 46,23" fill="#fde68a" stroke="#ffffff" stroke-width="1.1"/>
+        <polygon points="38,42 47,39 45,46" fill="#f3e8ff" filter="url(#${uid}_glow)"/>
+        <polygon points="62,42 53,39 55,46" fill="#f3e8ff" filter="url(#${uid}_glow)"/>
+        <circle cx="43" cy="42.5" r="1.8" fill="#ffffff"/>
+        <circle cx="57" cy="42.5" r="1.8" fill="#ffffff"/>
+        <!-- Floating Crystal Runestone & Dawn-Star Astrolabe Staff -->
+        <polygon points="16,27 22,16 28,27 22,38" fill="#c084fc" stroke="#ffffff" stroke-width="1.5"/>
+        <circle cx="84" cy="22" r="9" fill="none" stroke="url(#${uid}_gold)" stroke-width="1.5" stroke-dasharray="4 2"/>
+        <polygon points="84,9 93,22 84,35 75,22" fill="#38bdf8" stroke="#fef08a" stroke-width="1.6"/>
+        <circle cx="84" cy="22" r="3.8" fill="#ffffff"/>
+        <line x1="84" y1="35" x2="77" y2="92" stroke="url(#${uid}_gold)" stroke-width="3.4"/>
       `;
       break;
 
     case 'hero_dragonknight':
-      // Dragon-Lord Draven: Horned Crimson Wyrm-Helm, Molten Scale Armor & Ember-Wyrm Halberd
+      // Dragon-Lord Draven: Horned Crimson Wyrm-Helm, Swept Dragon Wings, Molten Heart Core & Ember-Wyrm Halberd
       bust = `
         <!-- Molten Dragonfire Halo -->
-        <circle cx="50" cy="42" r="34" fill="none" stroke="#f97316" stroke-width="1.5" stroke-dasharray="5 3" opacity="0.8"/>
-        <!-- Swept Dragon-Wing Pauldrons & Torso -->
-        <path d="M8,93 L14,58 L39,66 L34,93 Z M92,93 L86,58 L61,66 L66,93 Z" fill="url(#${uid}_cloak)" stroke="url(#${uid}_gold)" stroke-width="2.2"/>
-        <polygon points="31,65 69,65 63,93 37,93" fill="url(#${uid}_armor)" stroke="url(#${uid}_gold)" stroke-width="2.2"/>
-        <circle cx="50" cy="79" r="7" fill="#f97316" stroke="#fef08a" stroke-width="1.8"/>
-        <polygon points="50,73 54,79 50,85 46,79" fill="#ffffff"/>
+        <circle cx="50" cy="41" r="35" fill="none" stroke="#f97316" stroke-width="1.6" stroke-dasharray="5 3" opacity="0.85"/>
+        <!-- Articulated Swept Dragon Wings Behind Back -->
+        <path d="M4,42 L18,16 L32,38 L22,56 Z M96,42 L82,16 L68,38 L78,56 Z" fill="url(#${uid}_cloak)" stroke="url(#${uid}_gold)" stroke-width="1.8"/>
+        <circle cx="18" cy="16" r="2.2" fill="#fef08a"/>
+        <circle cx="82" cy="16" r="2.2" fill="#fef08a"/>
+        <!-- Swept Dragon-Scale Pauldrons & Torso -->
+        <path d="M7,93 L13,56 L39,65 L34,93 Z M93,93 L87,56 L61,65 L66,93 Z" fill="url(#${uid}_cloak)" stroke="url(#${uid}_gold)" stroke-width="2.3"/>
+        <polygon points="30,64 70,64 63,93 37,93" fill="url(#${uid}_armor)" stroke="url(#${uid}_gold)" stroke-width="2.3"/>
+        <!-- Blazing Dragon-Heart Furnace Core -->
+        <circle cx="50" cy="78" r="8" fill="#f97316" stroke="#fef08a" stroke-width="2"/>
+        <polygon points="50,71 55,78 50,85 45,78" fill="#ffffff"/>
         <!-- Swept Golden Wyrm Horns -->
-        <path d="M32,32 Q9,15 16,6 Q26,16 39,25 Z" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.5"/>
-        <path d="M68,32 Q91,15 84,6 Q74,16 61,25 Z" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.5"/>
-        <!-- Armored Dragon Helm & Crest -->
-        <polygon points="50,13 70,29 65,59 50,67 35,59 30,29" fill="url(#${uid}_armor)" stroke="url(#${uid}_gold)" stroke-width="2.5"/>
-        <polygon points="50,10 55,24 50,34 45,24" fill="#fbbf24" stroke="#ffffff" stroke-width="1.2"/>
-        <!-- Blazing Dragon Eyes & Visor -->
-        <polygon points="36,39 48,43 37,47" fill="#fef08a"/>
-        <polygon points="64,39 52,43 63,47" fill="#fef08a"/>
-        <line x1="50" y1="32" x2="50" y2="62" stroke="url(#${uid}_gold)" stroke-width="2.2"/>
+        <path d="M32,32 Q8,14 15,5 Q26,15 39,25 Z" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.6"/>
+        <path d="M68,32 Q92,14 85,5 Q74,15 61,25 Z" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.6"/>
+        <!-- Armored Dragon Helm & Dorsal Crest -->
+        <polygon points="50,12 71,28 65,59 50,68 35,59 29,28" fill="url(#${uid}_armor)" stroke="url(#${uid}_gold)" stroke-width="2.5"/>
+        <polygon points="50,8 56,24 50,35 44,24" fill="#fbbf24" stroke="#ffffff" stroke-width="1.3"/>
+        <!-- Blazing Slit Dragon Eyes & Fang Visor -->
+        <polygon points="35,38 48,43 36,47" fill="#fef08a" filter="url(#${uid}_glow)"/>
+        <polygon points="65,38 52,43 64,47" fill="#fef08a" filter="url(#${uid}_glow)"/>
+        <line x1="50" y1="32" x2="50" y2="63" stroke="url(#${uid}_gold)" stroke-width="2.4"/>
+        <path d="M39,53 L44,58 L50,54 L56,58 L61,53" fill="none" stroke="#f97316" stroke-width="1.6"/>
         <!-- Ember-Wyrm Halberd -->
-        <line x1="84" y1="16" x2="78" y2="92" stroke="url(#${uid}_gold)" stroke-width="3.2"/>
-        <path d="M84,8 L95,22 L82,28 Z" fill="#f97316" stroke="#fef08a" stroke-width="1.4"/>
+        <line x1="84" y1="14" x2="78" y2="92" stroke="url(#${uid}_gold)" stroke-width="3.4"/>
+        <path d="M84,5 L96,21 L82,29 L76,18 Z" fill="#f97316" stroke="#fef08a" stroke-width="1.5"/>
+        <circle cx="84" cy="19" r="2.4" fill="#ffffff"/>
       `;
       break;
 
     case 'hero_ranger':
-      // Sylvan Warden Lyra: Antlered Elven Crown, Emerald Leaf-Plate & Starlight Whisper-Bow
+      // Sylvan Warden Lyra: Multi-Pronged Royal Antler Diadem, Emerald Leaf-Plate & Starlight Whisper-Bow with Drawn Star-Arrow
       bust = `
-        <!-- Starlight Forest Halo -->
-        <circle cx="50" cy="42" r="33" fill="none" stroke="#2dd4bf" stroke-width="1.4" stroke-dasharray="5 3" opacity="0.78"/>
+        <!-- Starlight Forest Halo & Floating Spores -->
+        <circle cx="50" cy="41" r="34" fill="none" stroke="#2dd4bf" stroke-width="1.5" stroke-dasharray="5 3" opacity="0.82"/>
+        <circle cx="22" cy="28" r="1.8" fill="#99f6e4"/>
+        <circle cx="75" cy="24" r="1.8" fill="#fef08a"/>
+        <!-- Back Quiver Feathers -->
+        <polygon points="18,36 12,18 22,22 25,38" fill="#2dd4bf" stroke="url(#${uid}_gold)" stroke-width="1.2"/>
         <!-- Emerald Ranger Cloak & Leaf Pauldrons -->
-        <path d="M12,93 C16,60 84,60 88,93 Z" fill="url(#${uid}_cloak)" stroke="#2dd4bf" stroke-width="2.2"/>
-        <path d="M10,76 Q22,56 39,66 L31,90 Z M90,76 Q78,56 61,66 L69,90 Z" fill="url(#${uid}_armor)" stroke="url(#${uid}_gold)" stroke-width="2"/>
-        <polygon points="50,69 55,78 50,87 45,78" fill="#2dd4bf" stroke="#ffffff" stroke-width="1.2"/>
-        <!-- Royal Golden Antler Diadem -->
-        <path d="M34,26 L18,8 M25,16 L14,17 M66,26 L82,8 M75,16 L86,17" stroke="url(#${uid}_gold)" stroke-width="2.8" stroke-linecap="round"/>
-        <!-- Sylvan Hood & Star Gem -->
-        <path d="M50,12 L72,33 L65,62 L35,62 L28,33 Z" fill="url(#${uid}_armor)" stroke="#2dd4bf" stroke-width="2.4"/>
-        <polygon points="50,20 54,28 50,35 46,28" fill="#99f6e4" stroke="#ffffff" stroke-width="1.2"/>
-        <polygon points="38,42 46,40 44,45" fill="#ccfbf1"/>
-        <polygon points="62,42 54,40 56,45" fill="#ccfbf1"/>
-        <!-- Starlight Whisper-Bow & Glowing Arrow -->
-        <path d="M81,12 Q96,50 77,90" fill="none" stroke="url(#${uid}_gold)" stroke-width="3"/>
-        <line x1="81" y1="12" x2="77" y2="90" stroke="#99f6e4" stroke-width="1.4"/>
-        <circle cx="86" cy="48" r="3" fill="#ffffff"/>
+        <path d="M11,93 C15,59 85,59 89,93 Z" fill="url(#${uid}_cloak)" stroke="#2dd4bf" stroke-width="2.2"/>
+        <path d="M9,76 Q21,55 39,65 L31,91 Z M91,76 Q79,55 61,65 L69,91 Z" fill="url(#${uid}_armor)" stroke="url(#${uid}_gold)" stroke-width="2.2"/>
+        <path d="M14,74 Q24,63 35,68 M86,74 Q76,63 65,68" fill="none" stroke="#5eead4" stroke-width="1.4"/>
+        <!-- Emerald Star Brooch -->
+        <polygon points="50,67 56,78 50,89 44,78" fill="#2dd4bf" stroke="#ffffff" stroke-width="1.4"/>
+        <circle cx="50" cy="78" r="2.6" fill="#ffffff"/>
+        <!-- Multi-Pronged Royal Golden Antler Diadem -->
+        <path d="M35,26 L16,7 M25,16 L12,16 M29,21 L21,9 M65,26 L84,7 M75,16 L88,16 M71,21 L79,9" stroke="url(#${uid}_gold)" stroke-width="2.8" stroke-linecap="round"/>
+        <!-- Sylvan Hood, Masked Lower Face & Star Gem -->
+        <path d="M50,11 L73,32 L65,63 L35,63 L27,32 Z" fill="url(#${uid}_armor)" stroke="#2dd4bf" stroke-width="2.4"/>
+        <polygon points="36,46 50,52 64,46 60,61 50,65 40,61" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="1.5"/>
+        <polygon points="50,19 55,28 50,36 45,28" fill="#99f6e4" stroke="#ffffff" stroke-width="1.2"/>
+        <polygon points="37,41 46,39 44,45" fill="#ccfbf1" filter="url(#${uid}_glow)"/>
+        <polygon points="63,41 54,39 56,45" fill="#ccfbf1" filter="url(#${uid}_glow)"/>
+        <!-- Starlight Whisper-Bow & Drawn Glowing Star-Arrow -->
+        <path d="M80,10 Q97,50 76,91" fill="none" stroke="url(#${uid}_gold)" stroke-width="3.2"/>
+        <line x1="80" y1="10" x2="76" y2="91" stroke="#99f6e4" stroke-width="1.5"/>
+        <line x1="72" y1="49" x2="94" y2="47" stroke="#ffffff" stroke-width="2"/>
+        <polygon points="97,47 89,43 91,47 89,51" fill="#5eead4" stroke="#ffffff" stroke-width="1"/>
       `;
       break;
 
     case 'hero_deathknight':
-      // Runeblade Arthos: Glacial Crown Visor, Runed Dread-Plate & Winter-Star Greatsword
+      // Runeblade Arthos: 5-Spire Glacial Ice-Crown, Spiked Dread-Plate & Winter-Star Greatsword
       bust = `
-        <!-- Glacial Frost Halo -->
-        <circle cx="50" cy="41" r="34" fill="none" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.8"/>
+        <!-- Glacial Frost Halo & Ice Shards -->
+        <circle cx="50" cy="40" r="35" fill="none" stroke="#60a5fa" stroke-width="1.6" stroke-dasharray="4 3" opacity="0.85"/>
+        <polygon points="18,22 22,15 25,23" fill="#93c5fd"/>
+        <polygon points="82,22 78,15 75,23" fill="#93c5fd"/>
         <!-- Spiked Glacial Pauldrons & Cuirass -->
-        <polygon points="7,84 17,56 39,65 33,93" fill="url(#${uid}_armor)" stroke="#93c5fd" stroke-width="2.2"/>
-        <polygon points="93,84 83,56 61,65 67,93" fill="url(#${uid}_armor)" stroke="#93c5fd" stroke-width="2.2"/>
-        <polygon points="31,65 69,65 63,93 37,93" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="2.2"/>
-        <polygon points="50,69 56,79 50,89 44,79" fill="#60a5fa" stroke="#ffffff" stroke-width="1.3"/>
-        <!-- Jagged Ice-Star Crown & Helm -->
-        <polygon points="26,28 35,8 44,23 50,6 56,23 65,8 74,28" fill="url(#${uid}_steel)" stroke="#bfdbfe" stroke-width="2"/>
-        <path d="M31,28 H69 L65,59 L50,67 L35,59 Z" fill="url(#${uid}_armor)" stroke="#60a5fa" stroke-width="2.4"/>
-        <!-- Glowing Frost-Star Eyes & Grill -->
-        <circle cx="41" cy="42" r="4.5" fill="#3b82f6"/>
-        <circle cx="59" cy="42" r="4.5" fill="#3b82f6"/>
-        <circle cx="41" cy="42" r="2.2" fill="#ffffff"/>
-        <circle cx="59" cy="42" r="2.2" fill="#ffffff"/>
-        <line x1="44" y1="53" x2="44" y2="61" stroke="#bfdbfe" stroke-width="2.2"/>
-        <line x1="50" y1="52" x2="50" y2="63" stroke="#bfdbfe" stroke-width="2.2"/>
-        <line x1="56" y1="53" x2="56" y2="61" stroke="#bfdbfe" stroke-width="2.2"/>
-        <!-- Winter-Star Runeblade -->
-        <polygon points="83,8 89,20 85,90 79,90" fill="url(#${uid}_steel)" stroke="#bfdbfe" stroke-width="1.6"/>
+        <polygon points="6,84 16,54 39,64 33,93" fill="url(#${uid}_armor)" stroke="#93c5fd" stroke-width="2.3"/>
+        <polygon points="94,84 84,54 61,64 67,93" fill="url(#${uid}_armor)" stroke="#93c5fd" stroke-width="2.3"/>
+        <polygon points="12,58 18,45 24,59" fill="url(#${uid}_steel)" stroke="#bfdbfe" stroke-width="1.5"/>
+        <polygon points="88,58 82,45 76,59" fill="url(#${uid}_steel)" stroke="#bfdbfe" stroke-width="1.5"/>
+        <polygon points="31,64 69,64 63,93 37,93" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="2.3"/>
+        <!-- Glowing Frost-Skull / Diamond Core on Chest -->
+        <polygon points="50,68 57,79 50,90 43,79" fill="#60a5fa" stroke="#ffffff" stroke-width="1.4"/>
+        <circle cx="50" cy="79" r="2.8" fill="#ffffff"/>
+        <!-- 5-Spire Jagged Ice-Star Crown & Helm -->
+        <polygon points="25,28 33,9 42,23 50,5 58,23 67,9 75,28" fill="url(#${uid}_steel)" stroke="#bfdbfe" stroke-width="2.1"/>
+        <path d="M30,28 H70 L65,59 L50,68 L35,59 Z" fill="url(#${uid}_armor)" stroke="#60a5fa" stroke-width="2.5"/>
+        <!-- Glowing Frost-Star Eyes & Skeletal Vent Grill -->
+        <circle cx="41" cy="41" r="4.8" fill="#3b82f6" filter="url(#${uid}_glow)"/>
+        <circle cx="59" cy="41" r="4.8" fill="#3b82f6" filter="url(#${uid}_glow)"/>
+        <circle cx="41" cy="41" r="2.3" fill="#ffffff"/>
+        <circle cx="59" cy="41" r="2.3" fill="#ffffff"/>
+        <line x1="43" y1="52" x2="43" y2="61" stroke="#bfdbfe" stroke-width="2.2"/>
+        <line x1="50" y1="51" x2="50" y2="63" stroke="#bfdbfe" stroke-width="2.4"/>
+        <line x1="57" y1="52" x2="57" y2="61" stroke="#bfdbfe" stroke-width="2.2"/>
+        <!-- Winter-Star Runeblade Greatsword -->
+        <polygon points="84,5 90,18 86,91 78,91 78,18" fill="url(#${uid}_steel)" stroke="#bfdbfe" stroke-width="1.8"/>
+        <line x1="84" y1="14" x2="82" y2="86" stroke="#60a5fa" stroke-width="1.6" stroke-dasharray="4 2"/>
       `;
       break;
 
     case 'hero_paladin':
     default:
-      // High Paladin Aurelius: Sunforged Winged Crown-Helm, Lion Pauldrons & Dawnbreaker Sun-Spear (Zero Crosses)
+      // High Paladin Aurelius: Sunforged Winged Crown-Helm, Lion Pauldrons, Heater Shield & Dawnbreaker Sun-Spear (Zero Crosses)
       bust = `
         <!-- Radiant Solar Starburst Halo -->
-        <circle cx="50" cy="40" r="35" fill="none" stroke="url(#${uid}_gold)" stroke-width="1.8" stroke-dasharray="6 3" opacity="0.9"/>
-        <circle cx="50" cy="40" r="29" fill="none" stroke="#fef08a" stroke-width="0.9" opacity="0.5"/>
+        <circle cx="50" cy="39" r="35" fill="none" stroke="url(#${uid}_gold)" stroke-width="2" stroke-dasharray="6 3" opacity="0.92"/>
+        <circle cx="50" cy="39" r="29" fill="none" stroke="#fef08a" stroke-width="1.1" opacity="0.6"/>
         <!-- Sunforged Lion Pauldrons & Royal Cuirass -->
-        <path d="M7,87 Q13,56 39,63 L34,93 Z M93,87 Q87,56 61,63 L66,93 Z" fill="url(#${uid}_cloak)" stroke="url(#${uid}_gold)" stroke-width="2.4"/>
-        <path d="M12,75 Q22,62 36,68 M88,75 Q78,62 64,68" fill="none" stroke="#fef08a" stroke-width="1.6"/>
-        <polygon points="33,63 67,63 61,93 39,93" fill="url(#${uid}_armor)" stroke="url(#${uid}_gold)" stroke-width="2.4"/>
+        <path d="M6,88 Q12,55 39,62 L34,93 Z M94,88 Q88,55 61,62 L66,93 Z" fill="url(#${uid}_cloak)" stroke="url(#${uid}_gold)" stroke-width="2.5"/>
+        <path d="M11,74 Q21,60 36,67 M89,74 Q79,60 64,67" fill="none" stroke="#fef08a" stroke-width="1.8"/>
+        <polygon points="32,62 68,62 61,93 39,93" fill="url(#${uid}_armor)" stroke="url(#${uid}_gold)" stroke-width="2.5"/>
         <!-- Solar Star Emblem on Chest -->
-        <polygon points="50,67 57,78 50,89 43,78" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.3"/>
-        <circle cx="50" cy="78" r="2.8" fill="#ffffff"/>
-        <!-- Golden Dragon-Feather Helm Wings & Solar Crown -->
-        <path d="M12,20 L32,36 L28,50 L8,32 Z M88,20 L68,36 L72,50 L92,32 Z" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.6"/>
-        <polygon points="33,26 40,9 50,19 60,9 67,26" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.6"/>
+        <polygon points="50,66 58,78 50,90 42,78" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.4"/>
+        <circle cx="50" cy="78" r="3" fill="#ffffff"/>
+        <!-- Left-Hand Sunforged Heater Shield Corner -->
+        <polygon points="8,70 28,66 26,91 14,94 6,85" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="2.2"/>
+        <polygon points="17,73 22,80 17,87 12,80" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1"/>
+        <!-- Golden Dragon-Feather Helm Wings & 5-Point Solar Crown -->
+        <path d="M10,19 L32,35 L28,50 L7,31 Z M90,19 L68,35 L72,50 L93,31 Z" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.6"/>
+        <polygon points="32,25 39,8 46,19 50,6 54,19 61,8 68,25" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.6"/>
         <!-- Royal Alabaster & Gold Great-Helm with Angled V-Visor -->
-        <path d="M32,25 L50,17 L68,25 L64,58 L50,66 L36,58 Z" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="2.5"/>
-        <polygon points="37,38 48,42 37,46" fill="#fef08a"/>
-        <polygon points="63,38 52,42 63,46" fill="#fef08a"/>
-        <polygon points="50,24 55,32 50,40 45,32" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.1"/>
+        <path d="M31,25 L50,16 L69,25 L64,58 L50,67 L36,58 Z" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="2.6"/>
+        <line x1="50" y1="35" x2="50" y2="63" stroke="url(#${uid}_gold)" stroke-width="2.2"/>
+        <polygon points="36,38 48,42 36,46" fill="#fef08a" filter="url(#${uid}_glow)"/>
+        <polygon points="64,38 52,42 64,46" fill="#fef08a" filter="url(#${uid}_glow)"/>
+        <polygon points="50,23 55,31 50,39 45,31" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.2"/>
         <!-- Dawnbreaker Upright Sun-Spear -->
-        <line x1="84" y1="18" x2="79" y2="92" stroke="url(#${uid}_gold)" stroke-width="3.4"/>
-        <polygon points="85,4 93,21 84,16 76,21" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.5"/>
+        <line x1="84" y1="18" x2="79" y2="92" stroke="url(#${uid}_gold)" stroke-width="3.6"/>
+        <polygon points="77,22 91,22 84,18" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.2"/>
+        <polygon points="85,3 94,21 84,15 75,21" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.5"/>
       `;
       break;
   }
@@ -402,9 +450,16 @@ export function renderFantasyHeroPortraitSVG(heroId = 'hero_paladin', color = '#
   return `
     <svg class="hero-portrait-svg" viewBox="0 0 100 100" aria-hidden="true">
       <defs>
+        <filter id="${uid}_glow" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="1.4" result="blur"/>
+          <feMerge>
+            <feMergeNode in="blur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
         <radialGradient id="${uid}_bg" cx="50%" cy="38%" r="62%">
-          <stop offset="0%" stop-color="${color}" stop-opacity="0.48"/>
-          <stop offset="55%" stop-color="#1e1530" stop-opacity="0.92"/>
+          <stop offset="0%" stop-color="${color}" stop-opacity="0.54"/>
+          <stop offset="55%" stop-color="#1e1530" stop-opacity="0.94"/>
           <stop offset="100%" stop-color="#090610" stop-opacity="1"/>
         </radialGradient>
         <linearGradient id="${uid}_gold" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -413,12 +468,12 @@ export function renderFantasyHeroPortraitSVG(heroId = 'hero_paladin', color = '#
           <stop offset="100%" stop-color="#92400e"/>
         </linearGradient>
         <linearGradient id="${uid}_steel" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="#475569"/>
-          <stop offset="50%" stop-color="#1e293b"/>
+          <stop offset="0%" stop-color="#64748b"/>
+          <stop offset="45%" stop-color="#1e293b"/>
           <stop offset="100%" stop-color="#0f172a"/>
         </linearGradient>
         <linearGradient id="${uid}_armor" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#312e81"/>
+          <stop offset="0%" stop-color="#3730a3"/>
           <stop offset="50%" stop-color="#1e1b4b"/>
           <stop offset="100%" stop-color="#090714"/>
         </linearGradient>
@@ -429,14 +484,14 @@ export function renderFantasyHeroPortraitSVG(heroId = 'hero_paladin', color = '#
       </defs>
       <!-- Ornate Octagonal Royal Medallion Frame -->
       <polygon points="50,2 94,21 94,79 50,98 6,79 6,21" fill="url(#${uid}_bg)" stroke="url(#${uid}_gold)" stroke-width="2.8"/>
-      <polygon points="50,6 90,23 90,77 50,94 10,77 10,23" fill="none" stroke="${color}" stroke-width="1.1" stroke-opacity="0.65"/>
+      <polygon points="50,6 90,23 90,77 50,94 10,77 10,23" fill="none" stroke="${color}" stroke-width="1.2" stroke-opacity="0.72"/>
       <!-- Corner Star Rivets -->
-      <circle cx="50" cy="5" r="2" fill="#fef08a"/>
-      <circle cx="50" cy="95" r="2" fill="#fef08a"/>
-      <circle cx="9" cy="23" r="1.8" fill="#fef08a"/>
-      <circle cx="91" cy="23" r="1.8" fill="#fef08a"/>
-      <circle cx="9" cy="77" r="1.8" fill="#fef08a"/>
-      <circle cx="91" cy="77" r="1.8" fill="#fef08a"/>
+      <circle cx="50" cy="5" r="2.1" fill="#fef08a"/>
+      <circle cx="50" cy="95" r="2.1" fill="#fef08a"/>
+      <circle cx="9" cy="23" r="1.9" fill="#fef08a"/>
+      <circle cx="91" cy="23" r="1.9" fill="#fef08a"/>
+      <circle cx="9" cy="77" r="1.9" fill="#fef08a"/>
+      <circle cx="91" cy="77" r="1.9" fill="#fef08a"/>
       ${bust}
     </svg>
   `;
@@ -444,88 +499,130 @@ export function renderFantasyHeroPortraitSVG(heroId = 'hero_paladin', color = '#
 
 /**
  * Render 6 Distinct Enemy Fantasy War Commander Portraits (`viewBox="0 0 80 80"`)
- * AAA Shaded Vector Art with metallic obsidian/crimson gradients and glowing eyes (Zero Crosses).
+ * AAA Shaded Vector Art with metallic obsidian/crimson gradients, weapons, crowns, and glowing eyes (Zero Crosses).
  */
 export function renderBossCrestSVG(bossId, color = '#e11d48') {
   const uid = `boss_${bossId}`;
   let inner = '';
   switch (bossId) {
     case 'boss_malakor':
-      // Warlord Malakor the Ironclad: Spiked Black-Iron Juggernaut Bust & Angled Visor
+      // Warlord Malakor the Ironclad: Spiked Black-Iron Juggernaut Bust, Horned Great-Helm & Dread Cleaver-Halberd
       inner = `
-        <path d="M8,73 Q15,48 33,53 L28,75 Z M72,73 Q65,48 47,53 L52,75 Z" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="2"/>
-        <polygon points="12,14 25,28 19,35" fill="url(#${uid}_gold)"/>
-        <polygon points="68,14 55,28 61,35" fill="url(#${uid}_gold)"/>
-        <path d="M21,23 L40,10 L59,23 L56,59 L40,68 L24,59 Z" fill="url(#${uid}_steel)" stroke="${color}" stroke-width="2.4"/>
-        <polygon points="26,35 38,39 27,43" fill="${color}"/>
-        <polygon points="54,35 42,39 53,43" fill="${color}"/>
-        <circle cx="32" cy="39" r="2.2" fill="#ffffff"/>
-        <circle cx="48" cy="39" r="2.2" fill="#ffffff"/>
-        <polygon points="40,19 45,28 40,34 35,28" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1"/>
+        <!-- Spiked Black-Iron Pauldrons & Cuirass -->
+        <path d="M7,73 Q14,46 34,52 L29,75 Z M73,73 Q66,46 46,52 L51,75 Z" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="2.2"/>
+        <polygon points="27,53 53,53 49,75 31,75" fill="#11131a" stroke="${color}" stroke-width="1.8"/>
+        <polygon points="40,57 45,65 40,73 35,65" fill="${color}" stroke="#ffffff" stroke-width="1"/>
+        <!-- Swept Iron Horns -->
+        <polygon points="10,12 26,27 19,35" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.1"/>
+        <polygon points="70,12 54,27 61,35" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.1"/>
+        <!-- Juggernaut Great-Helm & Glowing Slit Visor -->
+        <path d="M21,22 L40,9 L59,22 L56,58 L40,67 L24,58 Z" fill="url(#${uid}_steel)" stroke="${color}" stroke-width="2.4"/>
+        <polygon points="25,34 38,39 26,43" fill="${color}"/>
+        <polygon points="55,34 42,39 54,43" fill="${color}"/>
+        <circle cx="32" cy="38.5" r="2.2" fill="#ffffff"/>
+        <circle cx="48" cy="38.5" r="2.2" fill="#ffffff"/>
+        <polygon points="40,17 45,27 40,34 35,27" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.1"/>
+        <!-- Dread Cleaver-Halberd -->
+        <line x1="67" y1="14" x2="63" y2="74" stroke="url(#${uid}_gold)" stroke-width="2.8"/>
+        <polygon points="67,8 76,22 65,28" fill="${color}" stroke="#ffffff" stroke-width="1.2"/>
       `;
       break;
 
     case 'boss_vespera':
-      // Lich-Empress Vespera: Undead Necromancer Queen with Bone Crown & Soul-Fire Eyes
+      // Lich-Empress Vespera: Undead Necromancer Queen with 5-Spire Bone Crown, Soul-Fire Eyes & Necrotic Staff
       inner = `
-        <path d="M10,73 C15,50 65,50 70,73 Z" fill="url(#${uid}_steel)" stroke="${color}" stroke-width="2.2"/>
+        <!-- Necrotic Mantle & Pauldrons -->
+        <path d="M9,74 C14,48 66,48 71,74 Z" fill="url(#${uid}_steel)" stroke="${color}" stroke-width="2.2"/>
+        <!-- Sculpted Skull Visage & Jaw -->
         <circle cx="40" cy="38" r="19" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="2.4"/>
-        <rect x="31" y="50" width="18" height="13" rx="2.5" fill="#122024" stroke="url(#${uid}_gold)" stroke-width="2"/>
-        <polygon points="20,24 29,6 40,19 51,6 60,24" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.4"/>
-        <circle cx="33" cy="38" r="4.8" fill="${color}"/>
-        <circle cx="47" cy="38" r="4.8" fill="${color}"/>
-        <circle cx="33" cy="38" r="2.2" fill="#ffffff"/>
-        <circle cx="47" cy="38" r="2.2" fill="#ffffff"/>
+        <rect x="30" y="50" width="20" height="14" rx="2.5" fill="#101c22" stroke="url(#${uid}_gold)" stroke-width="2"/>
+        <line x1="36" y1="51" x2="36" y2="63" stroke="#99f6e4" stroke-width="1.4"/>
+        <line x1="40" y1="51" x2="40" y2="63" stroke="#99f6e4" stroke-width="1.4"/>
+        <line x1="44" y1="51" x2="44" y2="63" stroke="#99f6e4" stroke-width="1.4"/>
+        <!-- 5-Spire Bone & Gold Crown -->
+        <polygon points="18,24 27,6 35,19 40,4 45,19 53,6 62,24" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.4"/>
+        <!-- Blazing Soul-Fire Eye Sockets -->
+        <circle cx="33" cy="38" r="5" fill="${color}"/>
+        <circle cx="47" cy="38" r="5" fill="${color}"/>
+        <circle cx="33" cy="38" r="2.3" fill="#ffffff"/>
+        <circle cx="47" cy="38" r="2.3" fill="#ffffff"/>
         <polygon points="40,42 43,48 37,48" fill="#fef08a"/>
+        <!-- Twin-Skull Necrotic Staff -->
+        <line x1="68" y1="18" x2="64" y2="74" stroke="url(#${uid}_gold)" stroke-width="2.6"/>
+        <polygon points="68,8 74,17 68,26 62,17" fill="${color}" stroke="#ffffff" stroke-width="1.2"/>
       `;
       break;
 
     case 'boss_vorn':
-      // General Vorn the Wyrm-Breaker: Horned Gargoyle Warlord with Swept Wings
+      // General Vorn the Wyrm-Breaker: Horned Gargoyle Warlord with Swept Wings & Colossal Siege Maul
       inner = `
-        <path d="M6,26 L28,20 L24,54 Z M74,26 L52,20 L56,54 Z" fill="${color}" fill-opacity="0.55" stroke="url(#${uid}_gold)" stroke-width="1.8"/>
-        <path d="M22,8 L33,26 L25,28 Z M58,8 L47,26 L55,28 Z" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.2"/>
-        <path d="M25,25 C25,15 55,15 55,25 L61,59 L19,59 Z" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="2.5"/>
-        <circle cx="40" cy="64" r="5.5" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.2"/>
-        <polygon points="30,35 38,38 31,41" fill="#ffffff"/>
-        <polygon points="50,35 42,38 49,41" fill="#ffffff"/>
+        <!-- Swept Gargoyle Pinions -->
+        <path d="M5,24 L28,19 L23,56 Z M75,24 L52,19 L57,56 Z" fill="${color}" fill-opacity="0.62" stroke="url(#${uid}_gold)" stroke-width="1.9"/>
+        <!-- Curved Ram/Wyrm Horns -->
+        <path d="M20,6 L34,25 L24,28 Z M60,6 L46,25 L56,28 Z" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.3"/>
+        <!-- Armored Gargoyle Helm & Chest -->
+        <path d="M24,25 C24,14 56,14 56,25 L62,60 L40,70 L18,60 Z" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="2.5"/>
+        <circle cx="40" cy="63" r="5.8" fill="url(#${uid}_gold)" stroke="#ffffff" stroke-width="1.3"/>
+        <polygon points="29,35 38,39 30,42" fill="#ffffff"/>
+        <polygon points="51,35 42,39 50,42" fill="#ffffff"/>
+        <!-- Siege Great-Maul Head -->
+        <rect x="61" y="12" width="13" height="9" rx="1.5" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="1.6"/>
+        <line x1="67" y1="21" x2="64" y2="74" stroke="url(#${uid}_gold)" stroke-width="2.8"/>
       `;
       break;
 
     case 'boss_thurible':
-      // Pyromancer Morvain: Hell-Forge Warlock Mitre, Chains & Brimstone Core
+      // Pyromancer Morvain: Hell-Forge Warlock Mitre, Suspended Chains & Brimstone Furnace Core
       inner = `
-        <path d="M12,73 C17,50 63,50 68,73 Z" fill="url(#${uid}_steel)" stroke="${color}" stroke-width="2.2"/>
-        <line x1="40" y1="7" x2="25" y2="36" stroke="url(#${uid}_gold)" stroke-width="2" stroke-dasharray="3 2"/>
-        <line x1="40" y1="7" x2="55" y2="36" stroke="url(#${uid}_gold)" stroke-width="2" stroke-dasharray="3 2"/>
-        <polygon points="21,36 59,36 51,63 29,63" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="2.4"/>
-        <polygon points="40,12 52,36 28,36" fill="${color}" fill-opacity="0.7" stroke="#ffffff" stroke-width="1.6"/>
-        <circle cx="34" cy="46" r="3.2" fill="#fef08a"/>
-        <circle cx="46" cy="46" r="3.2" fill="#fef08a"/>
+        <!-- Hell-Forge Mantle & Furnace Core -->
+        <path d="M10,74 C15,49 65,49 70,74 Z" fill="url(#${uid}_steel)" stroke="${color}" stroke-width="2.2"/>
+        <circle cx="40" cy="64" r="6" fill="${color}" stroke="#fef08a" stroke-width="1.5"/>
+        <!-- Suspended Golden Censer Chains -->
+        <line x1="40" y1="6" x2="24" y2="35" stroke="url(#${uid}_gold)" stroke-width="2.2" stroke-dasharray="3 2"/>
+        <line x1="40" y1="6" x2="56" y2="35" stroke="url(#${uid}_gold)" stroke-width="2.2" stroke-dasharray="3 2"/>
+        <!-- Armored Censer Faceplate & Flaming Mitre Crown -->
+        <polygon points="20,35 60,35 52,62 28,62" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="2.4"/>
+        <polygon points="40,10 54,35 26,35" fill="${color}" fill-opacity="0.78" stroke="#ffffff" stroke-width="1.6"/>
+        <circle cx="33" cy="45" r="3.4" fill="#fef08a"/>
+        <circle cx="47" cy="45" r="3.4" fill="#fef08a"/>
+        <!-- Brimstone Flail Staff -->
+        <line x1="67" y1="20" x2="64" y2="74" stroke="url(#${uid}_gold)" stroke-width="2.6"/>
+        <polygon points="67,10 74,18 67,26 60,18" fill="#fef08a" stroke="${color}" stroke-width="1.4"/>
       `;
       break;
 
     case 'boss_carmilla':
-      // Blood-Countess Carmilla: Vampiric Crimson Valkyrie Collar & Ruby Tiara
+      // Blood-Countess Carmilla: Vampiric Crimson Winged Collar, Ruby Tiara & Blood-Star Lance
       inner = `
-        <path d="M8,26 L29,44 L15,70 Z M72,26 L51,44 L65,70 Z" fill="#4c0519" stroke="url(#${uid}_gold)" stroke-width="2"/>
-        <path d="M23,22 H57 L51,49 C49,57 44,59 40,59 C36,59 31,57 29,49 Z" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="2.5"/>
-        <polygon points="40,7 49,24 40,36 31,24" fill="${color}" stroke="#ffffff" stroke-width="1.6"/>
-        <circle cx="34" cy="40" r="2.8" fill="#fda4af"/>
-        <circle cx="46" cy="40" r="2.8" fill="#fda4af"/>
-        <circle cx="34" cy="40" r="1.3" fill="#ffffff"/>
-        <circle cx="46" cy="40" r="1.3" fill="#ffffff"/>
+        <!-- High Vampiric Bat-Wing Collar -->
+        <path d="M6,23 L29,43 L14,72 Z M74,23 L51,43 L66,72 Z" fill="#4c0519" stroke="url(#${uid}_gold)" stroke-width="2.1"/>
+        <!-- Aristocratic Silver Mask & Armor -->
+        <path d="M22,22 H58 L52,50 C49,58 44,61 40,61 C36,61 31,58 28,50 Z" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="2.5"/>
+        <!-- Blood-Ruby Tiara Jewel -->
+        <polygon points="40,6 50,23 40,35 30,23" fill="${color}" stroke="#ffffff" stroke-width="1.6"/>
+        <circle cx="33.5" cy="40" r="3" fill="#fda4af"/>
+        <circle cx="46.5" cy="40" r="3" fill="#fda4af"/>
+        <circle cx="33.5" cy="40" r="1.4" fill="#ffffff"/>
+        <circle cx="46.5" cy="40" r="1.4" fill="#ffffff"/>
+        <!-- Crimson Blood-Lance -->
+        <line x1="67" y1="18" x2="64" y2="74" stroke="url(#${uid}_gold)" stroke-width="2.6"/>
+        <polygon points="68,6 74,22 67,18 61,22" fill="${color}" stroke="#ffffff" stroke-width="1.2"/>
       `;
       break;
 
     case 'boss_hollow_seraph':
     default:
-      // The Abyssal War-God: Six-Winged Fallen Seraph Mask
+      // The Abyssal War-God: Six-Winged Fallen Seraph Mask, Solar-Eclipse Crown & Twin-Pronged Spear
       inner = `
-        <polygon points="40,5 50,29 75,40 50,51 40,75 30,51 5,40 30,29" fill="${color}" fill-opacity="0.6" stroke="url(#${uid}_gold)" stroke-width="2"/>
-        <polygon points="40,13 63,26 63,54 40,67 17,54 17,26" fill="none" stroke="#ffffff" stroke-width="1.6"/>
-        <circle cx="40" cy="40" r="12" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="2.4"/>
-        <circle cx="40" cy="40" r="5" fill="#ffffff"/>
+        <!-- 6 Fanned Golden & Violet Seraph Wings -->
+        <polygon points="40,4 51,28 76,40 51,52 40,76 29,52 4,40 29,28" fill="${color}" fill-opacity="0.68" stroke="url(#${uid}_gold)" stroke-width="2.1"/>
+        <polygon points="12,14 33,31 25,42 Z M68,14 47,31 55,42 Z M12,66 33,49 25,38 Z M68,66 47,49 55,38 Z" fill="url(#${uid}_gold)" opacity="0.85"/>
+        <!-- Sacred Hexagram Frame & Eclipse Mask -->
+        <polygon points="40,12 64,26 64,54 40,68 16,54 16,26" fill="none" stroke="#ffffff" stroke-width="1.6"/>
+        <circle cx="40" cy="40" r="13" fill="url(#${uid}_steel)" stroke="url(#${uid}_gold)" stroke-width="2.5"/>
+        <circle cx="40" cy="40" r="5.5" fill="#ffffff"/>
+        <circle cx="35" cy="38" r="1.8" fill="${color}"/>
+        <circle cx="45" cy="38" r="1.8" fill="${color}"/>
       `;
       break;
   }
@@ -534,7 +631,7 @@ export function renderBossCrestSVG(bossId, color = '#e11d48') {
     <svg class="boss-crest-svg" viewBox="0 0 80 80" aria-hidden="true">
       <defs>
         <radialGradient id="${uid}_bg" cx="50%" cy="40%" r="60%">
-          <stop offset="0%" stop-color="${color}" stop-opacity="0.45"/>
+          <stop offset="0%" stop-color="${color}" stop-opacity="0.5"/>
           <stop offset="100%" stop-color="#0b0712" stop-opacity="1"/>
         </radialGradient>
         <linearGradient id="${uid}_gold" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -543,14 +640,15 @@ export function renderBossCrestSVG(bossId, color = '#e11d48') {
           <stop offset="100%" stop-color="#92400e"/>
         </linearGradient>
         <linearGradient id="${uid}_steel" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="#334155"/>
+          <stop offset="0%" stop-color="#475569"/>
+          <stop offset="50%" stop-color="#1e293b"/>
           <stop offset="100%" stop-color="#0f172a"/>
         </linearGradient>
       </defs>
-      <polygon points="40,2 75,18 75,62 40,78 5,62 5,18" fill="url(#${uid}_bg)" stroke="url(#${uid}_gold)" stroke-width="2.4"/>
-      <circle cx="40" cy="40" r="31" fill="none" stroke="${color}" stroke-width="1.2" stroke-dasharray="4 2" opacity="0.78"/>
-      <circle cx="40" cy="5" r="1.8" fill="#fef08a"/>
-      <circle cx="40" cy="75" r="1.8" fill="#fef08a"/>
+      <polygon points="40,2 75,18 75,62 40,78 5,62 5,18" fill="url(#${uid}_bg)" stroke="url(#${uid}_gold)" stroke-width="2.5"/>
+      <circle cx="40" cy="40" r="31" fill="none" stroke="${color}" stroke-width="1.3" stroke-dasharray="4 2" opacity="0.82"/>
+      <circle cx="40" cy="5" r="1.9" fill="#fef08a"/>
+      <circle cx="40" cy="75" r="1.9" fill="#fef08a"/>
       ${inner}
     </svg>
   `;

@@ -24,22 +24,25 @@ export class GothicScene3D {
 
     this.camera = new THREE.PerspectiveCamera(42, 16 / 9, 0.1, 120);
 
-    // Spherical Orbit Camera State (supports presets + interactive mouse/touch drag + cinematic focus)
+    // Spherical Orbit Camera State (Default: Isometric View `high_cathedral`)
     this.camSpherical = {
-      theta: 0,
-      phi: 0.92,
-      radius: 10.6,
-      targetTheta: 0,
-      targetPhi: 0.92,
-      targetRadius: 10.6,
-      lookAt: new THREE.Vector3(0, 0.15, 0),
-      targetLookAt: new THREE.Vector3(0, 0.15, 0),
+      theta: 0.62,
+      phi: 0.82,
+      radius: 11.2,
+      targetTheta: 0.62,
+      targetPhi: 0.82,
+      targetRadius: 11.2,
+      lookAt: new THREE.Vector3(0, 0.14, 0),
+      targetLookAt: new THREE.Vector3(0, 0.14, 0),
     };
 
     this.cameraShake = 0;
     this.cinematicFocusTimer = 0;
     this.idleOrbitActive = true;
     this.cinematicFlyIn = null;
+    this.orbitVelocity = { theta: 0, phi: 0 };
+    this.pointerParallax = { x: 0, y: 0 };
+    this.radiusPulse = 0;
 
     this.boardSize = 5;
     this.altarData = null;
@@ -78,7 +81,7 @@ export class GothicScene3D {
 
     this._setupLighting();
     this.rebuildAltar(5, 'obsidian_nave', null);
-    this.applyCameraPreset(this.save?.getState()?.cameraPreset || 'commander_angle', true);
+    this.applyCameraPreset(this.save?.getState()?.cameraPreset || 'high_cathedral', true);
     this._bindBusEvents();
 
     if (this.canvas && typeof window !== 'undefined' && typeof WebGLRenderingContext !== 'undefined') {
@@ -169,6 +172,7 @@ export class GothicScene3D {
       if (snapshot) this._syncEntitiesOnly(snapshot);
       this.animatePieceSlam(r, c, symbol);
       this.lookInquisitorAtTile(r, c);
+      this.radiusPulse = -0.18;
     });
 
     this.bus.on('3d:stoneShatter', (payload) => {
@@ -512,49 +516,72 @@ export class GothicScene3D {
   }
 
   /**
-   * Apply one of the 4 Camera Angle Presets (`commander_angle`, `high_cathedral`, `inquisitor_duel`, `belfry_topdown`)
+   * Apply one of the 4 Camera Angle Presets (`high_cathedral` Isometric default, `commander_angle`, `inquisitor_duel`, `belfry_topdown`)
    */
-  applyCameraPreset(presetId, immediate = false) {
+  applyCameraPreset(presetId = 'high_cathedral', immediate = false) {
     const preset = CAMERA_PRESETS.find((p) => p.id === presetId) || CAMERA_PRESETS[0];
     const scaleFactor = this.boardSize >= 6 ? 1.18 : 1.0;
 
-    this.cinematicFlyIn = null;
-    this.camSpherical.targetTheta = preset.theta;
-    this.camSpherical.targetPhi = preset.phi;
-    this.camSpherical.targetRadius = preset.radius * scaleFactor;
-    this.camSpherical.targetLookAt.set(0, preset.targetY || 0.15, 0);
+    const endTheta = preset.theta;
+    const endPhi = preset.phi;
+    const endRadius = preset.radius * scaleFactor;
+    const endLookY = preset.targetY ?? 0.14;
+
+    this.orbitVelocity.theta = 0;
+    this.orbitVelocity.phi = 0;
+    this.camSpherical.targetTheta = endTheta;
+    this.camSpherical.targetPhi = endPhi;
+    this.camSpherical.targetRadius = endRadius;
+    this.camSpherical.targetLookAt.set(0, endLookY, 0);
 
     if (immediate) {
-      this.camSpherical.theta = this.camSpherical.targetTheta;
-      this.camSpherical.phi = this.camSpherical.targetPhi;
-      this.camSpherical.radius = this.camSpherical.targetRadius;
-      this.camSpherical.lookAt.copy(this.camSpherical.targetLookAt);
+      this.cinematicFlyIn = null;
+      this.camSpherical.theta = endTheta;
+      this.camSpherical.phi = endPhi;
+      this.camSpherical.radius = endRadius;
+      this.camSpherical.lookAt.set(0, endLookY, 0);
       this._updateCameraTransform(0, 0);
+    } else {
+      // Smooth S-curve transition when switching camera presets
+      this.cinematicFlyIn = {
+        elapsed: 0,
+        duration: 0.78,
+        startTheta: this.camSpherical.theta,
+        startPhi: this.camSpherical.phi,
+        startRadius: this.camSpherical.radius,
+        startLookAt: this.camSpherical.lookAt.clone(),
+        endTheta,
+        endPhi,
+        endRadius,
+        endLookAt: new THREE.Vector3(0, endLookY, 0),
+      };
     }
   }
 
   /**
-   * AAA Cinematic Camera Fly-In toward the 3D War-Table (sweeps down from high cathedral rafters to the board)
+   * AAA Cinematic Isometric Camera Fly-In toward the 3D War-Table
    */
-  playCinematicFlyIn(presetId = 'commander_angle', duration = 2.65) {
+  playCinematicFlyIn(presetId = 'high_cathedral', duration = 2.35) {
     const preset = CAMERA_PRESETS.find((p) => p.id === presetId) || CAMERA_PRESETS[0];
     const scaleFactor = this.boardSize >= 6 ? 1.18 : 1.0;
 
     const endTheta = preset.theta;
     const endPhi = preset.phi;
     const endRadius = preset.radius * scaleFactor;
-    const endLookY = preset.targetY || 0.15;
+    const endLookY = preset.targetY ?? 0.14;
 
-    // Start high and wide with a dramatic sweeping arc toward the 3D War-Table
-    const startTheta = endTheta - 1.25;
-    const startPhi = 0.34;
-    const startRadius = 22.8 * scaleFactor;
-    const startLookY = 2.45;
+    // Start from an elevated isometric vantage and glide smoothly down into the Isometric board view
+    const startTheta = endTheta - 0.72;
+    const startPhi = 0.52;
+    const startRadius = 17.6 * scaleFactor;
+    const startLookY = 1.45;
 
+    this.orbitVelocity.theta = 0;
+    this.orbitVelocity.phi = 0;
     this.camSpherical.theta = startTheta;
     this.camSpherical.phi = startPhi;
     this.camSpherical.radius = startRadius;
-    this.camSpherical.lookAt.set(0, startLookY, -1.35);
+    this.camSpherical.lookAt.set(0, startLookY, -0.65);
 
     this.camSpherical.targetTheta = endTheta;
     this.camSpherical.targetPhi = endPhi;
@@ -567,7 +594,7 @@ export class GothicScene3D {
       startTheta,
       startPhi,
       startRadius,
-      startLookAt: new THREE.Vector3(0, startLookY, -1.35),
+      startLookAt: new THREE.Vector3(0, startLookY, -0.65),
       endTheta,
       endPhi,
       endRadius,
@@ -576,25 +603,27 @@ export class GothicScene3D {
   }
 
   /**
-   * Dramatic Battle-Start Camera Swoop from the Enemy Warlord down to the Commander's perspective
+   * Smooth Battle-Start Isometric Swoop toward the 3D War-Table
    */
-  playBattleZoomIn(presetId = 'commander_angle', duration = 1.85) {
+  playBattleZoomIn(presetId = 'high_cathedral', duration = 1.65) {
     const preset = CAMERA_PRESETS.find((p) => p.id === presetId) || CAMERA_PRESETS[0];
     const scaleFactor = this.boardSize >= 6 ? 1.18 : 1.0;
 
     const endTheta = preset.theta;
     const endPhi = preset.phi;
     const endRadius = preset.radius * scaleFactor;
-    const endLookY = preset.targetY || 0.15;
+    const endLookY = preset.targetY ?? 0.14;
 
-    const startTheta = endTheta + 0.72;
-    const startPhi = 1.14;
-    const startRadius = 15.6 * scaleFactor;
+    const startTheta = endTheta - 0.38;
+    const startPhi = 0.62;
+    const startRadius = 14.2 * scaleFactor;
 
+    this.orbitVelocity.theta = 0;
+    this.orbitVelocity.phi = 0;
     this.camSpherical.theta = startTheta;
     this.camSpherical.phi = startPhi;
     this.camSpherical.radius = startRadius;
-    this.camSpherical.lookAt.set(0, 1.35, -1.6);
+    this.camSpherical.lookAt.set(0, 0.85, -0.65);
 
     this.camSpherical.targetTheta = endTheta;
     this.camSpherical.targetPhi = endPhi;
@@ -607,7 +636,7 @@ export class GothicScene3D {
       startTheta,
       startPhi,
       startRadius,
-      startLookAt: new THREE.Vector3(0, 1.35, -1.6),
+      startLookAt: new THREE.Vector3(0, 0.85, -0.65),
       endTheta,
       endPhi,
       endRadius,
@@ -615,9 +644,10 @@ export class GothicScene3D {
     };
   }
 
-  focusCameraBrieflyOnTile(r, c, duration = 1.0) {
+  focusCameraBrieflyOnTile(r, c, duration = 0.95) {
     const pos = this.tileToWorld(r, c);
-    this.camSpherical.targetLookAt.set(pos.x * 0.38, 0.25, pos.z * 0.38);
+    this.camSpherical.targetLookAt.set(pos.x * 0.24, 0.2, pos.z * 0.24);
+    this.radiusPulse = -0.36;
     this.cinematicFocusTimer = duration;
   }
 
@@ -726,19 +756,25 @@ export class GothicScene3D {
         if (totalDist > 16) {
           this.isDraggingOrbit = true;
           this.cinematicFlyIn = null;
-          this.camSpherical.targetTheta -= dx * 0.0075;
+          const dTheta = -dx * 0.0068;
+          const dPhi = -dy * 0.0058;
+          this.camSpherical.targetTheta += dTheta;
           this.camSpherical.targetPhi = Math.max(
-            0.28,
-            Math.min(1.32, this.camSpherical.targetPhi - dy * 0.0065)
+            0.26,
+            Math.min(1.28, this.camSpherical.targetPhi + dPhi)
           );
+          this.orbitVelocity.theta = dTheta * 0.55;
+          this.orbitVelocity.phi = dPhi * 0.55;
           this.lastDragPos = { x: e.clientX, y: e.clientY };
           return;
         }
       }
 
-      // Raycast against Altar Stone Tiles & Pieces for hover preview
+      // Raycast against Altar Stone Tiles & Pieces for hover preview + subtle cursor parallax
       this.pointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       this.pointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      this.pointerParallax.x = this.pointerNDC.x * 0.024;
+      this.pointerParallax.y = this.pointerNDC.y * 0.016;
       const hitTile = this._raycastAltarTile();
       this.bus.emit('3d:tileHover', hitTile);
     });
@@ -853,8 +889,11 @@ export class GothicScene3D {
     if (this.cinematicFlyIn) {
       this.cinematicFlyIn.elapsed += dt;
       const rawT = Math.min(1, this.cinematicFlyIn.elapsed / this.cinematicFlyIn.duration);
-      // Smooth cubic ease-out S-curve toward the 3D War-Table
-      const ease = 1 - Math.pow(1 - rawT, 3.2);
+      // Silky Quintic S-curve (smoothstep-5) with gentle ease-in and feather-soft landing
+      const quint = rawT * rawT * rawT * (rawT * (rawT * 6 - 15) + 10);
+      const easeOut = 1 - Math.pow(1 - rawT, 3.0);
+      const ease = quint * 0.65 + easeOut * 0.35;
+
       s.theta =
         this.cinematicFlyIn.startTheta +
         (this.cinematicFlyIn.endTheta - this.cinematicFlyIn.startTheta) * ease;
@@ -869,21 +908,38 @@ export class GothicScene3D {
         this.cinematicFlyIn = null;
       }
     } else {
-      const damp = Math.min(1, dt * 7.5);
+      // Apply smooth inertial orbit glide when releasing a camera drag
+      if (!this.isDraggingOrbit && (Math.abs(this.orbitVelocity.theta) > 0.0001 || Math.abs(this.orbitVelocity.phi) > 0.0001)) {
+        const friction = Math.exp(-dt * 8.5);
+        this.camSpherical.targetTheta += this.orbitVelocity.theta;
+        this.camSpherical.targetPhi = Math.max(
+          0.26,
+          Math.min(1.28, this.camSpherical.targetPhi + this.orbitVelocity.phi)
+        );
+        this.orbitVelocity.theta *= friction;
+        this.orbitVelocity.phi *= friction;
+      }
+
+      this.radiusPulse += (0 - this.radiusPulse) * Math.min(1, dt * 4.5);
+
+      const damp = Math.min(1, dt * 7.8);
       const idleOffset =
         this.idleOrbitActive && !this.isDraggingOrbit && elapsedSec > 0
-          ? Math.sin(elapsedSec * 0.35) * 0.085
+          ? Math.sin(elapsedSec * 0.38) * 0.065
           : 0;
-      s.theta += (s.targetTheta + idleOffset - s.theta) * damp;
-      s.phi += (s.targetPhi - s.phi) * damp;
-      s.radius += (s.targetRadius - s.radius) * damp;
+      const parallaxTheta = !this.isDraggingOrbit ? this.pointerParallax.x : 0;
+      const parallaxPhi = !this.isDraggingOrbit ? -this.pointerParallax.y * 0.5 : 0;
+
+      s.theta += (s.targetTheta + idleOffset + parallaxTheta - s.theta) * damp;
+      s.phi += (s.targetPhi + parallaxPhi - s.phi) * damp;
+      s.radius += (s.targetRadius + this.radiusPulse - s.radius) * damp;
       s.lookAt.lerp(s.targetLookAt, damp);
     }
 
     if (this.cinematicFocusTimer > 0) {
       this.cinematicFocusTimer -= dt;
       if (this.cinematicFocusTimer <= 0) {
-        s.targetLookAt.set(0, 0.15, 0);
+        s.targetLookAt.set(0, 0.14, 0);
       }
     }
 
@@ -1024,14 +1080,33 @@ export class GothicScene3D {
       }
     }
 
-    // Gentle idle spin on relic cores & floating Inquisitor halo
+    // Gentle idle spin & levitation on character relic cores & floating Warlord Commander
     this.piecesRoot.traverse((obj) => {
       if (obj.userData && obj.userData.spinSpeed) {
         obj.rotation.y += dt * obj.userData.spinSpeed;
       }
+      if (obj.userData && obj.userData.floatAmplitude) {
+        obj.position.y =
+          (obj.userData.baseY || 0.65) +
+          Math.sin(elapsedSec * 3.2 + (obj.userData.floatPhase || 0)) *
+            obj.userData.floatAmplitude;
+      }
     });
-    if (this.inquisitorMesh && this.inquisitorMesh.userData.halo) {
-      this.inquisitorMesh.userData.halo.rotation.z += dt * 0.45;
+    if (this.inquisitorMesh) {
+      const iu = this.inquisitorMesh.userData || {};
+      if (iu.halo) {
+        iu.halo.rotation.z += dt * 0.55;
+      }
+      if (iu.innerHalo) {
+        iu.innerHalo.rotation.z -= dt * 0.85;
+      }
+      if (iu.bodyGroup) {
+        iu.bodyGroup.position.y = Math.sin(elapsedSec * 2.1) * 0.045;
+      }
+      if (iu.wingGroup) {
+        const flap = Math.sin(elapsedSec * 2.6) * 0.06;
+        iu.wingGroup.scale.set(1 + flap, 1 + flap * 0.5, 1);
+      }
     }
 
     if (this.renderer) {

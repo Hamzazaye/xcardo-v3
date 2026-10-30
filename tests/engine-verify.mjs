@@ -15,6 +15,7 @@ import {
   FANTASY_HEROES,
   SCULPTED_PIECES,
   STONE_MATERIALS,
+  CAMERA_PRESETS,
 } from '../src/data/gothic-config.js';
 import {
   renderTarotArtSVG,
@@ -45,10 +46,11 @@ function runSuite(name, fn) {
 console.log('=== XcardO: Warlords of the Obsidian Altar — Verification Suite ===');
 
 // 1. Master Config & Brand Title Integrity (No "III")
-runSuite('1. Master Configuration (Brand Title XcardO, 36 Levels, 20 War-Scrolls, 6 Heroes, 6 Bosses)', () => {
+runSuite('1. Master Configuration (Brand Title XcardO, Isometric Default Camera, 36 Levels, 6 Heroes, 6 Bosses)', () => {
   assert.equal(GAME_CONFIG.TITLE, 'XcardO');
   assert.equal(GAME_CONFIG.TITLE.includes('III'), false, 'Title must not contain III');
   assert.equal(GAME_CONFIG.CARDS_UNLOCK_LEVEL, 3);
+  assert.equal(CAMERA_PRESETS[0].id, 'high_cathedral', 'First camera preset must be Isometric View (high_cathedral)');
   assert.equal(CATHEDRAL_LEVELS.length, 36);
   assert.equal(ARCANA_CARDS.length, 20);
   assert.equal(CRYPT_TRIALS.length, 5);
@@ -60,17 +62,25 @@ runSuite('1. Master Configuration (Brand Title XcardO, 36 Levels, 20 War-Scrolls
 });
 
 // 2. 3D Procedural Piece Sculptor & War-Table Builder
-runSuite('2. 3D Sculptor (6 Fantasy War Miniatures, Shield Dome, War-Table & Warlord Automaton)', () => {
+runSuite('2. 3D Sculptor (All 6 Hero 3D Miniatures, 3 Enemy 3D Sculptures, All 6 Boss 3D Commanders & War-Table)', () => {
+  const heroSculptIds = new Set();
+  for (const hero of FANTASY_HEROES) {
+    heroSculptIds.add(hero.defaultSculpt);
+    const mesh = createPieceSculpture3D('X', hero.defaultSculpt, hero, { shield: 2 });
+    assert.ok(mesh.children.length >= 6, `Hero 3D sculpt ${hero.defaultSculpt} should contain detailed multi-part 3D geometry`);
+  }
+  assert.equal(heroSculptIds.size, 6, 'All 6 Playable Heroes must have their own unique 3D miniature sculpture');
+
   for (const p of SCULPTED_PIECES.player) {
     const mesh = createPieceSculpture3D('X', p.id, 'alabaster_marble', { shield: 2 });
-    assert.ok(mesh.children.length >= 4, `Sculpt ${p.id} should contain multi-part 3D geometry`);
+    assert.ok(mesh.children.length >= 6, `Sculpt ${p.id} should contain multi-part 3D geometry`);
   }
   for (const e of SCULPTED_PIECES.enemy) {
     const mesh = createPieceSculpture3D('O', e.id, 'blood_obsidian');
-    assert.ok(mesh.children.length >= 4, `Sculpt ${e.id} should contain multi-part 3D geometry`);
+    assert.ok(mesh.children.length >= 6, `Sculpt ${e.id} should contain multi-part 3D geometry`);
   }
   const wildMesh = createPieceSculpture3D('W', 'seraph_cross', 'gilded_reliquary');
-  assert.ok(wildMesh.children.length >= 4);
+  assert.ok(wildMesh.children.length >= 6);
 
   const cofferMesh = createTileEntity3D('reliquary_coffer');
   assert.ok(cofferMesh.children.length >= 3);
@@ -80,8 +90,12 @@ runSuite('2. 3D Sculptor (6 Fantasy War Miniatures, Shield Dome, War-Table & War
   assert.equal(altar.tileMeshes[0].length, 5);
   assert.equal(altar.brazierFlames.length, 4);
 
-  const inquisitor = createInquisitorAutomaton3D({ name: 'Malakor', color: '#e11d48' });
-  assert.ok(inquisitor.userData.headGroup);
+  for (const boss of INQUISITOR_BOSSES) {
+    const inquisitor = createInquisitorAutomaton3D(boss);
+    assert.ok(inquisitor.userData.headGroup, `Boss ${boss.id} 3D model must have headGroup`);
+    assert.ok(inquisitor.userData.bodyGroup, `Boss ${boss.id} 3D model must have bodyGroup`);
+    assert.ok(inquisitor.userData.halo, `Boss ${boss.id} 3D model must have halo`);
+  }
 });
 
 // 3. Real-Time 3D Rigid-Body Stone Shatter & Weapon Impact Physics
