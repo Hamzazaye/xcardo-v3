@@ -1048,6 +1048,42 @@ export class BattleEngine {
     }
   }
 
+  /**
+   * Check whether a card currently has at least one valid target on the War-Table
+   * so selecting a card never locks the player into an impossible targeting state.
+   */
+  hasValidTargetsForCard(player, card) {
+    if (!card || card.targetType === 'none') return true;
+    const enemy = player === 'X' ? 'O' : 'X';
+    let enemyUnshielded = 0;
+    let friendlyCount = 0;
+    let emptyCount = 0;
+    let swappableOccupied = 0;
+
+    for (let r = 0; r < this.boardSize; r++) {
+      for (let c = 0; c < this.boardSize; c++) {
+        const cell = this.board[r][c];
+        if (cell.symbol === enemy && cell.shield === 0) enemyUnshielded++;
+        if (cell.symbol === player || cell.symbol === 'W') friendlyCount++;
+        if (cell.symbol === null && !cell.obstacle) emptyCount++;
+        if (cell.symbol && cell.shield === 0) swappableOccupied++;
+      }
+    }
+
+    switch (card.targetType) {
+      case 'enemy_cell':
+        return enemyUnshielded >= 1;
+      case 'friendly_cell':
+        return friendlyCount >= 1;
+      case 'empty_cell':
+        return emptyCount >= 1;
+      case 'two_occupied':
+        return swappableOccupied >= 2;
+      default:
+        return true;
+    }
+  }
+
   executeCardEffect(player, card, targets, exalted = false) {
     const enemy = player === 'X' ? 'O' : 'X';
     const events = [];
@@ -1721,7 +1757,21 @@ export class BattleEngine {
     if (move) {
       this.bus.emit('3d:inquisitorReact', { mood: 'strike', reason: move.reason, target: [move.r, move.c] });
       const res = this.placePiece(move.r, move.c);
-      return { action: 'move', r: move.r, c: move.c, reason: move.reason, ...res };
+      if (res.ok) {
+        return { action: 'move', r: move.r, c: move.c, reason: move.reason, ...res };
+      }
+    }
+
+    // Fallback: scan for any valid playable tile so AI turn never stalls
+    for (let r = 0; r < this.boardSize; r++) {
+      for (let c = 0; c < this.boardSize; c++) {
+        if (this.canPlaceAt(r, c)) {
+          const res = this.placePiece(r, c);
+          if (res.ok) {
+            return { action: 'move', r, c, reason: 'Fallback placement', ...res };
+          }
+        }
+      }
     }
 
     this.endTurn();

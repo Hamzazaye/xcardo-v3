@@ -20,7 +20,7 @@ export class GothicScene3D {
     this.save = saveManager;
 
     this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.FogExp2(0x09070d, 0.032);
+    this.scene.fog = new THREE.FogExp2(0x09070d, 0.015);
 
     this.camera = new THREE.PerspectiveCamera(42, 16 / 9, 0.1, 120);
 
@@ -100,7 +100,7 @@ export class GothicScene3D {
       this.renderer.shadowMap.enabled = true;
       this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      this.renderer.toneMappingExposure = 1.18;
+      this.renderer.toneMappingExposure = 1.36;
       this.resize();
       window.addEventListener('resize', () => this.resize());
     } catch {
@@ -109,11 +109,16 @@ export class GothicScene3D {
   }
 
   _setupLighting() {
-    this.ambientLight = new THREE.AmbientLight(0x28203a, 1.35);
+    this.ambientLight = new THREE.AmbientLight(0x362b4e, 1.55);
     this.scene.add(this.ambientLight);
 
+    // 360° Warm Sanctuary Zenith / Royal Twilight Ground Bounce Fill Light
+    this.hemiLight = new THREE.HemisphereLight(0xffeab5, 0x2d2246, 1.48);
+    this.hemiLight.position.set(0, 14, 0);
+    this.scene.add(this.hemiLight);
+
     // Moonlight / Rose-Window Directional Key Light casting crisp Gothic shadows
-    this.dirLight = new THREE.DirectionalLight(0xffe4b5, 2.3);
+    this.dirLight = new THREE.DirectionalLight(0xffe8c2, 2.65);
     this.dirLight.position.set(5.5, 11.5, 6.5);
     this.dirLight.castShadow = true;
     this.dirLight.shadow.mapSize.width = 1024;
@@ -128,19 +133,28 @@ export class GothicScene3D {
     this.dirLight.shadow.bias = -0.0015;
     this.scene.add(this.dirLight);
 
+    // Dedicated Overhead War-Table Chandelier Key Light for crisp stone & metallic highlights
+    this.altarKeyLight = new THREE.PointLight(0xfff1cc, 3.1, 18.5, 1.15);
+    this.altarKeyLight.position.set(0, 5.2, 0.65);
+    this.scene.add(this.altarKeyLight);
+
     // 4 Corner Fire Brazier PointLights (flicker dynamically in render loop)
     this.brazierLights = [];
     for (let i = 0; i < 4; i++) {
-      const pLight = new THREE.PointLight(0xff7b29, 2.2, 9.5, 1.6);
+      const pLight = new THREE.PointLight(0xff7b29, 3.1, 11.5, 1.35);
       pLight.position.set(0, 1.5, 0);
       this.scene.add(pLight);
       this.brazierLights.push(pLight);
     }
 
-    // Rim backlight behind the Inquisitor Automaton
-    this.inquisitorRimLight = new THREE.PointLight(0xe11d48, 2.4, 10, 1.5);
+    // Rim backlight & front key fill on the 3D Enemy Warlord Commander
+    this.inquisitorRimLight = new THREE.PointLight(0xe11d48, 3.0, 12, 1.3);
     this.inquisitorRimLight.position.set(0, 3.2, -5.2);
     this.scene.add(this.inquisitorRimLight);
+
+    this.commanderFillLight = new THREE.PointLight(0xffb480, 1.9, 9.5, 1.35);
+    this.commanderFillLight.position.set(0, 2.4, -2.5);
+    this.scene.add(this.commanderFillLight);
   }
 
   _bindBusEvents() {
@@ -313,6 +327,10 @@ export class GothicScene3D {
         if (entityType) {
           const entMesh = createTileEntity3D(entityType);
           entMesh.position.set(pos.x, pos.y, pos.z);
+          entMesh.userData = { ...entMesh.userData, isAltarTile: true, r, c };
+          entMesh.traverse((child) => {
+            child.userData = { ...child.userData, isAltarTile: true, r, c };
+          });
           this.entitiesRoot.add(entMesh);
           this.entityMap.set(`${r},${c}`, entMesh);
         }
@@ -337,7 +355,10 @@ export class GothicScene3D {
 
     const { sculptId, materialId } = this.getSculptSettings(symbol);
     const mesh = createPieceSculpture3D(symbol, sculptId, materialId, { shield });
-    mesh.userData.hasShield = shield > 0;
+    mesh.userData = { ...mesh.userData, isAltarTile: true, r, c, hasShield: shield > 0 };
+    mesh.traverse((child) => {
+      child.userData = { ...child.userData, isAltarTile: true, r, c };
+    });
     const pos = this.tileToWorld(r, c);
     mesh.position.set(pos.x, pos.y, pos.z);
     this.piecesRoot.add(mesh);
@@ -673,8 +694,15 @@ export class GothicScene3D {
 
   _bindPointerEvents() {
     if (!this.canvas) return;
+    this.isPointerDownOnCanvas = false;
+    this.pointerDownTime = 0;
 
     this.canvas.addEventListener('pointerdown', (e) => {
+      if (e.button === 2) {
+        this.bus.emit('3d:cancelSelection');
+      }
+      this.isPointerDownOnCanvas = true;
+      this.pointerDownTime = performance.now();
       this.pointerDownPos = { x: e.clientX, y: e.clientY };
       this.lastDragPos = { x: e.clientX, y: e.clientY };
       this.isDraggingOrbit = false;
@@ -685,8 +713,8 @@ export class GothicScene3D {
       const rect = this.canvas.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) return;
 
-      // Check if user is dragging to orbit the 3D camera
-      if (e.buttons === 1 || e.buttons === 2) {
+      // Check if user is deliberately dragging on the 3D canvas to orbit the camera
+      if (this.isPointerDownOnCanvas && (e.buttons === 1 || e.buttons === 2)) {
         const dx = e.clientX - this.lastDragPos.x;
         const dy = e.clientY - this.lastDragPos.y;
         const totalDist = Math.hypot(
@@ -694,7 +722,8 @@ export class GothicScene3D {
           e.clientY - this.pointerDownPos.y
         );
 
-        if (totalDist > 6) {
+        // Generous 16px threshold so normal hand jitter during a click never swallows the click
+        if (totalDist > 16) {
           this.isDraggingOrbit = true;
           this.cinematicFlyIn = null;
           this.camSpherical.targetTheta -= dx * 0.0075;
@@ -707,18 +736,32 @@ export class GothicScene3D {
         }
       }
 
-      // Raycast against Altar Stone Tiles for hover preview
+      // Raycast against Altar Stone Tiles & Pieces for hover preview
       this.pointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       this.pointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
       const hitTile = this._raycastAltarTile();
       this.bus.emit('3d:tileHover', hitTile);
     });
 
-    this.canvas.addEventListener('pointerup', (e) => {
-      if (this.isDraggingOrbit) {
+    window.addEventListener('pointerup', (e) => {
+      if (!this.isPointerDownOnCanvas) return;
+      this.isPointerDownOnCanvas = false;
+
+      const clickDuration = performance.now() - this.pointerDownTime;
+      const totalDist = Math.hypot(
+        e.clientX - this.pointerDownPos.x,
+        e.clientY - this.pointerDownPos.y
+      );
+      const isQuickClick = clickDuration < 260 && totalDist < 24;
+
+      if (this.isDraggingOrbit && !isQuickClick) {
         this.isDraggingOrbit = false;
         return;
       }
+      this.isDraggingOrbit = false;
+
+      if (e.button !== 0) return;
+
       const rect = this.canvas.getBoundingClientRect();
       this.pointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       this.pointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -726,6 +769,11 @@ export class GothicScene3D {
       if (hitTile) {
         this.bus.emit('3d:tileClick', hitTile);
       }
+    });
+
+    window.addEventListener('pointercancel', () => {
+      this.isPointerDownOnCanvas = false;
+      this.isDraggingOrbit = false;
     });
 
     this.canvas.addEventListener(
@@ -746,13 +794,47 @@ export class GothicScene3D {
   _raycastAltarTile() {
     if (!this.altarData || !this.altarData.tilesGroup) return null;
     this.raycaster.setFromCamera(this.pointerNDC, this.camera);
-    const intersects = this.raycaster.intersectObjects(this.altarData.tilesGroup.children, false);
-    if (intersects.length > 0) {
-      const hit = intersects[0].object;
-      if (hit.userData && hit.userData.isAltarTile) {
-        return { r: hit.userData.r, c: hit.userData.c };
+
+    // 1. Raycast against 3D Sculpted Pieces, Board Entities, and Stone Tiles (recursively)
+    const targets = [
+      this.piecesRoot,
+      this.entitiesRoot,
+      this.altarData.tilesGroup,
+    ].filter(Boolean);
+    const intersects = this.raycaster.intersectObjects(targets, true);
+    for (const hit of intersects) {
+      let cur = hit.object;
+      while (cur) {
+        if (cur.userData && cur.userData.isAltarTile) {
+          return { r: cur.userData.r, c: cur.userData.c };
+        }
+        cur = cur.parent;
       }
     }
+
+    // 2. Mathematical War-Table Plane Fallback (y = 0.02) so clicking between tile bevels never misses!
+    const ray = this.raycaster.ray;
+    if (Math.abs(ray.direction.y) > 0.001) {
+      const t = (0.02 - ray.origin.y) / ray.direction.y;
+      if (t > 0) {
+        const wx = ray.origin.x + ray.direction.x * t;
+        const wz = ray.origin.z + ray.direction.z * t;
+        const { tileSpacing, offset } = this.altarData;
+        const c = Math.round((wx + offset) / tileSpacing);
+        const r = Math.round((wz + offset) / tileSpacing);
+        if (r >= 0 && r < this.boardSize && c >= 0 && c < this.boardSize) {
+          const tileX = c * tileSpacing - offset;
+          const tileZ = r * tileSpacing - offset;
+          if (
+            Math.abs(wx - tileX) <= tileSpacing * 0.54 &&
+            Math.abs(wz - tileZ) <= tileSpacing * 0.54
+          ) {
+            return { r, c };
+          }
+        }
+      }
+    }
+
     return null;
   }
 
@@ -868,16 +950,76 @@ export class GothicScene3D {
       }
     }
 
-    // 4. Flicker Corner Fire Braziers & Spin Relic Cores
+    // 4. Animate Multi-Layered Corner Fire Braziers, Sparks & Relic Cores
     if (this.altarData && this.altarData.brazierFlames) {
       for (let i = 0; i < this.altarData.brazierFlames.length; i++) {
-        const flame = this.altarData.brazierFlames[i];
-        const phase = flame.userData.phase || 0;
-        const pulse = 0.88 + Math.sin(elapsedSec * 7.5 + phase) * 0.16;
-        flame.scale.set(pulse, 0.9 + Math.cos(elapsedSec * 9.2 + phase) * 0.22, pulse);
-        flame.rotation.y += dt * 2.2;
+        const flameGroup = this.altarData.brazierFlames[i];
+        const ud = flameGroup.userData || {};
+        const phase = ud.phase || 0;
+
+        if (ud.outerFlame) {
+          const sx = 0.92 + Math.sin(elapsedSec * 6.8 + phase) * 0.14;
+          const sy = 0.96 + Math.sin(elapsedSec * 9.5 + phase * 1.3) * 0.22;
+          const sz = 0.92 + Math.cos(elapsedSec * 7.2 + phase) * 0.14;
+          ud.outerFlame.scale.set(sx, sy, sz);
+          ud.outerFlame.rotation.y += dt * 1.8;
+          ud.outerFlame.rotation.z = Math.sin(elapsedSec * 5.4 + phase) * 0.09;
+          ud.outerFlame.rotation.x = Math.cos(elapsedSec * 4.9 + phase) * 0.09;
+        }
+
+        if (ud.tongues) {
+          for (let t = 0; t < ud.tongues.length; t++) {
+            const tongue = ud.tongues[t];
+            const tp = tongue.userData.phaseOffset || 0;
+            const baseAngle = tongue.userData.baseAngle || 0;
+            const tScaleY = 0.88 + Math.sin(elapsedSec * 11.2 + tp) * 0.26;
+            const tScaleXZ = 0.86 + Math.cos(elapsedSec * 8.4 + tp) * 0.16;
+            tongue.scale.set(tScaleXZ, tScaleY, tScaleXZ);
+            tongue.rotation.z =
+              -Math.cos(baseAngle) * 0.2 + Math.sin(elapsedSec * 7.8 + tp) * 0.14;
+            tongue.rotation.x =
+              Math.sin(baseAngle) * 0.2 + Math.cos(elapsedSec * 8.1 + tp) * 0.14;
+          }
+        }
+
+        if (ud.innerCore) {
+          const corePulse = 0.9 + Math.sin(elapsedSec * 14.0 + phase) * 0.18;
+          ud.innerCore.scale.set(
+            corePulse,
+            0.95 + Math.cos(elapsedSec * 16.0 + phase) * 0.2,
+            corePulse
+          );
+          ud.innerCore.rotation.y -= dt * 2.6;
+        }
+
+        if (ud.fireGlow) {
+          const glowScale = 0.94 + Math.sin(elapsedSec * 6.0 + phase) * 0.12;
+          ud.fireGlow.scale.setScalar(glowScale);
+        }
+
+        if (ud.sparks) {
+          for (let s = 0; s < ud.sparks.length; s++) {
+            const spark = ud.sparks[s];
+            const sd = spark.userData;
+            const cycle = (elapsedSec * sd.speed + sd.seed) % 1;
+            const sparkY = 0.14 + cycle * 1.05;
+            const angle = elapsedSec * 3.4 + sd.seed * 2.2;
+            const rad = sd.radius * (0.4 + cycle * 1.15);
+            spark.position.set(
+              Math.cos(angle) * rad,
+              sparkY,
+              Math.sin(angle) * rad
+            );
+            const lifeScale = Math.sin(cycle * Math.PI);
+            spark.scale.setScalar(Math.max(0.05, lifeScale * 1.15));
+          }
+        }
+
         if (this.brazierLights[i]) {
-          this.brazierLights[i].intensity = 2.0 + Math.sin(elapsedSec * 8.0 + phase) * 0.45;
+          this.brazierLights[i].intensity =
+            3.0 +
+            Math.sin(elapsedSec * 8.2 + phase) * 0.45 +
+            Math.cos(elapsedSec * 13.5 + phase) * 0.2;
         }
       }
     }

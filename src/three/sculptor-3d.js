@@ -588,11 +588,51 @@ export function createCathedralAltar3D(boardSize = 5, hallConfig = {}) {
   roseRing.position.set(0, 3.1, apseZ - 0.4);
   root.add(roseRing);
 
-  const emberMat = new THREE.MeshStandardMaterial({
-    color: new THREE.Color(hallConfig.brazierColor || 0xff7b29),
-    emissive: new THREE.Color(hallConfig.brazierColor || 0xff7b29),
-    emissiveIntensity: 2.2,
-    roughness: 0.2,
+  const emberCoalMat = new THREE.MeshStandardMaterial({
+    color: 0xff3b00,
+    emissive: 0xff2200,
+    emissiveIntensity: 2.6,
+    roughness: 0.35,
+  });
+
+  const outerFlameMat = new THREE.MeshBasicMaterial({
+    color: new THREE.Color(hallConfig.brazierColor || 0xff4d00),
+    transparent: true,
+    opacity: 0.88,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+
+  const midTongueMat = new THREE.MeshBasicMaterial({
+    color: 0xff9e1b,
+    transparent: true,
+    opacity: 0.92,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+
+  const coreFlameMat = new THREE.MeshBasicMaterial({
+    color: 0xfff5bd,
+    transparent: true,
+    opacity: 0.96,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+
+  const glowHaloMat = new THREE.MeshBasicMaterial({
+    color: new THREE.Color(hallConfig.brazierColor || 0xff6a00),
+    transparent: true,
+    opacity: 0.24,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+
+  const sparkMat = new THREE.MeshBasicMaterial({
+    color: 0xffd166,
+    transparent: true,
+    opacity: 0.95,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
   });
 
   for (let i = 0; i < cornerCoords.length; i++) {
@@ -603,19 +643,112 @@ export function createCathedralAltar3D(boardSize = 5, hallConfig = {}) {
     pillar.receiveShadow = true;
     root.add(pillar);
 
-    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.2, 0.24, 8), trimMat);
+    // Ornate Gilded Brazier Cauldron Bowl
+    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.22, 0.26, 10), trimMat);
     bowl.position.set(cx, 0.74, cz);
     bowl.castShadow = true;
     root.add(bowl);
 
-    const flame = new THREE.Mesh(new THREE.OctahedronGeometry(0.22, 0), emberMat.clone());
-    flame.position.set(cx, 0.98, cz);
-    flame.userData.phase = i * 1.57;
-    root.add(flame);
-    brazierFlames.push(flame);
+    const bowlRim = new THREE.Mesh(new THREE.TorusGeometry(0.41, 0.035, 6, 16), trimMat);
+    bowlRim.rotation.x = Math.PI / 2;
+    bowlRim.position.set(cx, 0.86, cz);
+    root.add(bowlRim);
+
+    // 4 Wrought-Iron Fire Prongs cradling the flame
+    for (let p = 0; p < 4; p++) {
+      const pAngle = (p / 4) * Math.PI * 2 + Math.PI / 4;
+      const prong = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.22, 4), trimMat);
+      prong.position.set(
+        cx + Math.cos(pAngle) * 0.38,
+        0.94,
+        cz + Math.sin(pAngle) * 0.38
+      );
+      prong.rotation.z = -Math.cos(pAngle) * 0.25;
+      prong.rotation.x = Math.sin(pAngle) * 0.25;
+      root.add(prong);
+    }
+
+    // Glowing Bed of Burning Coals inside the cauldron
+    const coalBed = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.34, 0.26, 0.08, 10),
+      emberCoalMat
+    );
+    coalBed.position.set(cx, 0.85, cz);
+    root.add(coalBed);
+
+    // Multi-Layered Sculpted 3D Fire Plume
+    const flameGroup = new THREE.Group();
+    flameGroup.position.set(cx, 0.88, cz);
+
+    // Layer 1: Tall Sculpted Outer Crimson-Orange Flame Plume
+    const outerGeo = new THREE.ConeGeometry(0.28, 0.86, 7, 3);
+    outerGeo.translate(0, 0.38, 0);
+    const outerFlame = new THREE.Mesh(outerGeo, outerFlameMat.clone());
+    flameGroup.add(outerFlame);
+
+    // Layer 2: 3 Dancing Amber-Gold Side Flame Tongues
+    const tongues = [];
+    for (let t = 0; t < 3; t++) {
+      const tAngle = (t / 3) * Math.PI * 2;
+      const tGeo = new THREE.ConeGeometry(0.16, 0.62, 6, 2);
+      tGeo.translate(0, 0.28, 0);
+      const tongue = new THREE.Mesh(tGeo, midTongueMat.clone());
+      tongue.position.set(Math.cos(tAngle) * 0.09, 0.02, Math.sin(tAngle) * 0.09);
+      tongue.rotation.z = -Math.cos(tAngle) * 0.18;
+      tongue.rotation.x = Math.sin(tAngle) * 0.18;
+      tongue.userData = {
+        baseAngle: tAngle,
+        phaseOffset: t * 2.1 + i * 0.9,
+      };
+      flameGroup.add(tongue);
+      tongues.push(tongue);
+    }
+
+    // Layer 3: White-Hot Golden Inner Flame Core
+    const coreGeo = new THREE.ConeGeometry(0.135, 0.52, 6);
+    coreGeo.translate(0, 0.22, 0);
+    const innerCore = new THREE.Mesh(coreGeo, coreFlameMat.clone());
+    flameGroup.add(innerCore);
+
+    // Layer 4: Soft Volumetric Fire Aura Sphere
+    const fireGlow = new THREE.Mesh(
+      new THREE.SphereGeometry(0.52, 12, 12),
+      glowHaloMat.clone()
+    );
+    fireGlow.position.set(0, 0.32, 0);
+    flameGroup.add(fireGlow);
+
+    // Layer 5: 6 Rising & Spiraling Fire Ember Sparks
+    const sparks = [];
+    for (let s = 0; s < 6; s++) {
+      const spark = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.036, 0),
+        sparkMat.clone()
+      );
+      spark.userData = {
+        seed: i * 3.7 + s * 1.13,
+        speed: 0.75 + (s % 3) * 0.28,
+        radius: 0.08 + (s % 2) * 0.09,
+      };
+      flameGroup.add(spark);
+      sparks.push(spark);
+    }
+
+    flameGroup.userData = {
+      phase: i * 1.57,
+      outerFlame,
+      tongues,
+      innerCore,
+      fireGlow,
+      sparks,
+      coalBed,
+    };
+
+    root.add(flameGroup);
+    brazierFlames.push(flameGroup);
   }
 
-  // 3. Individual Carved Stone War-Table Tiles (`r`, `c`)
+  // 3. Individual Carved Stone War-Table Tiles (`r`, `c`) — Well-lit with high-contrast bevels
   const tilesGroup = new THREE.Group();
   tilesGroup.name = 'AltarTilesGroup';
   const tileMeshes = [];
@@ -626,16 +759,16 @@ export function createCathedralAltar3D(boardSize = 5, hallConfig = {}) {
     tileMeshes[r] = [];
     for (let c = 0; c < boardSize; c++) {
       const isDark = (r + c) % 2 === 1;
-      const baseTileColor = isDark ? 0x201b29 : 0x2b2437;
+      const baseTileColor = isDark ? 0x2a2338 : 0x3b314e;
       const tileMat = new THREE.MeshStandardMaterial({
         color: baseTileColor,
-        roughness: 0.62,
-        metalness: 0.18,
-        emissive: new THREE.Color(0x000000),
-        emissiveIntensity: 0,
+        roughness: 0.48,
+        metalness: 0.24,
+        emissive: new THREE.Color(isDark ? 0x09070f : 0x120e1c),
+        emissiveIntensity: 0.35,
       });
 
-      const tileMesh = new THREE.Mesh(new THREE.BoxGeometry(1.02, 0.14, 1.02), tileMat);
+      const tileMesh = new THREE.Mesh(new THREE.BoxGeometry(1.04, 0.14, 1.04), tileMat);
       const wx = c * tileSpacing - offset;
       const wz = r * tileSpacing - offset;
       tileMesh.position.set(wx, -0.05, wz);
@@ -653,12 +786,17 @@ export function createCathedralAltar3D(boardSize = 5, hallConfig = {}) {
       const innerRim = new THREE.Mesh(
         new THREE.BoxGeometry(0.92, 0.146, 0.92),
         new THREE.MeshStandardMaterial({
-          color: isDark ? 0x181420 : 0x231d2e,
-          roughness: 0.75,
-          metalness: 0.12,
+          color: isDark ? 0x221c2e : 0x322944,
+          roughness: 0.56,
+          metalness: 0.22,
         })
       );
       innerRim.receiveShadow = true;
+      innerRim.userData = {
+        isAltarTile: true,
+        r,
+        c,
+      };
       tileMesh.add(innerRim);
 
       tilesGroup.add(tileMesh);

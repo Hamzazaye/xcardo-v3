@@ -107,6 +107,16 @@ export class AppController {
       }
     });
 
+    this.bus.on('3d:cancelSelection', () => {
+      if (this.currentScreen !== 'battle' || !this.engine) return;
+      if (this.engine.selectedCardIndex !== null) {
+        this.engine.selectedCardIndex = null;
+        this.engine.pendingTargets = [];
+        this.showToast('War-Scroll selection cancelled.');
+        this.render();
+      }
+    });
+
     // Audio & Telemetry Hooks
     this.bus.on('3d:piecePlaced', ({ symbol }) => {
       this.sound?.playStoneSlam(symbol);
@@ -200,11 +210,15 @@ export class AppController {
       clearTimeout(this.aiTimer);
       this.aiTimer = null;
     }
+    const wasBattle = this.currentScreen === 'battle';
+    const isSameNonBattle = this.currentScreen === screen && !wasBattle;
     this.currentScreen = screen;
     this.sound?.playUIHover();
     if (screen !== 'battle') {
       this.engine = null;
-      this._setupDemoAltar();
+      if (wasBattle || !isSameNonBattle) {
+        this._setupDemoAltar();
+      }
     }
     this.render();
   }
@@ -281,21 +295,23 @@ export class AppController {
     this.render();
   }
 
-  _scheduleAITurn() {
+  _scheduleAITurn(stepCount = 0) {
     if (this.aiTimer) clearTimeout(this.aiTimer);
     this.aiTimer = setTimeout(() => {
+      this.aiTimer = null;
       if (!this.engine || this.engine.status !== 'playing' || this.engine.activePlayer !== 'O') return;
-      const stepRes = this.engine.executeAITurnStep();
-      this.render();
-      if (
-        stepRes &&
-        stepRes.action === 'card' &&
-        this.engine.status === 'playing' &&
-        this.engine.activePlayer === 'O'
-      ) {
-        this._scheduleAITurn();
+      if (stepCount >= 5) {
+        this.engine.endTurn();
+        this.render();
+        return;
       }
-    }, 620);
+      this.engine.executeAITurnStep();
+      this.render();
+      // If AI played a card or had Twin Strike (2 placements) and is still the active player, continue AI turn!
+      if (this.engine && this.engine.status === 'playing' && this.engine.activePlayer === 'O') {
+        this._scheduleAITurn(stepCount + 1);
+      }
+    }, 580);
   }
 
   _handleMatchEnded(status) {
@@ -380,7 +396,11 @@ export class AppController {
     if (this.engine.selectedCardIndex !== null) {
       const inst = this.engine.hands[actor][this.engine.selectedCardIndex];
       const card = inst ? getArcanaCardById(inst.cardId) : null;
-      if (!card) return;
+      if (!card) {
+        this.engine.selectedCardIndex = null;
+        this.engine.pendingTargets = [];
+        return;
+      }
 
       this.engine.pendingTargets.push([r, c]);
       const needed = card.targetType === 'two_occupied' ? 2 : 1;
@@ -388,12 +408,14 @@ export class AppController {
       if (this.engine.pendingTargets.length >= needed) {
         const res = this.engine.playCard(actor, this.engine.selectedCardIndex, this.engine.pendingTargets);
         if (!res.ok) {
-          this.showToast(res.reason);
+          // Clear card selection so the player is never trapped in card-targeting mode
+          this.engine.selectedCardIndex = null;
           this.engine.pendingTargets = [];
+          this.showToast(`${res.reason} (Scroll selection cancelled)`);
         }
         this.render();
       } else {
-        this.showToast('Select the second Champion to transpose.');
+        this.showToast('Select the second Champion to transpose (or Right-Click to cancel).');
         this.render();
       }
       return;
@@ -427,6 +449,17 @@ export class AppController {
     const card = inst ? getArcanaCardById(inst.cardId) : null;
     if (!card) return;
 
+    // Prevent selecting a card that cannot be played this turn so the board never locks up
+    if (this.engine.cardsPlayedThisTurn >= 1) {
+      this.showToast('Only 1 War-Scroll may be invoked per turn.');
+      return;
+    }
+    const effectiveCost = inst.paidInShop ? 0 : card.cost;
+    if (this.engine.tithe[actor] < effectiveCost) {
+      this.showToast(`Requires ${effectiveCost}🪙 Gold Coins to invoke ${card.name}.`);
+      return;
+    }
+
     if (card.targetType === 'none') {
       const res = this.engine.playCard(actor, index, []);
       if (!res.ok) {
@@ -436,9 +469,14 @@ export class AppController {
       return;
     }
 
+    if (!this.engine.hasValidTargetsForCard(actor, card)) {
+      this.showToast(`No valid targets on the War-Table for ${card.name} right now!`);
+      return;
+    }
+
     this.engine.selectedCardIndex = index;
     this.engine.pendingTargets = [];
-    this.showToast(`${card.name}: Click a valid target on the 3D War-Table.`);
+    this.showToast(`${card.name}: Click a valid target on the 3D War-Table (Right-Click to cancel).`);
     this.render();
   }
 
@@ -537,6 +575,7 @@ export class AppController {
   _renderTopNav(activeTab) {
     const state = this.save.getState();
     const hero = getFantasyHeroById(state.selectedHeroId);
+    const nextLvlNum = state.highestUnlockedLevel || 1;
     const totalStars = Object.values(state.completedLevels || {}).reduce((a, b) => a + b, 0);
     return `
       <header class="sanctum-topbar">
@@ -546,7 +585,8 @@ export class AppController {
         </div>
 
         <nav class="sanctum-nav-tabs" aria-label="Main Navigation">
-          <button class="nav-tab-btn ${activeTab === 'hub' ? 'active' : ''}" data-action="nav" data-screen="hub">🏰 Play</button>
+          <button class="nav-tab-btn nav-play-cta" data-action="start-level" data-level="${nextLvlNum}" title="Start Battle Stage #${nextLvlNum}">⚔️ Play</button>
+          <button class="nav-tab-btn ${activeTab === 'hub' ? 'active' : ''}" data-action="nav" data-screen="hub">🏰 Home</button>
           <button class="nav-tab-btn ${activeTab === 'campaign' ? 'active' : ''}" data-action="nav" data-screen="campaign">🗺️ Map</button>
           <button class="nav-tab-btn ${activeTab === 'reliquary' ? 'active' : ''}" data-action="nav" data-screen="reliquary">👑 Heroes</button>
           <button class="nav-tab-btn ${activeTab === 'codex' ? 'active' : ''}" data-action="nav" data-screen="codex">📜 Cards</button>
@@ -1140,6 +1180,11 @@ export class AppController {
             }
           </div>
           <div class="hud-utility-strip">
+            ${
+              this.engine.selectedCardIndex !== null
+                ? `<button class="hud-tool-btn active" data-action="cancel-card" title="Cancel Selected War-Scroll (Esc / Right-Click)">✕ Cancel Scroll</button>`
+                : ''
+            }
             <button class="hud-tool-btn" data-action="cycle-camera" title="Switch 3D Camera Angle (C)">
               ${renderGothicIconSVG('camera')} <span>Camera</span>
             </button>
@@ -1518,6 +1563,14 @@ export class AppController {
           case 'select-card':
             this.selectHandCard(Number(el.getAttribute('data-index')));
             break;
+          case 'cancel-card':
+            if (this.engine) {
+              this.engine.selectedCardIndex = null;
+              this.engine.pendingTargets = [];
+              this.showToast('War-Scroll selection cancelled.');
+              this.render();
+            }
+            break;
           case 'board-cell':
             this.handleBoardCellClick(
               Number(el.getAttribute('data-r')),
@@ -1544,6 +1597,10 @@ export class AppController {
             break;
           case 'undo-move':
             if (this.engine) {
+              if (this.aiTimer) {
+                clearTimeout(this.aiTimer);
+                this.aiTimer = null;
+              }
               const res = this.engine.undoLastAction();
               if (!res.ok) this.showToast(res.reason);
               this.render();
@@ -1551,6 +1608,10 @@ export class AppController {
             break;
           case 'rematch':
             if (this.engine) {
+              if (this.aiTimer) {
+                clearTimeout(this.aiTimer);
+                this.aiTimer = null;
+              }
               this.engine.resetMatch();
               this.render();
             }

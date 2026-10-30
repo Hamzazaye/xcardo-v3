@@ -81,11 +81,24 @@ body {
 .table-floating-pill,
 .hub-command-deck,
 .modal-screen-container,
+.hud-wing,
+.hud-center-medallion,
+.penitence-bell-dock,
+.v1-shop-strip,
+.dark-tarot-hand,
+.camera-quick-dock,
+.chronicle-feed-panel,
+.mini-tactical-grid-panel,
+.endgame-modal-backdrop {
+  pointer-events: auto;
+}
+
 .battle-hud-topbar,
 .battle-hud-bottom,
 .battle-side-widgets,
-.endgame-modal-backdrop {
-  pointer-events: auto;
+.v1-battle-cards-zone,
+.v1-sealed-scrolls-banner {
+  pointer-events: none;
 }
 
 /* Toast Notification Banner */
@@ -106,6 +119,14 @@ body {
   border-radius: 7px;
   z-index: 95;
   pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.gothic-toast.visible {
+  opacity: 1;
+  visibility: visible;
 }
 
 /* ============================================================================
@@ -182,6 +203,22 @@ body {
   border-color: var(--gold-bright);
   color: var(--gold-bright);
   box-shadow: 0 0 15px rgba(225, 29, 72, 0.4);
+}
+
+.nav-tab-btn.nav-play-cta {
+  background: linear-gradient(180deg, #f59e0b 0%, #b45309 100%);
+  border: 1.5px solid #fef08a;
+  color: #fffbeb;
+  font-weight: 800;
+  padding: 7px 16px;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.48);
+}
+
+.nav-tab-btn.nav-play-cta:hover {
+  background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+  transform: translateY(-1px) scale(1.03);
+  box-shadow: 0 0 22px rgba(251, 191, 36, 0.72);
+  color: #ffffff;
 }
 
 .sanctum-currencies {
