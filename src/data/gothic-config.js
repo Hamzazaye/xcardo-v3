@@ -67,6 +67,131 @@ export const ROGUELIKE_BOONS = Object.freeze([
   },
 ]);
 
+export const WARLORD_DOCTRINES = Object.freeze([
+  {
+    tier: 1,
+    id: 'scout',
+    name: 'Scout',
+    title: 'Scout',
+    badge: 'Scout Doctrine',
+    rule: 'Immediate lines & open counterplay',
+    behavior: 'Prioritizes immediate lines and leaves obvious counterplay.',
+    counterplay: 'Watch his 2-stone lines and claim the open 3rd tile to block and counter.',
+    summary: 'Prioritizes immediate lines and leaves obvious counterplay. Counter: Claim the open 3rd tile to block.',
+  },
+  {
+    tier: 2,
+    id: 'lich_scholar',
+    name: 'Lich Scholar',
+    title: 'Lich Scholar',
+    badge: 'Lich Scholar Doctrine',
+    rule: 'Delayed diagonal threats',
+    behavior: 'Protects future lines and uses delayed diagonal threats.',
+    counterplay: 'Contest diagonal intersections and crack Mystery Chests before she reaches them.',
+    summary: 'Protects future lines and uses delayed diagonal threats. Counter: Contest diagonal intersections.',
+  },
+  {
+    tier: 3,
+    id: 'siege_captain',
+    name: 'Siege Captain',
+    title: 'Siege Captain',
+    badge: 'Siege Captain Doctrine',
+    rule: 'Locks tiles & blocks safest route',
+    behavior: 'Locks tiles and attacks the player’s safest route.',
+    counterplay: 'Build dual-axis L/T formations so a single tile lock cannot stop both lines.',
+    summary: 'Locks tiles and attacks the player’s safest route. Counter: Build dual-axis L/T formations.',
+  },
+  {
+    tier: 4,
+    id: 'pyromancer',
+    name: 'Pyromancer',
+    title: 'Pyromancer',
+    badge: 'Pyromancer Doctrine',
+    rule: 'Siege Bomb hazard zones',
+    behavior: 'Creates hazard zones and forces movement around Siege Bombs.',
+    counterplay: 'Use Golden Aegis Shields before bomb timers hit 1T or detonate enemy clusters.',
+    summary: 'Creates hazard zones and forces movement around Siege Bombs. Counter: Shield stones before detonation.',
+  },
+  {
+    tier: 5,
+    id: 'crimson_sovereign',
+    name: 'Crimson Sovereign',
+    title: 'Crimson Sovereign',
+    badge: 'Sovereign Doctrine',
+    rule: 'Depth-3 lookahead & gold tax',
+    behavior: 'Depth-3 lookahead that taxes gold and converts exposed front-line stones.',
+    counterplay: 'Spend Gold promptly in the 3-Slot Shop and shield anchor stones.',
+    summary: 'Depth-3 lookahead that taxes gold and converts exposed front-line stones.',
+  },
+  {
+    tier: 6,
+    id: 'war_god',
+    name: 'Abyssal War-God',
+    title: 'Abyssal War-God',
+    badge: 'War-God Doctrine',
+    rule: 'Omniscient Depth-3 minimax synthesis',
+    behavior: 'Omniscient Depth-3 minimax synthesis with Aegis fortification.',
+    counterplay: 'Combine Hero Skill [Q], War-Scrolls, and War-Horn Ultimate in a single turn.',
+    summary: 'Omniscient Depth-3 minimax synthesis with Aegis fortification.',
+  },
+]);
+
+export function getWarlordDoctrineByTier(tier = 1) {
+  const clamped = Math.max(1, Math.min(6, Number(tier) || 1));
+  return WARLORD_DOCTRINES.find((d) => d.tier === clamped) || WARLORD_DOCTRINES[0];
+}
+
+export const EARLY_STAGE_MICRO_REWARDS = Object.freeze([
+  {
+    id: 'firstLine',
+    icon: '✨',
+    title: 'I. First Formation',
+    desc: 'Align your first 3-stone line on the War-Table',
+    condition: 'Align your first 3-stone line on the War-Table',
+    rewardLabel: '+15 Sigils',
+    sigils: 15,
+  },
+  {
+    id: 'counterBlock',
+    icon: '🛡️',
+    title: 'II. Tactical Block',
+    desc: 'Block an enemy 2-in-a-row threat tile before they score',
+    condition: 'Block an enemy 2-in-a-row threat tile before they score',
+    rewardLabel: '+25 Sigils',
+    sigils: 25,
+  },
+  {
+    id: 'decisiveWin',
+    icon: '👑',
+    title: 'III. Decisive Command',
+    desc: 'Win the battle with a 2+ VP lead',
+    condition: 'Win the battle with a 2+ VP lead',
+    rewardLabel: '+35 Sigils & Scroll Preview',
+    sigils: 35,
+  },
+]);
+
+export const EARLY_STAGE_MODIFIERS = Object.freeze([
+  {
+    id: 'standard',
+    icon: '⚔️',
+    name: 'Standard Tactics',
+    desc: 'Balanced onboarding rules (+0 Target VP).',
+    targetBonus: 0,
+    bonusCoffers: 0,
+    sigilBonus: 0,
+  },
+  {
+    id: 'vanguard_oath',
+    icon: '🔥',
+    name: 'Vanguard Trial (+1 VP)',
+    desc: 'Raises target by +1 VP & spawns 1 Mystery Chest for +45 bonus Sigils.',
+    targetBonus: 1,
+    bonusCoffers: 1,
+    sigilBonus: 45,
+  },
+]);
+
 export const FANTASY_HEROES = Object.freeze([
   {
     id: 'hero_paladin',
@@ -86,6 +211,10 @@ export const FANTASY_HEROES = Object.freeze([
     storyCounsel: 'Take your time on the war-table, friend. Hold the center tiles and let our golden shield-wall guide the way.',
     shortPassive: '☀️ +1 Start Gold',
     passiveDesc: 'Radiant Command: Starts Level 3+ battles with +1 bonus Gold Coin.',
+    playstyleTag: 'Fortress & Economy',
+    startingStats: '4🪙 Start Gold • 3T Skill CD • Standard Horn',
+    passiveTrigger: 'Battle Start (Lv.3+): +1 Gold Coin',
+    bestFor: 'Holding center intersections with shielded anchors and buying early Shop scrolls.',
     activeAbility: {
       id: 'solar_bulwark',
       name: 'Solar Bulwark',
@@ -114,6 +243,10 @@ export const FANTASY_HEROES = Object.freeze([
     storyCounsel: 'Swift strikes win the day! Build diagonal lines and sound the War-Horn when their defenses falter.',
     shortPassive: '⚡ +20% War-Horn',
     passiveDesc: 'Sky-born Valor: Begins every battle with +20% War-Horn Ultimate charge.',
+    playstyleTag: 'High-Tempo Burst',
+    startingStats: '3🪙 Start Gold • 3T Skill CD • +20% Start Horn',
+    passiveTrigger: 'Battle Start (All Stages): +20% War-Horn Charge',
+    bestFor: 'Fast +2 VP Star-Mosaic alignments and unleashing an early War-Horn Ultimate.',
     activeAbility: {
       id: 'valkyrie_rune',
       name: 'Sky-Spire Rune',
@@ -142,6 +275,10 @@ export const FANTASY_HEROES = Object.freeze([
     storyCounsel: 'Every stone placed is a verse in our chronicle. Once we reach Level 3, the Scroll Vault will open to our command.',
     shortPassive: '🔮 -1🪙 Shop Reroll',
     passiveDesc: 'Arcane Mastery: First Shop Reroll each battle costs 1 less Gold.',
+    playstyleTag: 'Zone Control & Scrolls',
+    startingStats: '3🪙 Start Gold • 3T Skill CD • -1🪙 Shop Reroll',
+    passiveTrigger: 'First Shop Reroll: Costs 1 less Gold Coin',
+    bestFor: 'Locking enemy threat tiles on demand and cycling the 3-Slot Scroll Shop.',
     activeAbility: {
       id: 'astral_seal',
       name: 'Astral Interdict',
@@ -170,6 +307,10 @@ export const FANTASY_HEROES = Object.freeze([
     storyCounsel: 'Do not fear their numbers! Shatter their front ranks and turn the tide with bold formations.',
     shortPassive: '🐉 +10% Horn / Shatter',
     passiveDesc: 'Wyrm-Fury: Shattering enemy Champions grants +10% bonus War-Horn charge.',
+    playstyleTag: 'Aggressive Demolition',
+    startingStats: '3🪙 Start Gold • 3T Skill CD • +10% Horn/Shatter',
+    passiveTrigger: 'On Enemy Shatter: +10% Bonus War-Horn Charge',
+    bestFor: 'Direct removal of enemy blockers and breaking entrenched Siege Captain boards.',
     activeAbility: {
       id: 'dragon_scorch',
       name: 'Draconic Sunder',
@@ -198,6 +339,10 @@ export const FANTASY_HEROES = Object.freeze([
     storyCounsel: 'Claim the Mystery Chests on the board whenever you can — their treasures will tip the scales in our favor.',
     shortPassive: '🏹 +1🪙 Chest Loot',
     passiveDesc: 'Pathfinder Eye: Mystery War-Chests grant +1 extra Gold when cracked.',
+    playstyleTag: 'Treasure & Wildcards',
+    startingStats: '3🪙 Start Gold • 3T Skill CD • +1🪙 per Chest',
+    passiveTrigger: 'On Mystery Chest Cracked: +1 Extra Gold Coin',
+    bestFor: 'Spawning extra Mystery War-Chests for Wild Jokers, Shields, and Gold.',
     activeAbility: {
       id: 'pathfinder_drop',
       name: 'Supply Cache Drop',
@@ -226,6 +371,10 @@ export const FANTASY_HEROES = Object.freeze([
     storyCounsel: 'Patience is our strongest armor. Freeze their advances and strike when the board is ours.',
     shortPassive: '❄️ +1 Free Scroll',
     passiveDesc: 'Glacial Presence: Starts Level 3+ battles with 1 free War-Scroll in hand.',
+    playstyleTag: 'Glacial Defensive Control',
+    startingStats: '3🪙 Start Gold • +1 Start Scroll • 3T Skill CD',
+    passiveTrigger: 'Battle Start (Lv.3+): +1 Bonus War-Scroll in Hand',
+    bestFor: 'Freezing choke points while shielding adjacent allies in one action.',
     activeAbility: {
       id: 'permafrost_rune',
       name: 'Glacial Bastion',
@@ -1358,15 +1507,36 @@ export const CATHEDRAL_LEVELS = Object.freeze(
     const boardSize = level <= 2 ? 5 : level <= 12 ? 5 : level <= 24 ? 6 : 6;
     const targetScore = level === 1 ? 4 : level === 2 ? 5 : 5 + Math.floor(level / 4) + (isBossLevel ? 2 : 0);
     const aiTier = level <= 2 ? 1 : Math.min(6, Math.ceil(level / 6));
+    const doctrine = getWarlordDoctrineByTier(aiTier);
 
     // v1 Rule: NO CARDS UNTIL LEVEL 3!
     const cardsEnabled = level >= GAME_CONFIG.CARDS_UNLOCK_LEVEL;
     const unlockedCardObj = level >= 3 && level - 3 < ARCANA_CARDS.length ? ARCANA_CARDS[level - 3] : null;
+    const nextUnlockedCardObj = level + 1 >= 3 && level - 2 < ARCANA_CARDS.length ? ARCANA_CARDS[level - 2] : null;
     const tipText =
       LEVEL_TIPS[level] ||
       (cardsEnabled
         ? `${act.name}: Spend Gold Coins in the 3-slot Shop to buy War-Scrolls, then cast 1 Scroll per turn!`
         : 'Pure Tactical Mode — Cards & War-Scroll Shop unlock at Level 3!');
+
+    const baseSigilReward = 85 + (isBossLevel ? 140 : 65) + level * 4;
+    const enemyRuleLabel = isBossLevel
+      ? `${act.boss.name} • Ritual Every 3T`
+      : !cardsEnabled
+      ? `${doctrine.name} • Pure Tactics + Komi`
+      : level % 3 === 1 && level >= 5
+      ? `${doctrine.name} • Siege Bombs`
+      : `${doctrine.name} • War-Scroll Shop`;
+    const nextUnlockLabel =
+      level === 1
+        ? 'Stage #2 Watchtower & Counter-Block Trial'
+        : level === 2
+        ? '🔓 Level 3 War-Scroll Shop & Gold Economy!'
+        : nextUnlockedCardObj
+        ? `Scroll: ${nextUnlockedCardObj.name}`
+        : level < 36
+        ? `Stage #${level + 1}`
+        : 'Grand Campaign Mastery';
 
     return {
       level,
@@ -1380,6 +1550,16 @@ export const CATHEDRAL_LEVELS = Object.freeze(
       boardSize,
       targetScore,
       aiTier,
+      doctrine,
+      objectiveLabel: `Reach ${targetScore} VP`,
+      enemyRuleLabel,
+      rewardLabel: `+${baseSigilReward} Sigils`,
+      firstClearReward: isBossLevel
+        ? `+${baseSigilReward + 60} Sigils & Chapter Star-Stone`
+        : unlockedCardObj
+        ? `+${baseSigilReward} Sigils & ${unlockedCardObj.name}`
+        : `+${baseSigilReward} Sigils & Mastery Seal`,
+      nextUnlockLabel,
       isBossLevel,
       cardsEnabled,
       cardUnlock: unlockedCardObj ? unlockedCardObj.name : null,
@@ -1394,6 +1574,149 @@ export const CATHEDRAL_LEVELS = Object.freeze(
 
 export function getLevelByNumber(levelNumber) {
   return CATHEDRAL_LEVELS.find((l) => l.level === Number(levelNumber)) || CATHEDRAL_LEVELS[0];
+}
+
+/**
+ * Return structured decision-quality metadata for any War-Scroll card:
+ * Cost, Rarity, Timing, Target Rule, Counterplay, and 3×3 Mini Board Preview cells
+ */
+export function getCardTacticalSpec(card) {
+  if (!card) {
+    return {
+      rarity: 'COMMON',
+      timing: 'Before Placement (1/Turn)',
+      targetRule: 'Single Tile',
+      counterplay: 'Golden Aegis Shield',
+      previewCells: [[1, 1]],
+      previewMode: 'target',
+    };
+  }
+  const targetLabels = {
+    enemy_cell: 'Enemy Unshielded Stone',
+    friendly_cell: 'Friendly Stone',
+    empty_cell: 'Empty Playable Tile',
+    any_cell: 'Any Board Tile',
+    occupied_cell: 'Any Stone on Board',
+    two_occupied: '2 Stones (Swap)',
+    none: 'Global War-Table Instant',
+  };
+  let counterplay = 'Out-tempo by contesting multiple lines.';
+  if (card.targetType === 'enemy_cell' || card.effect.includes('shatter') || card.effect.includes('guillotine')) {
+    counterplay = 'Deflected by Golden Aegis Shield (🛡️).';
+  } else if (card.effect.includes('lock') || card.effect === 'iron_cage') {
+    counterplay = 'Build intersecting L/T lines to bypass locked tile.';
+  } else if (card.effect.includes('shield') || card.effect === 'aegis_gargoyle') {
+    counterplay = 'Wait out 2T shield or strike unshielded stones.';
+  } else if (card.effect.includes('transmute') || card.effect.includes('convert')) {
+    counterplay = 'Protect key line anchors with Solar Bulwark [Q].';
+  }
+
+  const rawCells =
+    card.targetType === 'none'
+      ? [
+          [0, 0],
+          [0, 2],
+          [1, 1],
+          [2, 0],
+          [2, 2],
+        ]
+      : getArcanaPreviewCells(card, 1, 1, 3);
+
+  return {
+    rarity: (card.rarity || 'common').toUpperCase(),
+    timing: 'Free Action Before Move (Max 1/Turn)',
+    targetRule: targetLabels[card.targetType] || 'Board Tile',
+    counterplay,
+    previewCells: rawCells,
+    previewMode:
+      card.targetType === 'friendly_cell' || card.effect.includes('shield')
+        ? 'ally'
+        : card.targetType === 'empty_cell'
+        ? 'deploy'
+        : 'strike',
+  };
+}
+
+/**
+ * Return structured decision-quality metadata for any Sacred War Relic (`BLOOD_OATHS`)
+ */
+export function getRelicTacticalSpec(oath) {
+  const specs = {
+    oath_blood_chalice: {
+      rarity: 'RARE RELIC',
+      timing: 'Passive • Battle Start (Lv.3+)',
+      targetRule: 'Player Treasury (+2🪙 Gold)',
+      counterplay: 'Pair with early Shop buys on Turn 1.',
+      previewCells: [
+        [0, 1],
+        [1, 1],
+        [2, 1],
+      ],
+      previewMode: 'ally',
+    },
+    oath_rose_window: {
+      rarity: 'EPIC RELIC',
+      timing: 'Passive • On Sacred Shape Scored',
+      targetRule: 'Cross, Saltire, Diamond, Fortress (+1 VP)',
+      counterplay: 'Guard central intersection [C3] to complete shapes.',
+      previewCells: [
+        [0, 1],
+        [1, 0],
+        [1, 1],
+        [1, 2],
+        [2, 1],
+      ],
+      previewMode: 'deploy',
+    },
+    oath_executioner_hood: {
+      rarity: 'RARE RELIC',
+      timing: 'Passive • 3-Slot Shop Discount',
+      targetRule: 'Inquisition / Strike Scrolls (-1🪙 Cost)',
+      counterplay: 'Ideal for shatter-heavy demolition decks.',
+      previewCells: [
+        [1, 0],
+        [1, 1],
+        [1, 2],
+      ],
+      previewMode: 'strike',
+    },
+    oath_forbidden_tome: {
+      rarity: 'EPIC RELIC',
+      timing: 'Passive • Battle Start (Lv.3+)',
+      targetRule: 'Starting Hand (+1 Free War-Scroll)',
+      counterplay: 'Gives immediate Turn-1 tactical flexibility.',
+      previewCells: [
+        [0, 0],
+        [1, 1],
+        [2, 2],
+      ],
+      previewMode: 'ally',
+    },
+    oath_cathedral_chime: {
+      rarity: 'LEGENDARY RELIC',
+      timing: 'Passive • Battle Start (All Stages)',
+      targetRule: 'War-Horn Ultimate (+35% Charge)',
+      counterplay: 'Works on Levels 1–2 as well as Level 3+!',
+      previewCells: [
+        [0, 0],
+        [0, 2],
+        [1, 1],
+        [2, 0],
+        [2, 2],
+      ],
+      previewMode: 'deploy',
+    },
+  };
+  return (
+    specs[oath?.id] || {
+      rarity: 'SACRED RELIC',
+      timing: 'Passive • Always Active',
+      targetRule: 'War-Table Global',
+      counterplay: 'Synergizes with Hero Active Skill [Q].',
+      previewCells: [[1, 1]],
+      previewMode: 'ally',
+    }
+  );
 }
 
 export const CRYPT_TRIALS = Object.freeze([

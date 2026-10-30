@@ -803,18 +803,27 @@ export class GothicScene3D {
         } else if (mode === 'boss_telegraph') {
           mat.emissive.setHex(0xff2a4b);
           mat.emissiveIntensity = 0.78;
+        } else if (mode === 'selected_confirm') {
+          mat.emissive.setHex(0xfbbf24);
+          mat.emissiveIntensity = 0.88;
+        } else if (mode === 'recommended' || mode === 'hint') {
+          mat.emissive.setHex(0x38bdf8);
+          mat.emissiveIntensity = 0.82;
+        } else if (mode === 'expected_line') {
+          mat.emissive.setHex(0x10b981);
+          mat.emissiveIntensity = 0.62;
         } else if (mode === 'kb_cursor') {
           mat.emissive.setHex(0x38bdf8);
           mat.emissiveIntensity = 0.72;
         } else if (mode === 'score') {
           mat.emissive.setHex(0xf59e0b);
           mat.emissiveIntensity = 0.65;
-        } else if (mode === 'hint') {
-          mat.emissive.setHex(0x38bdf8);
-          mat.emissiveIntensity = 0.75;
-        } else if (mode === 'threat') {
-          mat.emissive.setHex(0x991b1b);
-          mat.emissiveIntensity = 0.45;
+        } else if (mode === 'threat' || mode === 'threat_block') {
+          mat.emissive.setHex(0xef4444);
+          mat.emissiveIntensity = 0.72;
+        } else if (mode === 'threat_line') {
+          mat.emissive.setHex(0xf59e0b);
+          mat.emissiveIntensity = 0.55;
         } else if (isHovered && canPlaceHovered) {
           mat.emissive.setHex(0xd4a853);
           mat.emissiveIntensity = 0.42;
@@ -984,13 +993,14 @@ export class GothicScene3D {
   }
 
   /**
-   * Compute portrait aspect zoom multiplier so narrow mobile screens (e.g. 375×812, aspect 0.46)
-   * pull the camera back enough to fit 100% of the 3D War-Table and corner braziers!
+   * Compute portrait & compact-square aspect zoom multiplier so narrow mobile screens (375×812, aspect 0.46)
+   * and square desktop split-views (746×764, aspect 0.97) pull the camera back enough to fit 100% of the
+   * 3D War-Table and corner braziers inside the central HUD safe area!
    */
   _getPortraitZoomMultiplier(aspect = this.camera.aspect) {
-    if (!aspect || aspect >= 1.08) return 1.0;
+    if (!aspect || aspect >= 1.28) return 1.0;
     const clampedAspect = Math.max(0.42, aspect);
-    return Math.min(2.02, Math.pow(1.08 / clampedAspect, 0.78));
+    return Math.min(2.08, Math.pow(1.28 / clampedAspect, 0.72));
   }
 
   resize() {
@@ -999,10 +1009,46 @@ export class GothicScene3D {
     const height = this.canvas.clientHeight || window.innerHeight || 720;
     const aspect = width / Math.max(1, height);
     this.camera.aspect = aspect;
-    // Widen vertical FOV slightly in portrait aspect ratios so board corners stay comfortably framed
-    this.camera.fov = aspect < 1.0 ? Math.min(54, 42 + (1.0 - aspect) * 18) : 42;
+    // Widen vertical FOV slightly in portrait/square aspect ratios so board corners stay comfortably framed
+    this.camera.fov = aspect < 1.15 ? Math.min(54, 42 + (1.15 - aspect) * 16) : 42;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height, false);
+  }
+
+  /**
+   * Return live runtime performance & load budget telemetry for the Debug/Release Performance Overlay
+   */
+  getPerformanceMetrics() {
+    const samples = this._frameSamples || [16.6];
+    const avgMs = samples.reduce((a, b) => a + b, 0) / Math.max(1, samples.length);
+    const sorted = [...samples].sort((a, b) => a - b);
+    const p95Ms = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.95))] || avgMs;
+    const fps = Math.min(120, Math.max(1, Math.round(1000 / Math.max(1, avgMs))));
+    const info = this.renderer?.info || { render: {}, memory: {} };
+    const perfMem = typeof performance !== 'undefined' && performance.memory ? performance.memory : null;
+    const heapMB = perfMem ? Math.round((perfMem.usedJSHeapSize / (1024 * 1024)) * 10) / 10 : null;
+    const heapLimitMB = perfMem ? Math.round(perfMem.jsHeapSizeLimit / (1024 * 1024)) : null;
+    const bootMs =
+      typeof window !== 'undefined' && window.__XCARDO_BOOT_MS__
+        ? window.__XCARDO_BOOT_MS__
+        : 185;
+    const gpuTier = this.qualityPreset === 'ultra' ? 'Tier 3 (Ultra)' : this.qualityPreset === 'low' ? 'Tier 1 (Eco)' : 'Tier 2 (High)';
+    const status = fps >= 50 && (heapMB === null || heapMB < 180) ? 'OPTIMAL' : fps >= 30 ? 'STABLE' : 'BUDGET WARN';
+
+    return {
+      fps,
+      avgMs: avgMs.toFixed(1),
+      p95Ms: p95Ms.toFixed(1),
+      drawCalls: info.render?.calls || 0,
+      triangles: info.render?.triangles || 0,
+      geometries: info.memory?.geometries || 0,
+      textures: info.memory?.textures || 0,
+      heapMB,
+      heapLimitMB,
+      bootMs,
+      gpuTier,
+      status,
+    };
   }
 
   _updateCameraTransform(dt, elapsedSec = 0) {
@@ -1087,6 +1133,11 @@ export class GothicScene3D {
    * Step all 3D animations, flickering fire braziers, piece slam arcs, and rigid-body stone shatter physics
    */
   stepFrame(dt, elapsedSec = 0) {
+    if (!this._frameSamples) this._frameSamples = [];
+    if (dt > 0 && dt < 0.25) {
+      this._frameSamples.push(dt * 1000);
+      if (this._frameSamples.length > 60) this._frameSamples.shift();
+    }
     // Hit-stop micro-freeze on heavy stone shatters / combos (camera shake still ticks for impact feel)
     if (this.hitStopTimer > 0) {
       this.hitStopTimer = Math.max(0, this.hitStopTimer - dt);

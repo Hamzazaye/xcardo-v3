@@ -920,3 +920,31 @@ export function renderGeometryBlueprintSVG(cells = [], color = '#f59e0b') {
   }
   return `<svg class="geometry-blueprint-svg" viewBox="0 0 64 64" aria-hidden="true">${rects}</svg>`;
 }
+
+/**
+ * Render a 3×3 Mini Tactical Board Preview SVG (`viewBox="0 0 42 42"`) for War-Scrolls and Sacred Relics
+ */
+export function renderMiniBoardPreviewSVG(cells = [[1, 1]], mode = 'strike') {
+  const activeSet = new Set((cells || [[1, 1]]).map(([r, c]) => `${r},${c}`));
+  const fillCol =
+    mode === 'ally' ? '#38bdf8' : mode === 'deploy' ? '#f59e0b' : '#e11d48';
+  const strokeCol =
+    mode === 'ally' ? '#bae6fd' : mode === 'deploy' ? '#fde68a' : '#fda4af';
+
+  let tiles = '';
+  for (let r = 0; r < 3; r++) {
+    for (let c = 0; c < 3; c++) {
+      const active = activeSet.has(`${r},${c}`);
+      const isCenter = r === 1 && c === 1;
+      tiles += `<rect x="${3 + c * 12.5}" y="${3 + r * 12.5}" width="10.5" height="10.5" rx="2" fill="${
+        active ? fillCol : '#130e1c'
+      }" fill-opacity="${active ? '0.88' : '0.95'}" stroke="${
+        active ? strokeCol : '#382c4c'
+      }" stroke-width="${isCenter && active ? '1.6' : '1'}"/>`;
+      if (isCenter && active) {
+        tiles += `<circle cx="${8.25 + c * 12.5}" cy="${8.25 + r * 12.5}" r="2.1" fill="#ffffff"/>`;
+      }
+    }
+  }
+  return `<svg class="mini-board-preview-svg" viewBox="0 0 42 42" aria-hidden="true">${tiles}</svg>`;
+}

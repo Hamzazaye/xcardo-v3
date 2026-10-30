@@ -8,14 +8,21 @@ import { SeededRNG } from '../core/rng.js';
 import {
   GAME_CONFIG,
   ARCANA_CARDS,
+  EARLY_STAGE_MODIFIERS,
   getArcanaCardById,
   getLevelByNumber,
   getCryptTrialById,
   getFantasyHeroById,
+  getWarlordDoctrineByTier,
   PENITENCE_BELLS,
 } from '../data/gothic-config.js';
 import { scanBoardPatterns, previewPlacementScoring } from './pattern-detector.js';
-import { selectBestAIMove, selectBestAICardAction, selectBestAIShopPurchase } from './ai-brain.js';
+import {
+  selectBestAIMove,
+  selectBestAICardAction,
+  selectBestAIShopPurchase,
+  formatCoordLabel,
+} from './ai-brain.js';
 
 export class BattleEngine {
   constructor(eventBus, options = {}) {
@@ -34,9 +41,21 @@ export class BattleEngine {
         : null;
 
     this.levelData = levelData;
+    this.earlyModifierId = options.earlyModifierId || 'standard';
+    this.earlyModifier =
+      EARLY_STAGE_MODIFIERS.find((m) => m.id === this.earlyModifierId) ||
+      EARLY_STAGE_MODIFIERS[0];
+
+    const modTargetBonus =
+      this.mode === 'campaign' && this.levelNumber < GAME_CONFIG.CARDS_UNLOCK_LEVEL
+        ? this.earlyModifier.targetBonus || 0
+        : 0;
+
     this.boardSize = options.boardSize || (levelData ? levelData.boardSize : 5);
-    this.targetScore = options.targetScore || (levelData ? levelData.targetScore : 6);
+    this.targetScore =
+      (options.targetScore || (levelData ? levelData.targetScore : 6)) + modTargetBonus;
     this.aiTier = options.aiTier || (levelData ? levelData.aiTier : 3);
+    this.doctrine = getWarlordDoctrineByTier(this.aiTier);
     this.boss = options.boss || (levelData ? levelData.boss : null);
     this.cathedralHallId = options.cathedralHallId || (levelData ? levelData.hallId : 'obsidian_nave');
 
@@ -140,6 +159,12 @@ export class BattleEngine {
     this.undoStack = [];
     this.undosRemaining = this.maxUndos;
     this.battleChronicle = [];
+    this.moveHistory = [];
+    this.microRewards = {
+      firstLine: false,
+      counterBlock: false,
+      decisiveWin: false,
+    };
 
     // Build 2D/3D Altar Grid
     this.board = Array.from({ length: this.boardSize }, (_, r) =>
@@ -401,7 +426,11 @@ export class BattleEngine {
     }
 
     // 2. Mystery War-Chests / Reliquary Coffers (shatter when an adjacent stone is consecrated!)
-    const cofferCount = this.levelData?.reliquaryCoffers || 0;
+    const modCoffers =
+      this.mode === 'campaign' && this.levelNumber < GAME_CONFIG.CARDS_UNLOCK_LEVEL
+        ? this.earlyModifier?.bonusCoffers || 0
+        : 0;
+    const cofferCount = (this.levelData?.reliquaryCoffers || 0) + modCoffers;
     for (let i = 0; i < cofferCount && emptyCoords.length > 0; i++) {
       const [r, c] = emptyCoords.pop();
       this.board[r][c].obstacle = 'reliquary_coffer';
@@ -459,6 +488,8 @@ export class BattleEngine {
       shop: this.shop.map((s) => ({ ...s })),
       shopLockedSlots: Array.from(this.shopLockedSlots),
       shopRerollCount: this.shopRerollCount,
+      moveHistory: this.moveHistory.map((m) => ({ ...m })),
+      microRewards: { ...this.microRewards },
       hands: {
         X: this.hands.X.map((h) => ({ ...h })),
         O: this.hands.O.map((h) => ({ ...h })),
@@ -504,6 +535,13 @@ export class BattleEngine {
     this.shop = (snap.shop || []).map((s) => ({ ...s }));
     this.shopLockedSlots = new Set(snap.shopLockedSlots || []);
     this.shopRerollCount = snap.shopRerollCount || 0;
+    this.moveHistory = (snap.moveHistory || []).map((m) => ({ ...m }));
+    this.microRewards = {
+      firstLine: false,
+      counterBlock: false,
+      decisiveWin: false,
+      ...(snap.microRewards || {}),
+    };
     this.hands = {
       X: snap.hands.X.map((h) => ({ ...h })),
       O: snap.hands.O.map((h) => ({ ...h })),
@@ -575,6 +613,19 @@ export class BattleEngine {
     }
 
     const player = this.activePlayer;
+    const enemy = player === 'X' ? 'O' : 'X';
+    const oppThreatPatterns = previewPlacementScoring(
+      this.board,
+      this.boardSize,
+      r,
+      c,
+      enemy,
+      this.scoredRegistry
+    );
+    const blockedEnemyThreat = oppThreatPatterns.length > 0;
+    const shatteredBefore = this.stonesShatteredThisMatch;
+    const scoreBefore = this.scores[player] || 0;
+
     const cell = this.board[r][c];
     cell.symbol = player;
     cell.placedTurn = this.turnNumber;
@@ -612,10 +663,11 @@ export class BattleEngine {
       this._logChronicle('boss', `⚡ Disrupted ${disruptedName}'s telegraphed ritual at [${r + 1}, ${c + 1}]!`, 'X');
     }
 
+    const coord = formatCoordLabel(r, c);
     const actorLabel = player === 'X' ? (this.hero?.shortName || 'Hero') : (this.boss?.name || 'Warlord');
     this._logChronicle(
       'move',
-      `${actorLabel} deployed Champion to [${r + 1}, ${c + 1}]`,
+      `${actorLabel} deployed Champion to ${coord} [${r + 1}, ${c + 1}]${blockedEnemyThreat ? ' (Blocked Threat!)' : ''}`,
       player
     );
 
@@ -694,10 +746,59 @@ export class BattleEngine {
     // Evaluate Sacred Geometry & Line Scoring (+v1 Coin Reward per score!)
     const newlyScored = this.evaluateBoardScoring(player);
 
+    const vpDelta = (this.scores[player] || 0) - scoreBefore;
+    const shatteredDelta = this.stonesShatteredThisMatch - shatteredBefore;
+    const formationLabel =
+      newlyScored.length > 0
+        ? newlyScored.map((p) => p.name).join(' + ')
+        : blockedEnemyThreat
+        ? 'Counter-Block'
+        : crackedCoffers.length > 0
+        ? 'Cracked Chest'
+        : 'Positioning';
+
+    this.moveHistory.unshift({
+      turn: this.turnNumber,
+      player,
+      r,
+      c,
+      coord,
+      formation: formationLabel,
+      vpDelta,
+      shattered: shatteredDelta,
+      blockedThreat: blockedEnemyThreat,
+    });
+    if (this.moveHistory.length > 24) {
+      this.moveHistory.pop();
+    }
+
+    // Check Early-Stage Micro-Rewards for Player ('X')
+    if (player === 'X') {
+      if (newlyScored.length > 0 && !this.microRewards.firstLine) {
+        this.microRewards.firstLine = true;
+        this.bus.emit('battle:microReward', {
+          id: 'firstLine',
+          title: 'I. First Formation',
+          sigils: 15,
+        });
+      }
+      if (blockedEnemyThreat && !this.microRewards.counterBlock) {
+        this.microRewards.counterBlock = true;
+        this.addBellCharge('X', 12);
+        this.bus.emit('battle:microReward', {
+          id: 'counterBlock',
+          title: 'II. Tactical Block',
+          sigils: 25,
+        });
+      }
+    }
+
     this.bus.emit('battle:piecePlaced', {
       r,
       c,
+      coord,
       player,
+      blockedEnemyThreat,
       anomalyEvent,
       crackedCoffers,
       newlyScored,
@@ -2344,6 +2445,10 @@ export class BattleEngine {
         this.winner = 'O';
       }
 
+      if (this.status === 'victory' && (this.scores.X - this.scores.O) >= 2) {
+        this.microRewards.decisiveWin = true;
+      }
+
       this.bus.emit('battle:ended', {
         status: this.status,
         winner: this.winner,
@@ -2377,8 +2482,8 @@ export class BattleEngine {
     if (this.cardsEnabled && this.cardsPlayedThisTurn < 1) {
       if (this.hands.O.length < 2) {
         const shopSlot = selectBestAIShopPurchase(this, this.aiTier);
-        if (shopSlot !== null) {
-          this.buyFromShop(shopSlot, 'O');
+        if (shopSlot && typeof shopSlot.slotIndex === 'number') {
+          this.buyShopCard(shopSlot.slotIndex, 'O');
         }
       }
 
@@ -2425,6 +2530,9 @@ export class BattleEngine {
       levelData: this.levelData,
       hero: this.hero,
       boss: this.boss,
+      aiTier: this.aiTier,
+      doctrine: this.doctrine,
+      earlyModifier: this.earlyModifier,
       roguelikeBoon: this.roguelikeBoon,
       cardsEnabled: this.cardsEnabled,
       cathedralHallId: this.cathedralHallId,
@@ -2457,6 +2565,8 @@ export class BattleEngine {
         this.undosRemaining > 0 &&
         this.activePlayer === 'X' &&
         this.status === 'playing',
+      microRewards: { ...this.microRewards },
+      moveHistory: this.moveHistory.slice(0, 12),
       battleChronicle: this.battleChronicle.slice(0, 12),
       shop: this.shop.map((slot, i) => ({
         ...slot,

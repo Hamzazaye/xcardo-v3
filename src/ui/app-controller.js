@@ -14,6 +14,9 @@ import {
   BLOOD_OATHS,
   PENITENCE_BELLS,
   ROGUELIKE_BOONS,
+  WARLORD_DOCTRINES,
+  EARLY_STAGE_MICRO_REWARDS,
+  EARLY_STAGE_MODIFIERS,
   ARCANA_CARDS,
   CATHEDRAL_ACTS,
   CATHEDRAL_LEVELS,
@@ -25,16 +28,26 @@ import {
   getArcanaPreviewCells,
   getLevelByNumber,
   getFantasyHeroById,
+  getWarlordDoctrineByTier,
+  getCardTacticalSpec,
+  getRelicTacticalSpec,
 } from '../data/gothic-config.js';
 import { SeededRNG } from '../core/rng.js';
 import { BattleEngine } from '../engine/game-state.js';
-import { selectBestAIMove, scanEnemyThreatCells } from '../engine/ai-brain.js';
+import {
+  selectBestAIMove,
+  scanEnemyThreatCells,
+  getThreatOverlayData,
+  computeTacticalHint,
+  formatCoordLabel,
+} from '../engine/ai-brain.js';
 import { SACRED_GEOMETRY_SHAPES } from '../engine/pattern-detector.js';
 import {
   renderTarotArtSVG,
   renderBossCrestSVG,
   renderGothicIconSVG,
   renderGeometryBlueprintSVG,
+  renderMiniBoardPreviewSVG,
   renderRoseWindowSVG,
   renderFantasyHeroPortraitSVG,
 } from './gothic-svg.js';
@@ -55,7 +68,17 @@ export class AppController {
     this.seerHintCoord = null;
     this.showThreatScan = false;
     this.showMiniTacticalGrid = false;
-    this.showTacticalIntel = true;
+    this.saved3DCameraPreset = 'high_cathedral';
+    // Default side rail collapsed so the 3D War-Table has a clear, unobstructed safe area
+    this.showTacticalIntel = false;
+    this.confirmPlacementMode = false;
+    this.stagedCoord = null;
+    this.hoveredPreviewInfo = null;
+    this.earlyModifierId = 'standard';
+    this.showScrollPreviewDrawer = false;
+    this.showPerfOverlay = false;
+    this.perfInterval = null;
+    this.onboardingStep = 1; // 5-step Guided First Battle sequence on Level 1
     this.showStoryModal = false;
     this.showTutorialModal = false;
     this.tutorialStep = 0;
@@ -142,10 +165,11 @@ export class AppController {
 
     this.bus.on('3d:cancelSelection', () => {
       if (this.currentScreen !== 'battle' || !this.engine) return;
-      if (this.engine.selectedCardIndex !== null || this.engine.selectedHeroAbility) {
+      if (this.engine.selectedCardIndex !== null || this.engine.selectedHeroAbility || this.stagedCoord) {
         this.engine.selectedCardIndex = null;
         this.engine.selectedHeroAbility = false;
         this.engine.pendingTargets = [];
+        this.stagedCoord = null;
         this.showToast(this.t('Selection cancelled.', 'تم إلغاء التحديد.'));
         this.render();
       }
@@ -183,6 +207,11 @@ export class AppController {
       }
     });
 
+    this.bus.on('battle:microReward', ({ title, sigils }) => {
+      this.save.addReliquarySigils(sigils || 15);
+      this.showToast(`🏅 Mastery Unlocked: ${title} (+${sigils} Sigils)!`);
+    });
+
     this.bus.on('battle:bellActivated', ({ bell }) => {
       this.sound?.playCathedralBell();
       this.showToast(`${bell.name} Sounded Across the War-Table!`);
@@ -203,9 +232,38 @@ export class AppController {
 
     this.bus.on('battle:turnStarted', ({ activePlayer, bossEvents }) => {
       this.seerHintCoord = null;
+      this.stagedCoord = null;
       if (bossEvents && bossEvents.length > 0) {
         this.showToast(bossEvents[0].text);
       }
+      // Step 3 of Stage 1 Guided Onboarding: When Malakor finishes Turn 1, reveal Threat Line!
+      if (
+        this.engine &&
+        this.engine.mode === 'campaign' &&
+        this.engine.levelNumber === 1 &&
+        activePlayer === 'X' &&
+        this.engine.turnNumber === 2
+      ) {
+        this.showThreatScan = true;
+        this.onboardingStep = Math.max(this.onboardingStep, 3);
+      } else if (
+        this.engine &&
+        this.engine.mode === 'campaign' &&
+        this.engine.levelNumber === 1 &&
+        activePlayer === 'X' &&
+        this.engine.turnNumber >= 3
+      ) {
+        this.onboardingStep = Math.max(this.onboardingStep, 4);
+      }
+      if (
+        this.engine &&
+        this.engine.mode === 'campaign' &&
+        this.engine.levelNumber === 1 &&
+        (this.engine.scores.X >= 1 || this.engine.status !== 'playing')
+      ) {
+        this.onboardingStep = 5;
+      }
+
       this.render();
       this._handleTileHover(this.kbActive ? this.kbCursor : null);
       if (activePlayer === 'O' && this.engine && this.engine.mode !== 'local2p') {
@@ -218,12 +276,18 @@ export class AppController {
         clearTimeout(this.aiTimer);
         this.aiTimer = null;
       }
+      this.onboardingStep = 5;
       this._handleMatchEnded(status, reason);
       this.render();
     });
 
     if (typeof window !== 'undefined') {
       window.addEventListener('keydown', (e) => {
+        if (e.key === 'F3') {
+          e.preventDefault();
+          this.togglePerfOverlay();
+          return;
+        }
         if (e.key === 'Escape') {
           if (this.showTutorialModal) {
             this.showTutorialModal = false;
@@ -237,10 +301,11 @@ export class AppController {
             return;
           }
           if (this.currentScreen === 'battle' && this.engine) {
-            if (this.engine.selectedCardIndex !== null || this.engine.selectedHeroAbility) {
+            if (this.engine.selectedCardIndex !== null || this.engine.selectedHeroAbility || this.stagedCoord) {
               this.engine.selectedCardIndex = null;
               this.engine.selectedHeroAbility = false;
               this.engine.pendingTargets = [];
+              this.stagedCoord = null;
               this.showToast(this.t('Selection cancelled.', 'تم إلغاء التحديد.'));
               this.render();
             }
@@ -269,6 +334,7 @@ export class AppController {
 
           this._handleTileHover(this.kbCursor);
           const cell = this.engine.board[this.kbCursor.r]?.[this.kbCursor.c];
+          const coordLabel = formatCoordLabel(this.kbCursor.r, this.kbCursor.c);
           const cellStatus = cell?.symbol
             ? cell.symbol === 'X'
               ? 'Your Champion'
@@ -281,9 +347,10 @@ export class AppController {
             ? 'Obstacle'
             : cell?.locked > 0
             ? 'Locked Tile'
-            : 'Empty Playable Tile';
+            : 'Empty Legal Tile';
+          const previewNote = this.hoveredPreviewInfo?.summary ? ` — ${this.hoveredPreviewInfo.summary}` : '';
           this.announceToScreenReader(
-            `Row ${this.kbCursor.r + 1}, Column ${this.kbCursor.c + 1}: ${cellStatus}`
+            `Tile ${coordLabel} (Row ${this.kbCursor.r + 1}, Column ${this.kbCursor.c + 1}): ${cellStatus}${previewNote}`
           );
           return;
         }
@@ -299,6 +366,10 @@ export class AppController {
 
         if (e.key === 'q' || e.key === 'Q') {
           this.triggerHeroAbility();
+        } else if (e.key === 'e' || e.key === 'E') {
+          const res = this.engine?.activatePenitenceBell('X');
+          if (res && !res.ok) this.showToast(res.reason);
+          this.render();
         } else if (['1', '2', '3', '4', '5'].includes(e.key)) {
           const idx = Number(e.key) - 1;
           if (this.engine.hands.X[idx]) {
@@ -315,6 +386,50 @@ export class AppController {
         }
       });
     }
+  }
+
+  togglePerfOverlay() {
+    this.showPerfOverlay = !this.showPerfOverlay;
+    if (this.perfInterval) {
+      clearInterval(this.perfInterval);
+      this.perfInterval = null;
+    }
+    if (this.showPerfOverlay && typeof window !== 'undefined') {
+      this.perfInterval = setInterval(() => {
+        this._updatePerfDOMOnly();
+      }, 650);
+    }
+    this.render();
+  }
+
+  _updatePerfDOMOnly() {
+    if (!this.rootEl || typeof this.rootEl.querySelector !== 'function') return;
+    const panel = this.rootEl.querySelector('#perf-telemetry-panel');
+    if (!panel || !this.scene3d?.getPerformanceMetrics) return;
+    const m = this.scene3d.getPerformanceMetrics();
+    panel.innerHTML = this._renderPerfTelemetryInner(m);
+  }
+
+  toggle2DView() {
+    const state = this.save.getState();
+    this.showMiniTacticalGrid = !this.showMiniTacticalGrid;
+    if (this.showMiniTacticalGrid) {
+      // Save current 3D camera preset before animating into 2D Top-Down Tactical View
+      this.saved3DCameraPreset =
+        state.cameraPreset && state.cameraPreset !== 'belfry_topdown'
+          ? state.cameraPreset
+          : 'high_cathedral';
+      this.scene3d?.applyCameraPreset('belfry_topdown', false);
+      this.showToast(this.t('Switched to 2D Tactical Board View', 'تم التبديل إلى عرض اللوحة التكتيكية ثنائية الأبعاد'));
+      this.announceToScreenReader('Switched to 2D Tactical Board View');
+    } else {
+      const restoreId = this.saved3DCameraPreset || 'high_cathedral';
+      this.save.equipCosmetic('cameraPreset', restoreId);
+      this.scene3d?.applyCameraPreset(restoreId, false);
+      this.showToast(this.t('Restored 3D War-Table View', 'تمت استعادة عرض طاولة الحرب ثلاثية الأبعاد'));
+      this.announceToScreenReader('Restored 3D War-Table View');
+    }
+    this.render();
   }
 
   showToast(text, duration = 2900) {
@@ -358,6 +473,8 @@ export class AppController {
     const state = this.save.getState();
     const level = getLevelByNumber(levelNumber);
     this.lastScores = { X: 0, O: 0 };
+    this.stagedCoord = null;
+    this.hoveredPreviewInfo = null;
     this.kbCursor = {
       r: Math.floor((level?.boardSize || 5) / 2),
       c: Math.floor((level?.boardSize || 5) / 2),
@@ -370,13 +487,21 @@ export class AppController {
       activeOaths: state.equippedOaths,
       penitenceBellId: state.equippedBell,
       roguelikeBoon: state.selectedBoon || 'boon_shrine_aegis',
+      earlyModifierId: this.earlyModifierId || 'standard',
       upgradedCards: state.upgradedCards,
       customDeckIds: state.customDeck,
     });
     this.currentScreen = 'battle';
-    if (levelNumber === 1 && !state.tutorialCompleted) {
-      this.showTutorialModal = true;
-      this.tutorialStep = 0;
+    // Guided 5-Step First Battle Sequence directly on the War-Table (no blocking text modal on entry!)
+    this.showTutorialModal = false;
+    if (levelNumber === 1) {
+      this.onboardingStep = 1;
+      const hint = computeTacticalHint(this.engine, 'X');
+      if (hint) {
+        this.seerHintCoord = hint;
+      }
+    } else {
+      this.seerHintCoord = null;
     }
     if (this.scene3d) {
       this.scene3d.idleOrbitActive = false;
@@ -387,19 +512,28 @@ export class AppController {
       }
     }
     this.sound?.startMusic(levelNumber % 13);
-    if (levelNumber < GAME_CONFIG.CARDS_UNLOCK_LEVEL) {
+    if (levelNumber === 1) {
+      const hero = getFantasyHeroById(state.selectedHeroId);
+      const cLabel = this.seerHintCoord?.coordLabel || 'C3';
+      this.showToast(
+        `⚔️ Step 1/5: Place ${hero.shortName} on highlighted tile ${cLabel} (or click any legal tile)!`
+      );
+    } else if (levelNumber < GAME_CONFIG.CARDS_UNLOCK_LEVEL) {
       this.showToast(
         `⚔️ Level ${levelNumber}: Pure Tactical Combat + Hero Skill [Q] — War-Scroll Shop Unlocks at Level ${GAME_CONFIG.CARDS_UNLOCK_LEVEL}!`
       );
     } else if (level?.cardUnlock) {
       this.showToast(`🔓 Level ${levelNumber}: War-Scroll Shop Open! New Scroll: ${level.cardUnlock}`);
     }
+    this._handleTileHover(null);
     this.render();
   }
 
   startCryptTrial(cryptId) {
     const state = this.save.getState();
     this.lastScores = { X: 0, O: 0 };
+    this.stagedCoord = null;
+    this.hoveredPreviewInfo = null;
     this.engine = new BattleEngine(this.bus, {
       mode: 'crypt',
       cryptId,
@@ -421,6 +555,8 @@ export class AppController {
   startSkirmishMatch() {
     const state = this.save.getState();
     this.lastScores = { X: 0, O: 0 };
+    this.stagedCoord = null;
+    this.hoveredPreviewInfo = null;
     this.engine = new BattleEngine(this.bus, {
       mode: this.skirmishConfig.mode,
       boardSize: this.skirmishConfig.boardSize,
@@ -447,6 +583,8 @@ export class AppController {
     const state = this.save.getState();
     const dailySeed = SeededRNG.dailySeedString();
     this.lastScores = { X: 0, O: 0 };
+    this.stagedCoord = null;
+    this.hoveredPreviewInfo = null;
     this.engine = new BattleEngine(this.bus, {
       mode: 'daily',
       seed: dailySeed,
@@ -496,7 +634,12 @@ export class AppController {
       this.sound?.playCathedralBell();
       const diff = this.engine.scores.X - this.engine.scores.O;
       const stars = diff >= 4 ? 3 : diff >= 2 ? 2 : 1;
-      const sigilReward = 85 + stars * 35 + (this.engine.boss ? 90 : 0);
+      const modBonus =
+        this.engine.mode === 'campaign' && this.engine.levelNumber < GAME_CONFIG.CARDS_UNLOCK_LEVEL
+          ? this.engine.earlyModifier?.sigilBonus || 0
+          : 0;
+      const decisiveBonus = diff >= 2 ? 35 : 0;
+      const sigilReward = 85 + stars * 35 + (this.engine.boss ? 90 : 0) + modBonus + decisiveBonus;
 
       if (this.engine.mode === 'campaign') {
         this.save.recordCampaignVictory(this.engine.levelNumber, stars, sigilReward);
@@ -520,6 +663,76 @@ export class AppController {
     }
   }
 
+  _computeHoverPreviewSummary(r, c) {
+    if (!this.engine || !this.engine.canPlaceAt(r, c)) return null;
+    const coordLabel = formatCoordLabel(r, c);
+    const myPatterns = this.engine.previewMove(r, c, this.engine.activePlayer);
+    const oppPatterns = this.engine.previewMove(r, c, this.engine.activePlayer === 'X' ? 'O' : 'X');
+    const cell = this.engine.board[r]?.[c];
+    let adjChest = false;
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (this.engine.board[r + dr]?.[c + dc]?.obstacle === 'reliquary_coffer') {
+          adjChest = true;
+        }
+      }
+    }
+
+    if (myPatterns.length > 0) {
+      const pts =
+        myPatterns.reduce((s, p) => s + p.points, 0) +
+        (myPatterns.length >= 2 ? myPatterns.length - 1 : 0);
+      const names = myPatterns.map((p) => p.name).join(' + ');
+      return {
+        r,
+        c,
+        coordLabel,
+        points: pts,
+        patterns: myPatterns,
+        summary: `${coordLabel}: ${names} → +${pts} VP${this.engine.cardsEnabled ? ' & +1🪙' : ''}`,
+      };
+    }
+    if (oppPatterns.length > 0) {
+      const denied = oppPatterns.reduce((s, p) => s + p.points, 0);
+      return {
+        r,
+        c,
+        coordLabel,
+        points: 0,
+        patterns: [],
+        summary: `${coordLabel}: Tactical Block (Stops Enemy +${denied} VP Line)`,
+      };
+    }
+    if (cell?.anomaly === 'sanctified_mosaic') {
+      return {
+        r,
+        c,
+        coordLabel,
+        points: 0,
+        patterns: [],
+        summary: `${coordLabel}: Star-Mosaic Tile (+2 Bonus VP when aligned)`,
+      };
+    }
+    if (adjChest) {
+      return {
+        r,
+        c,
+        coordLabel,
+        points: 0,
+        patterns: [],
+        summary: `${coordLabel}: Cracks Adjacent Mystery War-Chest (📦)!`,
+      };
+    }
+    return {
+      r,
+      c,
+      coordLabel,
+      points: 0,
+      patterns: [],
+      summary: `${coordLabel}: Legal Placement — Opens Line Rays`,
+    };
+  }
+
   _handleTileHover(coord) {
     if (!this.engine || !this.scene3d) return;
     const isPlayerTurn =
@@ -528,7 +741,7 @@ export class AppController {
 
     const previewCells = [];
 
-    // Highlight Telegraphed Boss Ritual Target Tile 1 Turn Ahead!
+    // 1. Highlight Telegraphed Boss Ritual Target Tile 1 Turn Ahead!
     if (this.engine.pendingBossRitual) {
       previewCells.push({
         r: this.engine.pendingBossRitual.r,
@@ -537,7 +750,7 @@ export class AppController {
       });
     }
 
-    // Highlight Keyboard Focus Cursor if active
+    // 2. Highlight Keyboard Focus Cursor if active
     if (this.kbActive && this.kbCursor) {
       previewCells.push({
         r: this.kbCursor.r,
@@ -546,18 +759,46 @@ export class AppController {
       });
     }
 
-    // Include Seer Hint or Threat cells if active
-    if (this.seerHintCoord) {
-      previewCells.push({ r: this.seerHintCoord.r, c: this.seerHintCoord.c, mode: 'hint' });
-    }
+    // 3. Threat Overlay: paint enemy scoring lines in Amber (`threat_line`) and guaranteed blocks in Red (`threat_block`)
     if (this.showThreatScan) {
-      const threats = scanEnemyThreatCells(this.engine, 'O');
-      for (const t of threats) {
-        previewCells.push({ r: t.r, c: t.c, mode: 'threat' });
+      const overlay = getThreatOverlayData(this.engine, 'O');
+      for (const l of overlay.lineCells) {
+        previewCells.push({ r: l.r, c: l.c, mode: 'threat_line' });
+      }
+      for (const b of overlay.blockCells) {
+        previewCells.push({ r: b.r, c: b.c, mode: 'threat_block' });
       }
     }
 
-    if (!coord || !isPlayerTurn) {
+    // 4. Seer Hint or Guided Stage 1 Recommendation: pulse recommended tile & expected line!
+    if (this.seerHintCoord) {
+      for (const cellItem of this.seerHintCoord.expectedLineCells || []) {
+        const lr = Array.isArray(cellItem) ? cellItem[0] : cellItem.r;
+        const lc = Array.isArray(cellItem) ? cellItem[1] : cellItem.c;
+        if (lr !== this.seerHintCoord.r || lc !== this.seerHintCoord.c) {
+          previewCells.push({ r: lr, c: lc, mode: 'expected_line' });
+        }
+      }
+      previewCells.push({
+        r: this.seerHintCoord.r,
+        c: this.seerHintCoord.c,
+        mode: 'recommended',
+      });
+    }
+
+    // 5. Staged Confirm Tile
+    if (this.stagedCoord) {
+      previewCells.push({
+        r: this.stagedCoord.r,
+        c: this.stagedCoord.c,
+        mode: 'selected_confirm',
+      });
+    }
+
+    const activeCoord = coord || this.stagedCoord;
+    if (!activeCoord || !isPlayerTurn) {
+      this.hoveredPreviewInfo = null;
+      this._updateLivePreviewBannerDOM();
       this.scene3d.setHoverAndPreview(null, previewCells, this.engine.activePlayer, false);
       return;
     }
@@ -566,7 +807,7 @@ export class AppController {
     if (this.engine.selectedHeroAbility) {
       const ability = this.engine.hero?.activeAbility;
       if (ability) {
-        previewCells.push({ r: coord.r, c: coord.c, mode: 'target' });
+        previewCells.push({ r: activeCoord.r, c: activeCoord.c, mode: 'target' });
         if (ability.id === 'permafrost_rune') {
           const dirs = [
             [-1, 0],
@@ -575,15 +816,15 @@ export class AppController {
             [0, 1],
           ];
           for (const [dr, dc] of dirs) {
-            const nr = coord.r + dr;
-            const nc = coord.c + dc;
+            const nr = activeCoord.r + dr;
+            const nc = activeCoord.c + dc;
             if (nr >= 0 && nr < this.engine.boardSize && nc >= 0 && nc < this.engine.boardSize) {
               previewCells.push({ r: nr, c: nc, mode: 'target' });
             }
           }
         }
       }
-      this.scene3d.setHoverAndPreview(coord, previewCells, null, false);
+      this.scene3d.setHoverAndPreview(activeCoord, previewCells, null, false);
       return;
     }
 
@@ -592,26 +833,53 @@ export class AppController {
       const inst = this.engine.hands[this.engine.activePlayer][this.engine.selectedCardIndex];
       const card = inst ? getArcanaCardById(inst.cardId) : null;
       if (card) {
-        const footprint = getArcanaPreviewCells(card, coord.r, coord.c, this.engine.boardSize);
+        const footprint = getArcanaPreviewCells(card, activeCoord.r, activeCoord.c, this.engine.boardSize);
         for (const [fr, fc] of footprint) {
           previewCells.push({ r: fr, c: fc, mode: 'target' });
         }
       }
-      this.scene3d.setHoverAndPreview(coord, previewCells, null, false);
+      this.scene3d.setHoverAndPreview(activeCoord, previewCells, null, false);
       return;
     }
 
     // Standard stone placement hover preview
-    const canPlace = this.engine.canPlaceAt(coord.r, coord.c);
+    const canPlace = this.engine.canPlaceAt(activeCoord.r, activeCoord.c);
     if (canPlace) {
-      const scoring = this.engine.previewMove(coord.r, coord.c, this.engine.activePlayer);
+      this.hoveredPreviewInfo = this._computeHoverPreviewSummary(activeCoord.r, activeCoord.c);
+      if (
+        this.engine.mode === 'campaign' &&
+        this.engine.levelNumber === 1 &&
+        this.onboardingStep === 1
+      ) {
+        this.onboardingStep = 2;
+      }
+      const scoring = this.hoveredPreviewInfo?.patterns || [];
       for (const pat of scoring) {
         for (const [pr, pc] of pat.cells) {
           previewCells.push({ r: pr, c: pc, mode: 'score' });
         }
       }
+    } else {
+      this.hoveredPreviewInfo = null;
     }
-    this.scene3d.setHoverAndPreview(coord, previewCells, this.engine.activePlayer, canPlace);
+    this._updateLivePreviewBannerDOM();
+    this.scene3d.setHoverAndPreview(activeCoord, previewCells, this.engine.activePlayer, canPlace);
+  }
+
+  _updateLivePreviewBannerDOM() {
+    if (!this.rootEl || typeof this.rootEl.querySelector !== 'function') return;
+    const el = this.rootEl.querySelector('#live-placement-preview-pill');
+    if (!el) return;
+    if (this.hoveredPreviewInfo?.summary) {
+      el.textContent = `🎯 Preview ${this.hoveredPreviewInfo.summary}`;
+      el.classList.add('active');
+    } else {
+      el.textContent = this.t(
+        'Hover or focus any empty tile to preview formations & VP result',
+        'مرر أو ركز على أي بلاطة فارغة لمعاينة التشكيلات والنقاط'
+      );
+      el.classList.remove('active');
+    }
   }
 
   triggerHeroAbility() {
@@ -656,7 +924,7 @@ export class AppController {
     this.render();
   }
 
-  handleBoardCellClick(r, c) {
+  handleBoardCellClick(r, c, forceCommit = false) {
     if (!this.engine || this.engine.status !== 'playing') return;
     if (this.engine.activePlayer !== 'X' && this.engine.mode !== 'local2p') return;
 
@@ -702,7 +970,28 @@ export class AppController {
       return;
     }
 
-    // 2. Otherwise place a 3D sculpted War Champion on `(r, c)`
+    // 2. If Confirm Placement Mode is active (and not yet confirmed), stage the tile first
+    if (
+      this.confirmPlacementMode &&
+      !forceCommit &&
+      (!this.stagedCoord || this.stagedCoord.r !== r || this.stagedCoord.c !== c)
+    ) {
+      if (!this.engine.canPlaceAt(r, c)) {
+        this.showToast('War-Table tile is obstructed or locked.');
+        return;
+      }
+      this.stagedCoord = { r, c };
+      this._handleTileHover({ r, c });
+      const coordLabel = formatCoordLabel(r, c);
+      this.announceToScreenReader(
+        `Tile ${coordLabel} selected. ${this.hoveredPreviewInfo?.summary || ''} Click Confirm Placement or click ${coordLabel} again to deploy.`
+      );
+      this.render();
+      return;
+    }
+
+    // 3. Place the 3D sculpted War Champion on `(r, c)`
+    this.stagedCoord = null;
     const res = this.engine.placePiece(r, c);
     if (!res.ok) {
       this.showToast(res.reason);
@@ -769,6 +1058,9 @@ export class AppController {
       nextId = CAMERA_PRESETS[(idx + 1) % CAMERA_PRESETS.length].id;
     }
     this.save.equipCosmetic('cameraPreset', nextId);
+    if (nextId !== 'belfry_topdown') {
+      this.saved3DCameraPreset = nextId;
+    }
     this.scene3d?.applyCameraPreset(nextId, false);
     const preset = CAMERA_PRESETS.find((p) => p.id === nextId);
     if (preset) this.showToast(`Camera: ${preset.name}`);
@@ -802,13 +1094,57 @@ export class AppController {
       return;
     }
     this.engine.tithe.X -= cost;
-    const best = selectBestAIMove(this.engine, 'X', 5);
-    if (best) {
-      this.seerHintCoord = { r: best.r, c: best.c, reason: best.reason };
-      this._handleTileHover(null);
-      this.showToast(`Oracle Vision: Tile [${best.r + 1}, ${best.c + 1}] (${best.reason})`);
+    const hint = computeTacticalHint(this.engine, 'X');
+    if (hint) {
+      this.seerHintCoord = hint;
+      this._handleTileHover({ r: hint.r, c: hint.c });
+      this.showToast(`💡 Tactical Hint: ${hint.sentence}`, 4200);
+      this.announceToScreenReader(`Tactical Hint: ${hint.sentence}`);
       this.render();
     }
+  }
+
+  _renderPerfTelemetryInner(m) {
+    return `
+      <div class="perf-telemetry-header">
+        <span class="gothic-eyebrow">⚡ RUNTIME TELEMETRY & BUDGET</span>
+        <span class="perf-status-badge status-${m.status.toLowerCase().replace(/\s+/g, '-')}">${m.status}</span>
+      </div>
+      <div class="perf-metrics-grid">
+        <div><small>FPS / Frame</small><strong class="tabular-num">${m.fps} FPS (${m.avgMs} ms)</strong></div>
+        <div><small>P95 Frame</small><strong class="tabular-num">${m.p95Ms} ms / 16.7 ms</strong></div>
+        <div><small>GPU Tier</small><strong>${m.gpuTier}</strong></div>
+        <div><small>Draw Calls</small><strong class="tabular-num">${m.drawCalls} (${m.triangles} tris)</strong></div>
+        <div><small>Assets / Boot</small><strong class="tabular-num">${m.geometries} geo • ${m.bootMs} ms</strong></div>
+        <div><small>JS Heap Mem</small><strong class="tabular-num">${
+          m.heapMB !== null ? `${m.heapMB} / ${m.heapLimitMB} MB` : 'Within Budget (<64 MB)'
+        }</strong></div>
+      </div>
+    `;
+  }
+
+  _renderPerfTelemetryOverlay() {
+    const m = this.scene3d?.getPerformanceMetrics
+      ? this.scene3d.getPerformanceMetrics()
+      : {
+          fps: 60,
+          avgMs: '16.6',
+          p95Ms: '16.7',
+          drawCalls: 42,
+          triangles: 12400,
+          geometries: 28,
+          textures: 4,
+          heapMB: null,
+          heapLimitMB: null,
+          bootMs: 180,
+          gpuTier: 'Tier 2 (High)',
+          status: 'OPTIMAL',
+        };
+    return `
+      <aside id="perf-telemetry-panel" class="perf-telemetry-panel gothic-card-panel" role="region" aria-label="Runtime Performance Telemetry">
+        ${this._renderPerfTelemetryInner(m)}
+      </aside>
+    `;
   }
 
   render() {
@@ -847,6 +1183,7 @@ export class AppController {
         <div id="gothic-toast-banner" role="status" aria-live="polite" class="gothic-toast ${this.toastMessage ? 'visible' : ''}">
           ${this.toastMessage || ''}
         </div>
+        ${this.showPerfOverlay ? this._renderPerfTelemetryOverlay() : ''}
         ${screenHTML}
         ${this.showTutorialModal ? this._renderTutorialModal() : ''}
       </div>
@@ -977,6 +1314,9 @@ export class AppController {
             ${renderGothicIconSVG('sigil')}
             <span class="tabular-num">${state.reliquarySigils}</span>
           </div>
+          <button class="icon-btn ${this.showPerfOverlay ? 'active' : ''}" data-action="toggle-perf" aria-label="Toggle Performance Telemetry (Shortcut: F3)" title="Performance Budget & Telemetry (F3)">
+            <span class="btn-badge-txt">FPS</span>
+          </button>
           <button class="icon-btn" data-action="cycle-quality" aria-label="Graphics Quality: ${qPreset}" title="Graphics Quality: ${qPreset}">
             <span class="btn-badge-txt">${qPreset[0]}</span>
           </button>
@@ -1157,6 +1497,8 @@ export class AppController {
   _renderCampaignScreen() {
     const state = this.save.getState();
     const hero = getFantasyHeroById(state.selectedHeroId);
+    const nextLvlNum = state.highestUnlockedLevel || 1;
+    const nextLvl = getLevelByNumber(nextLvlNum);
     const act = CATHEDRAL_ACTS.find((a) => a.id === this.selectedActId) || CATHEDRAL_ACTS[0];
     const boss = INQUISITOR_BOSSES.find((b) => b.id === act.bossId) || INQUISITOR_BOSSES[0];
     const actLevels = CATHEDRAL_LEVELS.filter((l) => l.actId === act.id);
@@ -1167,28 +1509,38 @@ export class AppController {
       <section class="modal-screen-container gothic-card-panel">
         <div class="screen-header-row">
           <div>
-            <div class="gothic-eyebrow">36-LEVEL ROGUELIKE EXPEDITION MAP • THE CHRONICLE OF THE STAR-STONES</div>
-            <h2>${this.t('Story Chapters, Expedition Boons & Strongholds', 'فصول القصة وبركات الحملة والقلاع')}</h2>
-            <p class="screen-sub-note">
-              <strong>🌱 Levels 1–2:</strong> Pure Tactical Warmup + Hero Active Skill [Q] •
-              <strong>🏪 Level 3+:</strong> 3-Slot In-Battle War-Scroll Shop & Gold Economy Unlocked!
-            </p>
+            <div class="gothic-eyebrow">36-LEVEL TACTICAL EXPEDITION MAP • SCANNABLE STAGE BRIEFINGS</div>
+            <h2>${this.t('Campaign Strongholds, Doctrines & Rewards', 'خريطة الحملة والعقائد القتالية والمكافآت')}</h2>
           </div>
           <div class="act-selector-tabs">
             ${CATHEDRAL_ACTS.map(
               (a) => `
                 <button class="act-tab ${a.id === act.id ? 'active' : ''}" data-action="select-act" data-act="${a.id}">
                   <span>CHAPTER ${a.roman}</span>
-                  <small>${a.name}</small>
+                  <small>${a.name.replace(/^Chapter [IVX]+:\s*/i, '')}</small>
                 </button>
               `
             ).join('')}
           </div>
         </div>
 
+        <!-- VISIBLE NEXT-ACTION PATH BANNER -->
+        <div class="campaign-next-action-banner">
+          <div class="next-action-left">
+            <span class="next-action-badge">NEXT RECOMMENDED ACTION</span>
+            <div>
+              <strong>Stage #${nextLvl.level}: ${nextLvl.name}</strong>
+              <span>${nextLvl.objectiveLabel} • ${nextLvl.boardSize}×${nextLvl.boardSize} Grid • ${nextLvl.doctrine?.badge || `Tier ${nextLvl.aiTier}`} • Unlock: ${nextLvl.nextUnlockLabel}</span>
+            </div>
+          </div>
+          <button class="btn-gothic-primary" data-action="start-level" data-level="${nextLvl.level}">
+            ${renderGothicIconSVG('sword')} Continue Stage #${nextLvl.level}
+          </button>
+        </div>
+
         <!-- ROGUELIKE ACT EXPEDITION BOON WAYPOINTS -->
         <div class="roguelike-boons-bar">
-          <div class="gothic-eyebrow">🏕️ ${this.t('SELECT YOUR CHAPTER EXPEDITION WAYPOINT BOON (ACTIVE IN ALL BATTLES)', 'اختر بركة معسكر الحملة (تعمل في جميع المعارك)')}</div>
+          <div class="gothic-eyebrow">🏕️ ${this.t('ACTIVE EXPEDITION WAYPOINT BOON (APPLIES TO ALL STAGES)', 'بركة معسكر الحملة النشطة')}</div>
           <div class="roguelike-boons-grid">
             ${ROGUELIKE_BOONS.map((boon) => {
               const isSelected = selectedBoon === boon.id;
@@ -1205,63 +1557,87 @@ export class AppController {
           </div>
         </div>
 
-        <div class="act-story-showcase">
-          <div class="act-story-narrative-box">
-            <div class="gothic-eyebrow">📖 CHAPTER ${act.roman}: ${act.name.toUpperCase()} — ${act.subtitle.toUpperCase()}</div>
-            <h3>The Story So Far</h3>
-            <p class="act-story-paragraph">${act.storySummary || act.lore}</p>
-            <div class="act-story-goal">
-              <span>🎯 <strong>Mission Objective:</strong> ${act.storyGoal || 'Triumph across all 6 stages to reclaim the Chapter Star-Stone.'}</span>
+        <!-- COLLAPSIBLE "READ STORY" DRAWER (KEEPS MAP SCANNABLE FIRST) -->
+        <details class="story-lore-drawer">
+          <summary class="story-lore-summary">
+            <span>📖 <strong>Read Story & Chapter Lore:</strong> Chapter ${act.roman} (${act.name}) — Rival Commander ${boss.name}</span>
+            <span class="drawer-toggle-hint">Click to Expand / Collapse Chronicle</span>
+          </summary>
+          <div class="act-story-showcase">
+            <div class="act-story-narrative-box">
+              <div class="gothic-eyebrow">CHAPTER ${act.roman}: ${act.name.toUpperCase()} — ${act.subtitle.toUpperCase()}</div>
+              <p class="act-story-paragraph">${act.storySummary || act.lore}</p>
+              <div class="act-story-goal">
+                <span>🎯 <strong>Mission Objective:</strong> ${act.storyGoal || 'Triumph across all 6 stages to reclaim the Chapter Star-Stone.'}</span>
+              </div>
+              <div class="act-hero-companion-note">
+                <span>👑 <strong>${hero.shortName}:</strong> "${hero.storyCounsel}"</span>
+              </div>
             </div>
-            <div class="act-hero-companion-note">
-              <span>👑 <strong>${hero.shortName}:</strong> "${hero.storyCounsel}"</span>
+
+            <div class="act-boss-banner">
+              <div class="act-boss-crest">${renderBossCrestSVG(boss.id, boss.color)}</div>
+              <div class="act-boss-info">
+                <div class="gothic-eyebrow">RIVAL CHAPTER COMMANDER</div>
+                <h3>${boss.name} — <span>${boss.title}</span></h3>
+                <p class="act-boss-quote">${boss.quote}</p>
+                <div class="act-boss-passive"><strong>Commander Trait (Telegraphed 1T Ahead):</strong> ${boss.passiveDesc}</div>
+              </div>
             </div>
           </div>
+        </details>
 
-          <div class="act-boss-banner">
-            <div class="act-boss-crest">${renderBossCrestSVG(boss.id, boss.color)}</div>
-            <div class="act-boss-info">
-              <div class="gothic-eyebrow">RIVAL CHAPTER COMMANDER</div>
-              <h3>${boss.name} — <span>${boss.title}</span></h3>
-              <p class="act-boss-quote">${boss.quote}</p>
-              <div class="act-boss-passive"><strong>Commander Trait (Telegraphed 1T Ahead):</strong> ${boss.passiveDesc}</div>
-            </div>
-          </div>
-        </div>
-
+        <!-- SCANNABLE STAGE CARDS -->
         <div class="campaign-nodes-grid">
           ${actLevels
             .map((lvl) => {
-              const unlocked = lvl.level <= (state.highestUnlockedLevel || 1);
+              const unlocked = lvl.level <= nextLvlNum;
+              const isNext = lvl.level === nextLvlNum;
               const stars = (state.completedLevels && state.completedLevels[lvl.level]) || 0;
               return `
                 <div class="campaign-node-card ${unlocked ? 'unlocked' : 'locked'} ${
                 lvl.isBossLevel ? 'boss-node' : ''
-              }">
+              } ${isNext ? 'next-stage-highlight' : ''}">
                   <div class="node-top">
-                    <span class="node-num">STAGE #${lvl.level} ${lvl.isBossLevel ? '• CHAPTER FINALE' : ''}</span>
-                    <span class="node-stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</span>
+                    <span class="node-num">
+                      STAGE #${lvl.level} ${lvl.isBossLevel ? '• BOSS FINALE' : ''}
+                      ${isNext ? '<em class="node-next-pill">NEXT</em>' : ''}
+                    </span>
+                    <span class="node-stars" aria-label="${stars} of 3 stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</span>
                   </div>
                   <h4>${lvl.name}</h4>
-                  <p class="node-lore">"${lvl.lore}"</p>
-                  <div class="node-rule-tag ${lvl.cardsEnabled ? 'shop-open' : 'pure-tactical'}">
-                    ${
-                      !lvl.cardsEnabled
-                        ? '🌱 Warmup Stage (Hero Skill [Q] Active • Shop Lvl 3)'
-                        : lvl.cardUnlock
-                        ? `🔓 New Scroll in Shop: ${lvl.cardUnlock}`
-                        : '🏪 3-Slot Scroll Shop Active'
-                    }
-                  </div>
-                  <div class="node-specs">
-                    <span>${lvl.boardSize}×${lvl.boardSize} Board</span>
-                    <span>Target ${lvl.targetScore} VP</span>
-                    <span>Tier ${lvl.aiTier}</span>
-                  </div>
+
+                  <dl class="node-scannable-grid">
+                    <div>
+                      <dt>Objective</dt>
+                      <dd>${lvl.objectiveLabel || `Reach ${lvl.targetScore} VP`}</dd>
+                    </div>
+                    <div>
+                      <dt>Board Size</dt>
+                      <dd>${lvl.boardSize}×${lvl.boardSize} Grid (${lvl.cardsEnabled ? 'Shop Open' : 'Pure Board'})</dd>
+                    </div>
+                    <div>
+                      <dt>Enemy Doctrine</dt>
+                      <dd title="${lvl.doctrine?.summary || ''}">${lvl.doctrine?.badge || `Tier ${lvl.aiTier}`} · ${lvl.enemyRuleLabel}</dd>
+                    </div>
+                    <div>
+                      <dt>Clear Reward</dt>
+                      <dd>${lvl.rewardLabel}</dd>
+                    </div>
+                    <div>
+                      <dt>First-Clear</dt>
+                      <dd>${stars > 0 ? '✓ Claimed' : lvl.firstClearReward}</dd>
+                    </div>
+                    <div>
+                      <dt>Next Unlock</dt>
+                      <dd>${lvl.nextUnlockLabel}</dd>
+                    </div>
+                  </dl>
+
                   <button class="btn-gothic-primary" ${
                     unlocked ? '' : 'disabled'
                   } data-action="start-level" data-level="${lvl.level}">
-                    ${unlocked ? (lvl.isBossLevel ? '⚔️ Challenge Commander' : 'Play Stage') : 'Locked'}
+                    ${unlocked ? (lvl.isBossLevel ? '⚔️ Challenge Commander' : isNext ? `▶ Play Stage #${lvl.level}` : `Replay Stage #${lvl.level}`) : `🔒 Complete Stage #${lvl.level - 1}`}
                   </button>
                 </div>
               `;
@@ -1312,8 +1688,48 @@ export class AppController {
     return `
       ${this._renderTopNav('reliquary')}
       <section class="modal-screen-container gothic-card-panel">
-        <div class="gothic-eyebrow">RELIQUARY ATELIER • CHAMPIONS & 3D WAR-FORGE</div>
-        <h2>Playable Fantasy War Heroes, Turn-1 Active Skills & 3D Relics</h2>
+        <div class="gothic-eyebrow">RELIQUARY ATELIER • CHAMPIONS, COMPARISON TRAY & 3D WAR-FORGE</div>
+        <h2>Playable Fantasy War Heroes, Turn-1 Active Skills & Sacred Relics</h2>
+
+        <!-- HERO COMPARISON TRAY (RECOGNITION OVER RECALL) -->
+        <div class="hero-comparison-tray gothic-card-panel" role="region" aria-label="Hero Passive & Loadout Comparison Tray">
+          <div class="gothic-eyebrow">⚖️ QUICK CHAMPION COMPARISON TRAY — STARTING STATS, PASSIVE TRIGGERS & BEST FIT</div>
+          <div class="comparison-table-wrap">
+            <table class="hero-comparison-table">
+              <thead>
+                <tr>
+                  <th>Champion</th>
+                  <th>Playstyle Tag</th>
+                  <th>Starting Stats</th>
+                  <th>Passive Trigger</th>
+                  <th>Turn-1 Skill [Q]</th>
+                  <th>Best For</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${FANTASY_HEROES.map((h) => {
+                  const isSel = state.selectedHeroId === h.id;
+                  return `
+                    <tr class="${isSel ? 'active-row' : ''}">
+                      <td><strong style="color:${h.accent}">${h.shortName}</strong><br/><small>${h.classTitle}</small></td>
+                      <td><span class="spec-badge">${h.playstyleTag}</span></td>
+                      <td>${h.startingStats}</td>
+                      <td>${h.passiveTrigger}</td>
+                      <td><strong>${h.activeAbility?.name}</strong> (${h.activeAbility?.cooldown || 3}T CD)</td>
+                      <td>${h.bestFor}</td>
+                      <td>
+                        <button class="btn-gothic-small ${isSel ? 'deck-active' : ''}" data-action="select-hero" data-hero="${h.id}">
+                          ${isSel ? '✓ Equipped' : 'Select'}
+                        </button>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
         <h3 class="reliquary-section-title">1. Choose Your Playable Fantasy War Hero (6 Champions)</h3>
         <div class="heroes-roster-grid">
@@ -1326,12 +1742,16 @@ export class AppController {
                     ${renderFantasyHeroPortraitSVG(hero.id, hero.color)}
                   </div>
                   <div>
-                    <span class="char-class-badge" style="color:${hero.accent}">${hero.classTitle}</span>
+                    <span class="char-class-badge" style="color:${hero.accent}">${hero.classTitle} • ${hero.playstyleTag}</span>
                     <h4>${hero.name}</h4>
                     <div class="char-title-sub">${hero.title} · <em>${hero.weapon}</em></div>
                   </div>
                 </div>
-                <p class="hero-lore-text">${hero.lore}</p>
+                <div class="hero-quick-specs">
+                  <span><strong>Stats:</strong> ${hero.startingStats}</span>
+                  <span><strong>Trigger:</strong> ${hero.passiveTrigger}</span>
+                  <span><strong>Best For:</strong> ${hero.bestFor}</span>
+                </div>
                 <div class="char-passive-box">
                   <strong>Passive:</strong> ${hero.passiveDesc}<br/>
                   <strong>⚡ Turn-1 Active Skill [Q] (${hero.activeAbility?.cooldown || 3}T CD):</strong> ${hero.activeAbility?.name} — ${hero.activeAbility?.desc}
@@ -1344,7 +1764,38 @@ export class AppController {
           }).join('')}
         </div>
 
-        <h3 class="reliquary-section-title">2. 3D Sculpted War Miniatures</h3>
+        <h3 class="reliquary-section-title">2. Sacred War Relics (Equip Up to 2 Passives • Full Tactical Specs & Previews)</h3>
+        <div class="reliquary-grid">
+          ${BLOOD_OATHS.map((oath) => {
+            const unlocked = state.unlockedOaths.includes(oath.id);
+            const equipped = state.equippedOaths.includes(oath.id);
+            const spec = getRelicTacticalSpec(oath);
+            return `
+              <div class="reliquary-item-card relic-spec-card ${equipped ? 'equipped' : ''}">
+                <div class="relic-card-top">
+                  <div>
+                    <span class="spec-rarity-pill rarity-${spec.rarity.toLowerCase()}">${spec.rarity} Relic · ${oath.cost === 0 ? 'Starter' : `${oath.cost} Sigils`}</span>
+                    <h4>${oath.name}</h4>
+                  </div>
+                  <div class="mini-preview-box" title="Board Formation / Trigger Preview">
+                    ${renderMiniBoardPreviewSVG(spec.previewCells, spec.previewMode)}
+                  </div>
+                </div>
+                <p>${oath.desc}</p>
+                <dl class="card-tactical-specs">
+                  <div><dt>Timing</dt><dd>${spec.timing}</dd></div>
+                  <div><dt>Target</dt><dd>${spec.targetRule}</dd></div>
+                  <div><dt>Counterplay</dt><dd>${spec.counterplay}</dd></div>
+                </dl>
+                <button class="btn-gothic-secondary" data-action="toggle-oath" data-id="${oath.id}" data-cost="${oath.cost}">
+                  ${equipped ? 'Active Relic (Unequip)' : unlocked ? 'Equip Relic' : `Claim (${oath.cost} Sigils)`}
+                </button>
+              </div>
+            `;
+          }).join('')}
+        </div>
+
+        <h3 class="reliquary-section-title">3. 3D Sculpted War Miniatures</h3>
         <div class="reliquary-grid">
           ${SCULPTED_PIECES.player
             .map((sculpt) => {
@@ -1361,23 +1812,6 @@ export class AppController {
               `;
             })
             .join('')}
-        </div>
-
-        <h3 class="reliquary-section-title">3. Sacred War Relics (Equip Up to 2 Passives)</h3>
-        <div class="reliquary-grid">
-          ${BLOOD_OATHS.map((oath) => {
-            const unlocked = state.unlockedOaths.includes(oath.id);
-            const equipped = state.equippedOaths.includes(oath.id);
-            return `
-              <div class="reliquary-item-card ${equipped ? 'equipped' : ''}">
-                <h4>${oath.name}</h4>
-                <p>${oath.desc}</p>
-                <button class="btn-gothic-secondary" data-action="toggle-oath" data-id="${oath.id}" data-cost="${oath.cost}">
-                  ${equipped ? 'Active Relic (Unequip)' : unlocked ? 'Equip Relic' : `Claim (${oath.cost} Sigils)`}
-                </button>
-              </div>
-            `;
-          }).join('')}
         </div>
 
         <h3 class="reliquary-section-title">4. 3D Armor & Stone Materials</h3>
@@ -1409,7 +1843,7 @@ export class AppController {
       <section class="modal-screen-container gothic-card-panel">
         <div class="screen-header-row">
           <div>
-            <div class="gothic-eyebrow">40 WAR-SCROLLS, CUSTOM DECK-BUILDER & SACRED ALIGNMENTS</div>
+            <div class="gothic-eyebrow">40 WAR-SCROLLS • COST, TIMING, TARGET RULES, COUNTERPLAY & MINI BOARD PREVIEWS</div>
             <h2>Grimoire of the War-Table (40 Scrolls • Shop Unlocks at Level 3)</h2>
             <p class="screen-sub-note">
               <strong>📜 Custom Deck-Builder:</strong> ${customDeck.length} Scrolls Selected
@@ -1441,15 +1875,28 @@ export class AppController {
           ${ARCANA_CARDS.map((card) => {
             const exalted = state.upgradedCards.includes(card.id);
             const inDeck = customDeck.includes(card.id);
+            const spec = getCardTacticalSpec(card);
             return `
               <div class="codex-tarot-card ${exalted ? 'exalted' : ''} ${inDeck ? 'in-custom-deck' : ''}">
                 <div class="codex-tarot-top">
                   <span class="tarot-num">${card.numeral} · Lvl ${card.unlockLevel || 3}+</span>
-                  <span class="tarot-cost">🪙 ${card.cost} Gold</span>
+                  <span class="spec-rarity-pill rarity-${spec.rarity.toLowerCase()}">${spec.rarity}</span>
+                  <span class="tarot-cost">🪙 ${card.cost}G</span>
                 </div>
-                <div class="codex-tarot-art">${renderTarotArtSVG(card)}</div>
+                <div class="codex-art-and-preview">
+                  <div class="codex-tarot-art">${renderTarotArtSVG(card)}</div>
+                  <div class="mini-preview-box" title="Tactical Board Target Preview">
+                    ${renderMiniBoardPreviewSVG(spec.previewCells, spec.previewMode)}
+                    <small>Target Grid</small>
+                  </div>
+                </div>
                 <h4>${card.name} ${exalted ? '<span class="exalt-badge">[+]</span>' : ''}</h4>
                 <p>${exalted ? card.exaltedDesc : card.desc}</p>
+                <dl class="card-tactical-specs">
+                  <div><dt>Timing</dt><dd>${spec.timing}</dd></div>
+                  <div><dt>Target</dt><dd>${spec.targetRule}</dd></div>
+                  <div><dt>Counterplay</dt><dd>${spec.counterplay}</dd></div>
+                </dl>
                 <div class="codex-card-actions">
                   <button class="btn-gothic-small ${inDeck ? 'deck-active' : ''}" data-action="toggle-deck-card" data-card="${card.id}">
                     ${inDeck ? '✓ In Custom Deck' : '+ Add to Deck'}
@@ -1473,19 +1920,20 @@ export class AppController {
     const allDailyEntries = Object.entries(state.dailyBestScores || {})
       .sort((a, b) => (b[1].composite || 0) - (a[1].composite || 0))
       .slice(0, 5);
+    const activeDoctrine = getWarlordDoctrineByTier(this.skirmishConfig.aiTier || 3);
 
     return `
       ${this._renderTopNav('skirmish')}
       <section class="modal-screen-container gothic-card-panel skirmish-panel">
         <div class="screen-header-row">
           <div>
-            <div class="gothic-eyebrow">DAILY SEED LEADERBOARD, FREE PLAY & TACTICAL PUZZLES</div>
+            <div class="gothic-eyebrow">DAILY SEED LEADERBOARD, WARLORD DOCTRINES & TACTICAL PUZZLES</div>
             <h2>Custom 3D War-Table Duel, Daily Seed & 1-Turn Trials</h2>
           </div>
           <div class="act-selector-tabs">
             <button class="act-tab active" data-action="nav" data-screen="skirmish">
               <span>🎲 Custom & Daily Seed</span>
-              <small>AI, 2P & Leaderboard</small>
+              <small>AI Doctrines, 2P & Leaderboard</small>
             </button>
             <button class="act-tab" data-action="nav" data-screen="crypt">
               <span>🧩 5 Puzzle Trials</span>
@@ -1498,7 +1946,7 @@ export class AppController {
         <div class="daily-seed-showcase gothic-card-panel">
           <div class="daily-seed-info">
             <div class="gothic-eyebrow">🏆 DETERMINISTIC DAILY SEED CHALLENGE • ${dailySeed}</div>
-            <h3>Today's Seeded War-Table Gauntlet (5×5 • Target 8 VP • Tier 4 Depth-2 AI)</h3>
+            <h3>Today's Seeded War-Table Gauntlet (5×5 • Target 8 VP • Tier 4 Pyromancer Doctrine)</h3>
             <p>Every Commander worldwide faces the exact same Mystery Chest rolls, Shop offerings, and AI opening under seed <strong>${dailySeed}</strong>.</p>
             <div class="daily-record-pills">
               <span class="stage-chip">
@@ -1546,25 +1994,21 @@ export class AppController {
           </div>
 
           <div class="skirmish-field">
-            <label>Enemy Warlord AI Tier (Depth-3 Alpha-Beta on Tiers 5–6)</label>
+            <label>Enemy Warlord Doctrine (Readable AI Personality)</label>
             <div class="pill-group">
-              ${[
-                [1, '1: Friendly Scout'],
-                [2, '2: Lich Scholar'],
-                [3, '3: Siege Captain (D2)'],
-                [4, '4: Pyromancer (D2)'],
-                [5, '5: Crimson Duchess (D3)'],
-                [6, '6: Grand War-God (D3)'],
-              ]
+              ${Object.values(WARLORD_DOCTRINES)
                 .map(
-                  ([tier, label]) => `
-                    <button class="cam-pill ${this.skirmishConfig.aiTier === tier ? 'active' : ''}" data-action="skirmish-set" data-key="aiTier" data-val="${tier}">
-                      ${label}
+                  (doc) => `
+                    <button class="cam-pill ${this.skirmishConfig.aiTier === doc.tier ? 'active' : ''}" data-action="skirmish-set" data-key="aiTier" data-val="${doc.tier}" title="${doc.summary}">
+                      ${doc.badge}
                     </button>
                   `
                 )
                 .join('')}
             </div>
+            <p class="doctrine-preview-note">
+              <strong>${activeDoctrine.badge}:</strong> ${activeDoctrine.summary}
+            </p>
           </div>
 
           <div class="skirmish-field">
@@ -1598,7 +2042,9 @@ export class AppController {
     const snap = this.engine.getSnapshot();
     const state = this.save.getState();
     const hero = snap.hero || getFantasyHeroById(state.selectedHeroId);
+    const heroCalloutName = hero.shortName.split(' ').pop();
     const boss = snap.boss || INQUISITOR_BOSSES[0];
+    const doctrine = snap.doctrine || getWarlordDoctrineByTier(snap.aiTier || 1);
     const xPct = Math.min(100, Math.round((snap.scores.X / snap.targetScore) * 100));
     const oPct = Math.min(100, Math.round((snap.scores.O / snap.targetScore) * 100));
     const bellReady = !snap.bellUsedThisMatch.X && snap.bellCharge.X >= 100;
@@ -1615,12 +2061,36 @@ export class AppController {
         : null;
     const selectedCard = selectedInst ? selectedInst.card : null;
 
+    // Advance 5-step Stage 1 Guided Onboarding based on live board state
+    if (snap.mode === 'campaign' && snap.levelNumber === 1) {
+      if (snap.turnNumber === 1 && snap.moveHistory.length === 0) {
+        this.onboardingStep = 1;
+      } else if (snap.turnNumber === 2 && this.onboardingStep < 3) {
+        this.onboardingStep = 3;
+        this.showThreatScan = true;
+      } else if (snap.turnNumber >= 3 && this.onboardingStep < 4) {
+        this.onboardingStep = 4;
+      }
+    }
+
+    // Threat & Hint Overlay lookup sets for the Parallel DOM Board Grid
+    const threatData = this.showThreatScan
+      ? getThreatOverlayData(this.engine, 'O')
+      : { blockCells: [], lineCells: [] };
+    const blockSet = new Set(threatData.blockCells.map((t) => `${t.r},${t.c}`));
+    const lineSet = new Set(threatData.lineCells.map((t) => `${t.r},${t.c}`));
+    const expectedLineSet = new Set(
+      (this.seerHintCoord?.expectedLineCells || []).map((t) =>
+        Array.isArray(t) ? `${t[0]},${t[1]}` : `${t.r},${t.c}`
+      )
+    );
+
     let actionPromptHTML = '';
     if (snap.selectedHeroAbility && ability) {
       actionPromptHTML = `
         <div class="tactical-action-prompt prompt-targeting">
           <span class="prompt-pulse-dot targeting-dot"></span>
-          <span><strong>⚡ ${ability.name}:</strong> ${ability.desc} — Click a target tile on the 3D War-Table</span>
+          <span><strong>⚡ ${ability.name}:</strong> ${ability.desc} — Click a target tile on the board</span>
           <button class="prompt-cancel-chip" data-action="cancel-card">Cancel [Esc]</button>
         </div>
       `;
@@ -1628,7 +2098,7 @@ export class AppController {
       actionPromptHTML = `
         <div class="tactical-action-prompt prompt-targeting">
           <span class="prompt-pulse-dot targeting-dot"></span>
-          <span><strong>Targeting ${selectedCard.name}:</strong> Click a glowing tile on the 3D War-Table</span>
+          <span><strong>Targeting ${selectedCard.name}:</strong> Click a valid tile on the board</span>
           <button class="prompt-cancel-chip" data-action="cancel-card">Cancel [Esc]</button>
         </div>
       `;
@@ -1639,21 +2109,48 @@ export class AppController {
           <span><strong>${snap.pendingBossRitual.warningText}</strong></span>
         </div>
       `;
+    } else if (this.seerHintCoord?.sentence && snap.activePlayer === 'X') {
+      actionPromptHTML = `
+        <div class="tactical-action-prompt prompt-player">
+          <span class="prompt-pulse-dot player-dot"></span>
+          <span><strong>💡 Tactical Hint (${this.seerHintCoord.coordLabel}):</strong> ${this.seerHintCoord.sentence}</span>
+        </div>
+      `;
+    } else if (snap.mode === 'campaign' && snap.levelNumber === 1 && snap.activePlayer === 'X') {
+      const stepMessages = {
+        1: `Step 1/5: Click highlighted center tile C3 ("Place ${heroCalloutName} here") or press Enter to command the War-Table.`,
+        2: `Step 2/5: Preview your line & VP delta before confirming placement.`,
+        3: `Step 3/5: Enemy Threat Scan active! Amber tiles show ${boss.name}'s line; Red tiles mark critical blocks.`,
+        4: `Step 4/5: Complete a 3-stone line (+1 VP & Shatter) or press [Q] to unleash ${hero.shortName}'s ${ability?.name || 'Skill'}!`,
+      };
+      actionPromptHTML = `
+        <div class="tactical-action-prompt prompt-player">
+          <span class="prompt-pulse-dot player-dot"></span>
+          <span><strong>🎯 Guided Battle:</strong> ${stepMessages[this.onboardingStep] || stepMessages[4]}</span>
+        </div>
+      `;
     } else if (snap.activePlayer === 'X') {
       actionPromptHTML = `
         <div class="tactical-action-prompt prompt-player">
           <span class="prompt-pulse-dot player-dot"></span>
-          <span><strong>${this.t('Your Turn:', 'دورك:')}</strong> ${this.t('Click any empty stone tile (or use Arrow Keys + Enter) to deploy your Champion', 'انقر على أي بلاطة فارغة (أو استخدم الأسهم + Enter) لنشر بطلك')}</span>
+          <span><strong>${this.t('Your Turn:', 'دورك:')}</strong> ${this.t('Select any empty tile (Click or Arrow Keys + Enter) to deploy your Champion', 'اختر أي بلاطة فارغة (بالنقر أو الأسهم + Enter) لنشر بطلك')}</span>
         </div>
       `;
     } else {
       actionPromptHTML = `
         <div class="tactical-action-prompt prompt-enemy">
           <span class="prompt-pulse-dot enemy-dot"></span>
-          <span><strong>${boss.name}</strong> ${this.t('is commanding forces across the War-Table...', 'يقود قواته عبر طاولة الحرب...')}</span>
+          <span><strong>${boss.name} (${doctrine.title})</strong> ${this.t('is executing battle doctrine...', 'ينفذ عقيدته القتالية...')}</span>
         </div>
       `;
     }
+
+    const previewSummary =
+      this.stagedCoord && snap.activePlayer === 'X'
+        ? this._computeHoverPreviewSummary(this.stagedCoord.r, this.stagedCoord.c)
+        : this.hoveredPreviewInfo;
+
+    const previewFirstScrolls = ARCANA_CARDS.slice(0, 3);
 
     return `
       <header class="battle-hud-topbar">
@@ -1664,12 +2161,12 @@ export class AppController {
               ${renderFantasyHeroPortraitSVG(hero.id, hero.color)}
             </div>
             <div class="hud-commander-details">
-              <div class="wing-faction-tag">${hero.name.toUpperCase()} (${hero.classTitle})</div>
+              <div class="wing-faction-tag">${hero.shortName.toUpperCase()} · ${hero.playstyleTag || hero.classTitle}</div>
               <div class="wing-score-row">
                 <span class="score-big tabular-num ${pulseX}">${snap.scores.X}</span>
                 <span class="score-target tabular-num">/ ${snap.targetScore} VP</span>
               </div>
-              <div class="gothic-progress-track" role="progressbar" aria-valuenow="${snap.scores.X}" aria-valuemin="0" aria-valuemax="${snap.targetScore}">
+              <div class="gothic-progress-track" role="progressbar" aria-label="Player Score Progress" aria-valuenow="${snap.scores.X}" aria-valuemin="0" aria-valuemax="${snap.targetScore}">
                 <div class="gothic-progress-fill player-fill" style="width:${xPct}%"></div>
               </div>
               <div class="wing-sub-row">
@@ -1677,7 +2174,7 @@ export class AppController {
                   ${
                     snap.cardsEnabled
                       ? `${renderGothicIconSVG('coin')} Gold: <strong class="tabular-num">${snap.tithe.X}</strong>/${GAME_CONFIG.MAX_BLOOD_TITHE}`
-                      : `${renderGothicIconSVG('leaf')} Warmup: <strong>Skill [Q] Active • Shop Lvl 3</strong>`
+                      : `🌱 <strong>Pure Tactics</strong> · Next: ${snap.levelData?.nextUnlockLabel || 'Lvl 3 Shop'}`
                   }
                 </span>
                 <span class="placements-readout">Moves: <strong class="tabular-num">${snap.placementsRemaining}</strong></span>
@@ -1686,48 +2183,49 @@ export class AppController {
           </div>
         </div>
 
-        <!-- CENTER BATTLE MEDALLION -->
+        <!-- CENTER BATTLE MEDALLION & COMPACT TOOLBAR -->
         <div class="hud-center-medallion">
-          <div class="turn-pill ${snap.activePlayer === 'X' ? 'turn-x' : 'turn-o'}">
-            ${snap.activePlayer === 'X' ? `${hero.shortName.toUpperCase()}'S TURN` : `${boss.name.split(' ')[0].toUpperCase()} MOVING`} • TURN <span class="tabular-num">${snap.turnNumber}</span>
+          <div class="medallion-status-row">
+            <div class="turn-pill ${snap.activePlayer === 'X' ? 'turn-x' : 'turn-o'}">
+              ${snap.activePlayer === 'X' ? `${hero.shortName.toUpperCase()}'S TURN` : `${boss.name.split(' ')[0].toUpperCase()} MOVING`} • T<span class="tabular-num">${snap.turnNumber}</span>
+            </div>
+            <span class="view-mode-badge ${this.showMiniTacticalGrid ? 'badge-2d' : 'badge-3d'}" role="status">
+              ${this.showMiniTacticalGrid ? '2D TACTICAL BOARD' : '3D WAR-TABLE'}
+            </span>
+            <span class="doctrine-mode-badge" title="${doctrine.summary}">
+              ⚔️ ${doctrine.badge}
+            </span>
           </div>
-          <div class="battle-sub-title">
-            ${
-              snap.mode === 'campaign'
-                ? `${snap.levelData?.chapterName || 'Story Stage'} • Level #${snap.levelNumber}: ${
-                    snap.levelData?.name || 'War-Table Clash'
-                  }`
-                : snap.mode === 'daily'
-                ? `🏆 Daily Seed Challenge • ${boss.name}`
-                : `${boss.name} (${boss.title})`
-            }
-          </div>
+
           <div class="hud-utility-strip" role="toolbar" aria-label="Battle Controls">
             ${
               this.engine.selectedCardIndex !== null || snap.selectedHeroAbility
                 ? `<button class="hud-tool-btn active" data-action="cancel-card" title="Cancel Selection (Esc / Right-Click)">${renderGothicIconSVG('close')} <span>Cancel</span></button>`
                 : ''
             }
+            <button class="hud-tool-btn ${this.showMiniTacticalGrid ? 'active' : ''}" aria-pressed="${this.showMiniTacticalGrid}" data-action="toggle-minigrid" title="Switch between 2D Tactical Board and 3D War-Table">
+              ${renderGothicIconSVG('grid')} <span>${this.showMiniTacticalGrid ? '3D View' : '2D View'}</span>
+            </button>
             <button class="hud-tool-btn" data-action="cycle-camera" title="Switch 3D Camera Angle (Shortcut: C)">
               ${renderGothicIconSVG('camera')} <span>Camera</span> <kbd class="hud-kbd">C</kbd>
             </button>
-            <button class="hud-tool-btn" data-action="seer-hint" title="Ask Companion for Best Move Hint (Shortcut: H)">
+            <button class="hud-tool-btn ${this.seerHintCoord ? 'active' : ''}" data-action="seer-hint" title="Point at Recommended Tile, Pulse Outline & Show Tactical Reason (Shortcut: H)">
               ${renderGothicIconSVG('eye')} <span>Hint</span> <kbd class="hud-kbd">H</kbd>
             </button>
-            <button class="hud-tool-btn ${this.showThreatScan ? 'active' : ''}" data-action="toggle-threat" title="Highlight Enemy Scoring Threats">
+            <button class="hud-tool-btn ${this.showThreatScan ? 'active' : ''}" aria-pressed="${this.showThreatScan}" data-action="toggle-threat" title="Paint Enemy Scoring Lines in Amber & Guaranteed Blocks in Red">
               ${renderGothicIconSVG('target')} <span>Threats</span>
             </button>
-            <button class="hud-tool-btn ${this.showMiniTacticalGrid ? 'active' : ''}" data-action="toggle-minigrid" title="Toggle 2D Tactical Grid Overlay">
-              ${renderGothicIconSVG('grid')} <span>2D View</span>
+            <button class="hud-tool-btn ${this.confirmPlacementMode ? 'active' : ''}" aria-pressed="${this.confirmPlacementMode}" data-action="toggle-confirm-mode" title="Toggle 2-Step Confirm Placement vs Instant Placement">
+              <span>${this.confirmPlacementMode ? '✓ Confirm: ON' : '⚡ Instant'}</span>
             </button>
-            <button class="hud-tool-btn ${this.showTacticalIntel ? 'active' : ''}" data-action="toggle-intel" title="Toggle Tactical Intel & Battle Log">
-              ${renderGothicIconSVG('book')} <span>Intel</span>
+            <button class="hud-tool-btn ${this.showTacticalIntel ? 'active' : ''}" aria-pressed="${this.showTacticalIntel}" data-action="toggle-intel" title="Toggle Move History Strip, Micro-Rewards & Intel Drawer">
+              ${renderGothicIconSVG('book')} <span>History (${snap.moveHistory?.length || 0})</span>
             </button>
             <button class="hud-tool-btn" ${snap.canUndo ? '' : 'disabled'} data-action="undo-move" title="Undo Last Action (${snap.undosRemaining}/${snap.maxUndos} Left • Shortcut: Z)">
               ${renderGothicIconSVG('undo')} <span>${snap.undosRemaining}</span> <kbd class="hud-kbd">Z</kbd>
             </button>
-            <button class="hud-tool-btn" data-action="toggle-tutorial" title="Open Tactical Tutorial (?)">
-              <span>?</span>
+            <button class="hud-tool-btn ${this.showPerfOverlay ? 'active' : ''}" data-action="toggle-perf" title="Toggle Performance Telemetry Overlay (F3)">
+              <span>FPS</span>
             </button>
             <button class="hud-tool-btn" data-action="nav" data-screen="hub" title="Return to Sanctuary Menu">
               ${renderGothicIconSVG('castle')} <span>Menu</span>
@@ -1740,16 +2238,16 @@ export class AppController {
         <div class="hud-wing enemy-wing ${snap.activePlayer === 'O' ? 'active-turn' : ''}">
           <div class="hud-commander-row enemy-commander-row">
             <div class="hud-commander-details enemy-details">
-              <div class="wing-faction-tag">${boss.name.toUpperCase()} (${boss.classTitle || 'COMMANDER'})</div>
+              <div class="wing-faction-tag" title="${doctrine.summary}">${boss.name.toUpperCase()} · ${doctrine.title.toUpperCase()}</div>
               <div class="wing-score-row">
                 <span class="score-big tabular-num ${pulseO}">${snap.scores.O}</span>
                 <span class="score-target tabular-num">/ ${snap.targetScore} VP</span>
               </div>
-              <div class="gothic-progress-track" role="progressbar" aria-valuenow="${snap.scores.O}" aria-valuemin="0" aria-valuemax="${snap.targetScore}">
+              <div class="gothic-progress-track" role="progressbar" aria-label="Enemy Score Progress" aria-valuenow="${snap.scores.O}" aria-valuemin="0" aria-valuemax="${snap.targetScore}">
                 <div class="gothic-progress-fill enemy-fill" style="width:${oPct}%"></div>
               </div>
               <div class="wing-sub-row">
-                <span>${snap.cardsEnabled ? `${renderGothicIconSVG('coin')} Enemy Gold: <strong class="tabular-num">${snap.tithe.O}</strong>` : `${renderGothicIconSVG('sword')} Komi Counter-Guard`}</span>
+                <span title="${doctrine.summary}">${snap.cardsEnabled ? `${renderGothicIconSVG('coin')} Gold: <strong class="tabular-num">${snap.tithe.O}</strong>` : `🎯 ${doctrine.rule}`}</span>
                 <span>Shattered: <strong class="tabular-num">${snap.stonesShatteredThisMatch}</strong></span>
               </div>
             </div>
@@ -1760,57 +2258,177 @@ export class AppController {
         </div>
       </header>
 
-      <!-- RIGHT SIDE WIDGETS: 2D MATRIX, HERO STORY COUNSEL, CHEST ODDS & CHRONICLE -->
-      <aside class="battle-side-widgets ${this.showTacticalIntel ? 'intel-open' : 'intel-collapsed'}" aria-label="Tactical Intel">
-        ${
-          this.showMiniTacticalGrid
-            ? `
-              <div class="mini-tactical-grid-panel gothic-card-panel">
-                <div class="gothic-eyebrow">2D BOARD VIEW</div>
-                <div class="mini-grid-board" style="grid-template-columns: repeat(${snap.boardSize}, 1fr)">
-                  ${snap.board
-                    .map((row) =>
-                      row
-                        .map(
-                          (cell) => `
-                            <button class="mini-grid-cell ${cell.symbol ? `sym-${cell.symbol}` : ''} ${
-                            cell.obstacle ? 'has-obstacle' : ''
-                          }" data-action="board-cell" data-r="${cell.r}" data-c="${cell.c}" aria-label="Row ${cell.r + 1} Column ${cell.c + 1}">
-                              ${
-                                cell.symbol ||
-                                (cell.obstacle === 'reliquary_coffer'
-                                  ? '📦'
-                                  : cell.anomaly === 'cursed_censer'
-                                  ? `💣${cell.bombTimer || ''}`
-                                  : cell.obstacle
-                                  ? '■'
-                                  : '·')
-                              }
-                            </button>
-                          `
-                        )
-                        .join('')
-                    )
-                    .join('')}
-                </div>
-              </div>
-            `
-            : ''
-        }
+      <!-- CENTRAL BOARD SAFE AREA + PARALLEL ACCESSIBLE DOM BOARD GRID -->
+      <main class="battle-board-safe-area ${this.showMiniTacticalGrid ? 'is-2d-mode' : 'is-3d-mode'}" aria-label="War-Table Tactical Board Safe Area">
+        <div id="parallel-board-grid" class="parallel-board-grid ${this.showMiniTacticalGrid ? 'mode-2d-active' : 'mode-3d-overlay'}" role="grid" aria-label="War-Table Tactical Board (${snap.boardSize} by ${snap.boardSize})" style="--grid-size: ${snap.boardSize}">
+          ${snap.board
+            .map((row, rIdx) => `
+              <div class="parallel-board-row" role="row">
+                ${row
+                  .map((cell, cIdx) => {
+                    const coordLabel = formatCoordLabel(cell.r, cell.c);
+                    const key = `${cell.r},${cell.c}`;
+                    const isOccupied = Boolean(cell.symbol);
+                    const isLegal =
+                      !isOccupied &&
+                      !cell.obstacle &&
+                      cell.locked === 0 &&
+                      snap.activePlayer === 'X' &&
+                      snap.status === 'playing';
+                    const isRecommended =
+                      this.seerHintCoord &&
+                      this.seerHintCoord.r === cell.r &&
+                      this.seerHintCoord.c === cell.c;
+                    const isExpectedLine = expectedLineSet.has(key);
+                    const isStaged =
+                      this.stagedCoord &&
+                      this.stagedCoord.r === cell.r &&
+                      this.stagedCoord.c === cell.c;
+                    const isKbdFocus =
+                      this.kbActive &&
+                      this.kbCursor &&
+                      this.kbCursor.r === cell.r &&
+                      this.kbCursor.c === cell.c;
+                    const isThreatBlock = blockSet.has(key);
+                    const isThreatLine = !isThreatBlock && lineSet.has(key);
+                    const isBossRitual =
+                      snap.pendingBossRitual &&
+                      snap.pendingBossRitual.r === cell.r &&
+                      snap.pendingBossRitual.c === cell.c;
 
+                    const stateClasses = [
+                      isOccupied ? `is-occupied sym-${cell.symbol}` : 'is-empty',
+                      isLegal ? 'is-legal' : '',
+                      isRecommended ? 'is-recommended' : '',
+                      isExpectedLine ? 'is-expected-line' : '',
+                      isStaged ? 'is-selected' : '',
+                      isKbdFocus ? 'is-kbd-cursor' : '',
+                      isThreatBlock ? 'is-threat-block' : '',
+                      isThreatLine ? 'is-threat-line' : '',
+                      cell.locked > 0 ? 'is-locked' : '',
+                      cell.shield > 0 ? 'is-shielded' : '',
+                      cell.obstacle === 'reliquary_coffer' ? 'is-chest' : '',
+                      cell.anomaly === 'cursed_censer' ? 'is-bomb' : '',
+                      cell.anomaly === 'sanctified_mosaic' ? 'is-mosaic' : '',
+                      isBossRitual ? 'is-boss-ritual' : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ');
+
+                    let statusDesc = 'Empty legal tile';
+                    if (cell.symbol === 'X') statusDesc = `${hero.shortName} Stone (Player X)`;
+                    else if (cell.symbol === 'O') statusDesc = `${boss.name} Stone (Enemy O)`;
+                    else if (cell.obstacle === 'reliquary_coffer') statusDesc = 'Mystery Bone-Chest (Place adjacent stone to claim)';
+                    else if (cell.obstacle) statusDesc = 'Blocked Pillar';
+                    else if (cell.locked > 0) statusDesc = `Crater Locked (${cell.locked} turns)`;
+                    if (isRecommended) statusDesc += ` — Recommended placement: Place ${heroCalloutName} here`;
+                    if (isThreatBlock) statusDesc += ' — Critical Red Block (Stops enemy line)';
+                    else if (isThreatLine) statusDesc += ' — Amber Enemy Threat Line';
+                    if (cell.anomaly === 'sanctified_mosaic') statusDesc += ' — Sanctified Mosaic (+1 Bonus VP)';
+                    if (cell.anomaly === 'cursed_censer') statusDesc += ` — Siege Bomb (${cell.bombTimer || 1}T)`;
+                    if (isBossRitual) statusDesc += ' — Telegraphed Boss Ritual Target';
+
+                    let centerBadge = '';
+                    if (cell.symbol === 'X') centerBadge = '⚔️';
+                    else if (cell.symbol === 'O') centerBadge = '💀';
+                    else if (cell.obstacle === 'reliquary_coffer') centerBadge = '📦';
+                    else if (cell.anomaly === 'cursed_censer') centerBadge = `💣${cell.bombTimer || ''}`;
+                    else if (cell.anomaly === 'sanctified_mosaic') centerBadge = '✨';
+                    else if (cell.locked > 0) centerBadge = `🔒${cell.locked}`;
+                    else if (isThreatBlock) centerBadge = '🛡️';
+
+                    const showHeroCallout =
+                      isRecommended &&
+                      !isOccupied &&
+                      snap.activePlayer === 'X';
+
+                    return `
+                      <button
+                        type="button"
+                        role="gridcell"
+                        class="board-tile-btn ${stateClasses}"
+                        data-action="board-cell"
+                        data-r="${cell.r}"
+                        data-c="${cell.c}"
+                        aria-label="Tile ${coordLabel} (Row ${rIdx + 1}, Column ${cIdx + 1}): ${statusDesc}"
+                        title="Tile ${coordLabel}: ${statusDesc}"
+                      >
+                        <span class="tile-coord-tag">${coordLabel}</span>
+                        <span class="tile-center-glyph">${centerBadge}</span>
+                        ${cell.shield > 0 ? '<span class="tile-shield-badge" title="Shielded">🛡️</span>' : ''}
+                        ${
+                          showHeroCallout
+                            ? `<span class="tile-callout-pill">${
+                                snap.mode === 'campaign' && snap.levelNumber === 1 && this.onboardingStep === 1
+                                  ? `Place ${heroCalloutName} here`
+                                  : `★ Recommended (${coordLabel})`
+                              }</span>`
+                            : ''
+                        }
+                      </button>
+                    `;
+                  })
+                  .join('')}
+              </div>
+            `)
+            .join('')}
+        </div>
+
+        <!-- LIVE PRE-COMMIT FORMATION & VP DELTA PREVIEW BAR + CONFIRM PLACEMENT CTA -->
+        <div class="board-tactical-footer-bar">
+          <div id="live-placement-preview-pill" class="live-placement-preview-pill ${previewSummary ? 'visible' : ''}" role="status" aria-live="polite">
+            ${
+              previewSummary
+                ? `<span class="preview-coord">${previewSummary.coordLabel}</span> <span class="preview-summary">${previewSummary.summary}</span>`
+                : `<span class="preview-idle">Hover or focus any tile (${formatCoordLabel(0, 0)}–${formatCoordLabel(snap.boardSize - 1, snap.boardSize - 1)}) to preview formations & VP delta</span>`
+            }
+          </div>
+          ${
+            this.stagedCoord && snap.activePlayer === 'X'
+              ? `
+                <button class="btn-gothic-primary btn-confirm-placement" data-action="confirm-placement">
+                  ✓ Confirm Placement at ${formatCoordLabel(this.stagedCoord.r, this.stagedCoord.c)} [Enter]
+                </button>
+              `
+              : ''
+          }
+        </div>
+      </main>
+
+      <!-- COLLAPSIBLE SIDE RAIL: MOVE HISTORY STRIP, MICRO-REWARDS, DOCTRINE & CHEST ODDS -->
+      <aside class="battle-side-widgets ${this.showTacticalIntel ? 'intel-open' : 'intel-collapsed'}" aria-label="Tactical Intel & Move History">
         ${
           this.showTacticalIntel
             ? `
-              <div class="chronicle-feed-panel war-counsel-box">
-                <div class="gothic-eyebrow">${renderGothicIconSVG('crown')} ${hero.shortName.toUpperCase()}'S STORY COUNSEL</div>
+              <div class="chronicle-feed-panel move-history-panel">
+                <div class="gothic-eyebrow">📜 MOVE HISTORY STRIP (TURN · COORD · FORMATION · VP)</div>
                 ${
-                  snap.levelData?.lore
-                    ? `<p class="war-story-whisper">"${snap.levelData.lore}"</p>`
-                    : ''
+                  !snap.moveHistory || snap.moveHistory.length === 0
+                    ? `<p class="war-counsel-text">No placements yet. Claim ${formatCoordLabel(Math.floor(snap.boardSize / 2), Math.floor(snap.boardSize / 2))} to open the battle!</p>`
+                    : `
+                      <ul class="move-history-list">
+                        ${snap.moveHistory
+                          .slice(0, 6)
+                          .map(
+                            (m) => `
+                              <li class="history-item player-${m.player.toLowerCase()}">
+                                <span class="hist-turn">T${m.turn}</span>
+                                <strong class="hist-coord">${m.player}@${m.coord}</strong>
+                                <span class="hist-form">${m.formation}</span>
+                                <span class="hist-vp ${m.vpDelta > 0 ? 'vp-gain' : ''}">${m.vpDelta > 0 ? `+${m.vpDelta} VP` : '0 VP'}</span>
+                                ${m.shattered > 0 ? `<span class="hist-shatter">💥${m.shattered}</span>` : ''}
+                              </li>
+                            `
+                          )
+                          .join('')}
+                      </ul>
+                    `
                 }
-                <p class="war-counsel-text">
-                  ${snap.levelData?.tip || hero.storyCounsel || 'Hold the center tiles and build intersecting lines to score rapidly.'}
-                </p>
+              </div>
+
+              <div class="chronicle-feed-panel doctrine-intel-panel">
+                <div class="gothic-eyebrow">⚔️ ENEMY DOCTRINE • ${doctrine.badge.toUpperCase()}</div>
+                <p class="war-counsel-text">${doctrine.summary}</p>
               </div>
 
               <div class="chronicle-feed-panel chest-odds-panel">
@@ -1836,7 +2454,7 @@ export class AppController {
         }
       </aside>
 
-      <!-- BOTTOM DOCK: TURN-1 HERO ACTIVE SKILL, WAR-HORN ULTIMATE & LEVEL 3+ 3-SLOT SHOP -->
+      <!-- COMPACT BOTTOM ACTION TRAY: TURN-1 HERO SKILL, WAR-HORN, EARLY MICRO-REWARDS OR LEVEL 3+ SHOP -->
       <footer class="battle-hud-bottom">
         <div class="penitence-bell-dock">
           ${
@@ -1862,10 +2480,10 @@ export class AppController {
           }
           <button class="bell-ultimate-btn ${bellReady ? 'ready' : ''}" ${
       bellReady ? '' : 'disabled'
-    } data-action="toll-bell">
+    } data-action="toll-bell" title="War-Horn Ultimate (Hotkey: E)">
             ${renderGothicIconSVG('bell')}
             <div>
-              <div class="bell-label">WAR-HORN ULTIMATE</div>
+              <div class="bell-label">WAR-HORN [E]</div>
               <div class="bell-pct tabular-num">${
                 snap.bellUsedThisMatch.X ? 'UNLEASHED' : `${Math.floor(snap.bellCharge.X)}%`
               }</div>
@@ -1876,13 +2494,64 @@ export class AppController {
         ${
           !snap.cardsEnabled
             ? `
-              <div class="v1-sealed-scrolls-banner gothic-card-panel">
-                <div class="sealed-icon">${renderGothicIconSVG('leaf')}</div>
-                <div class="sealed-copy">
-                  <div class="gothic-eyebrow">RELAXED WARMUP STAGE • LEVELS 1 & 2 (HERO SKILL [Q] ACTIVE!)</div>
-                  <h4>WAR-SCROLL SHOP & CARDS UNLOCK AT LEVEL 3</h4>
-                  <p>Enjoy pure board tactics + your Hero's Turn-1 Active Skill [Q]! Complete Stage 2 to open the Ancient Scroll Vault & 3-Slot Shop!</p>
+              <div class="early-stage-mastery-bar gothic-card-panel">
+                <div class="mastery-rewards-strip" role="group" aria-label="Stage Mastery Micro-Rewards">
+                  <span class="mastery-eyebrow">🏆 STAGE REWARDS:</span>
+                  ${EARLY_STAGE_MICRO_REWARDS.map((r) => {
+                    const done = Boolean(snap.microRewards?.[r.id]);
+                    return `
+                      <span class="micro-reward-pill ${done ? 'claimed' : ''}" title="${r.condition} → ${r.rewardLabel}">
+                        ${done ? '✓' : r.icon} <strong>${r.title}</strong> <small>(${r.rewardLabel})</small>
+                      </span>
+                    `;
+                  }).join('')}
                 </div>
+
+                <div class="mastery-actions-strip">
+                  <div class="modifier-pills" role="group" aria-label="Optional Stage Modifier">
+                    ${EARLY_STAGE_MODIFIERS.map((mod) => {
+                      const active = (this.earlyModifierId || 'mod_standard') === mod.id;
+                      return `
+                        <button class="modifier-pill-btn ${active ? 'active' : ''}" data-action="set-early-modifier" data-mod="${mod.id}" title="${mod.desc}">
+                          ${mod.icon} ${mod.name}
+                        </button>
+                      `;
+                    }).join('')}
+                  </div>
+                  <button class="btn-gothic-small preview-scrolls-btn ${this.showScrollPreviewDrawer ? 'deck-active' : ''}" data-action="toggle-scroll-preview">
+                    📜 ${this.showScrollPreviewDrawer ? 'Hide Lvl 3 Scrolls' : 'Preview Lvl 3 Scrolls'}
+                  </button>
+                </div>
+
+                ${
+                  this.showScrollPreviewDrawer
+                    ? `
+                      <div class="scroll-preview-popover" role="region" aria-label="Level 3 War-Scroll Vault Preview">
+                        <div class="popover-head">
+                          <strong>🔓 UNLOCKING AT STAGE #3: 3-SLOT WAR-SCROLL SHOP & GOLD ECONOMY</strong>
+                          <button class="prompt-cancel-chip" data-action="toggle-scroll-preview">Close</button>
+                        </div>
+                        <div class="scroll-preview-cards-row">
+                          ${previewFirstScrolls
+                            .map((c) => {
+                              const spec = getCardTacticalSpec(c);
+                              return `
+                                <div class="scroll-preview-mini-card">
+                                  <div class="mini-preview-box">${renderMiniBoardPreviewSVG(spec.previewCells, spec.previewMode)}</div>
+                                  <div>
+                                    <strong>${c.name} (${c.cost}G · ${spec.rarity})</strong>
+                                    <p>${c.desc}</p>
+                                    <small>${spec.timing} · Target: ${spec.targetRule}</small>
+                                  </div>
+                                </div>
+                              `;
+                            })
+                            .join('')}
+                        </div>
+                      </div>
+                    `
+                    : ''
+                }
               </div>
             `
             : `
@@ -1907,14 +2576,16 @@ export class AppController {
                           return `<div class="v1-shop-slot sold-out"><span>EMPTY</span></div>`;
                         }
                         const c = slot.card;
+                        const spec = getCardTacticalSpec(c);
                         const price = slot.price ?? c.cost;
                         const canBuy =
                           snap.tithe.X >= price &&
                           snap.hands.X.length < GAME_CONFIG.MAX_HAND_SIZE;
                         return `
-                          <div class="v1-shop-slot ${slot.locked ? 'locked' : ''}">
+                          <div class="v1-shop-slot ${slot.locked ? 'locked' : ''}" title="${spec.timing} | Target: ${spec.targetRule} | Counter: ${spec.counterplay}">
                             <div class="shop-slot-top">
                               <span class="shop-slot-price tabular-num">${renderGothicIconSVG('coin')} ${price}</span>
+                              <span class="spec-rarity-pill rarity-${spec.rarity.toLowerCase()}">${spec.rarity[0]}</span>
                               <button class="shop-lock-btn" data-action="lock-shop-slot" data-slot="${sIdx}" aria-label="${slot.locked ? 'Unlock Shop Slot' : 'Lock Shop Slot'}" title="Lock/Unlock Slot">
                                 ${renderGothicIconSVG(slot.locked ? 'lock' : 'unlock')}
                               </button>
@@ -1941,7 +2612,7 @@ export class AppController {
                 <div class="dark-tarot-hand" role="list" aria-label="War-Scroll Hand">
                   ${
                     snap.hands.X.length === 0
-                      ? `<div class="empty-hand-hint">Hand Empty — Buy War-Scrolls from the Shop (Left) or Claim Mystery Chests on the 3D Board!</div>`
+                      ? `<div class="empty-hand-hint">Hand Empty — Buy War-Scrolls from the Shop (Left) or Claim Mystery Chests on the Board!</div>`
                       : snap.hands.X.map((inst, idx) => {
                           const card = inst.card;
                           if (!card) return '';
@@ -1974,7 +2645,7 @@ export class AppController {
         }
 
         <div class="camera-quick-dock" role="group" aria-label="3D Camera View">
-          <div class="dock-caption">3D CAMERA VIEW</div>
+          <div class="dock-caption">CAMERA</div>
           <div class="dock-cam-buttons">
             ${CAMERA_PRESETS.map(
               (p) => `
@@ -1994,12 +2665,15 @@ export class AppController {
   _renderEndgameOverlay(snap) {
     const isWin = snap.status === 'victory';
     const unlockedLvl3 = isWin && snap.mode === 'campaign' && snap.levelNumber === 2;
+    const isEarlyStage = snap.mode === 'campaign' && snap.levelNumber <= 2;
     const state = this.save.getState();
     const hero = snap.hero || getFantasyHeroById(state.selectedHeroId);
+    const heroCalloutName = hero.shortName.split(' ').pop();
     const nextStage =
       isWin && snap.mode === 'campaign' && snap.levelNumber < 36
         ? getLevelByNumber(snap.levelNumber + 1)
         : null;
+    const previewScrolls = ARCANA_CARDS.slice(0, 3);
 
     return `
       <div class="endgame-modal-backdrop" role="dialog" aria-modal="true" aria-label="Battle Result">
@@ -2008,19 +2682,56 @@ export class AppController {
           <h2>${isWin ? 'VICTORY ON THE STAR-ALTAR' : 'REGROUP & TRY AGAIN'}</h2>
           <p class="endgame-score-summary">
             Final Score: <strong>${hero.shortName} ${snap.scores.X} VP</strong> — <strong>Commander ${snap.scores.O} VP</strong>
-            <br/>Stones Shattered: <strong>${snap.stonesShatteredThisMatch}</strong>
+            · Turns: <strong>${snap.turnNumber}</strong> · Stones Shattered: <strong>${snap.stonesShatteredThisMatch}</strong>
             ${
               unlockedLvl3
                 ? `<br/><span class="unlock-callout">STORY MILESTONE UNLOCKED: The Ancient Scroll Vault is open! Level 3+ features Gold Coins and the 3-Slot War-Scroll Shop!</span>`
                 : ''
             }
           </p>
+
+          ${
+            isEarlyStage
+              ? `
+                <div class="endgame-micro-rewards-box">
+                  <div class="gothic-eyebrow">🏆 STAGE MASTERY MICRO-REWARDS & LEVEL 3 SHOP PREVIEW</div>
+                  <div class="mastery-rewards-strip">
+                    ${EARLY_STAGE_MICRO_REWARDS.map((r) => {
+                      const done = Boolean(snap.microRewards?.[r.id]);
+                      return `
+                        <span class="micro-reward-pill ${done ? 'claimed' : ''}">
+                          ${done ? '✓' : r.icon} <strong>${r.title}:</strong> ${r.rewardLabel}
+                        </span>
+                      `;
+                    }).join('')}
+                  </div>
+                  <div class="endgame-scroll-preview-row">
+                    ${previewScrolls
+                      .map((c) => {
+                        const spec = getCardTacticalSpec(c);
+                        return `
+                          <div class="scroll-preview-mini-card">
+                            <div class="mini-preview-box">${renderMiniBoardPreviewSVG(spec.previewCells, spec.previewMode)}</div>
+                            <div>
+                              <strong>${c.name} (${c.cost}G)</strong>
+                              <small>Unlocks at Stage #3 Shop</small>
+                            </div>
+                          </div>
+                        `;
+                      })
+                      .join('')}
+                  </div>
+                </div>
+              `
+              : ''
+          }
+
           ${
             nextStage
               ? `
                 <div class="endgame-story-next">
                   <div class="gothic-eyebrow">NEXT IN THE CHRONICLE • STAGE #${nextStage.level}: ${nextStage.name.toUpperCase()}</div>
-                  <p>"${nextStage.lore}"</p>
+                  <p>${nextStage.objectiveLabel} · ${nextStage.boardSize}×${nextStage.boardSize} Grid · ${nextStage.doctrine?.badge || ''} · Reward: ${nextStage.rewardLabel}</p>
                 </div>
               `
               : ''
@@ -2041,6 +2752,21 @@ export class AppController {
 
   _attachDOMListeners() {
     if (!this.rootEl || typeof this.rootEl.querySelectorAll !== 'function') return;
+
+    // Bind hover & keyboard focus on Parallel DOM Board Tiles so 3D War-Table & Live Preview stay in lockstep
+    const boardBtns = this.rootEl.querySelectorAll('.board-tile-btn');
+    boardBtns.forEach((btn) => {
+      const r = Number(btn.getAttribute('data-r'));
+      const c = Number(btn.getAttribute('data-c'));
+      btn.addEventListener('mouseenter', () => {
+        this._handleTileHover({ r, c });
+      });
+      btn.addEventListener('focus', () => {
+        this.kbActive = true;
+        this.kbCursor = { r, c };
+        this._handleTileHover({ r, c });
+      });
+    });
 
     const actionEls = this.rootEl.querySelectorAll('[data-action]');
     actionEls.forEach((el) => {
@@ -2098,6 +2824,9 @@ export class AppController {
             this.showTutorialModal = false;
             this.save.setTutorialCompleted(true);
             this.render();
+            break;
+          case 'toggle-perf':
+            this.togglePerfOverlay();
             break;
           case 'cycle-quality': {
             const order = ['low', 'high', 'ultra'];
@@ -2184,6 +2913,7 @@ export class AppController {
               this.engine.selectedCardIndex = null;
               this.engine.selectedHeroAbility = false;
               this.engine.pendingTargets = [];
+              this.stagedCoord = null;
               this.showToast(this.t('Selection cancelled.', 'تم إلغاء التحديد.'));
               this.render();
             }
@@ -2193,6 +2923,36 @@ export class AppController {
               Number(el.getAttribute('data-r')),
               Number(el.getAttribute('data-c'))
             );
+            break;
+          case 'confirm-placement':
+            if (this.stagedCoord) {
+              this.handleBoardCellClick(this.stagedCoord.r, this.stagedCoord.c, true);
+            }
+            break;
+          case 'toggle-confirm-mode':
+            this.confirmPlacementMode = !this.confirmPlacementMode;
+            this.stagedCoord = null;
+            this.showToast(
+              this.confirmPlacementMode
+                ? '✓ 2-Step Confirm Placement Mode Enabled'
+                : '⚡ 1-Click Instant Placement Mode Enabled'
+            );
+            this.render();
+            break;
+          case 'set-early-modifier': {
+            const modId = el.getAttribute('data-mod') || 'mod_standard';
+            this.earlyModifierId = modId;
+            if (this.engine && this.engine.mode === 'campaign' && this.engine.levelNumber <= 2) {
+              this.startCampaignLevel(this.engine.levelNumber);
+            } else {
+              this.render();
+            }
+            break;
+          }
+          case 'toggle-scroll-preview':
+            this.showScrollPreviewDrawer = !this.showScrollPreviewDrawer;
+            this.sound?.playUIHover();
+            this.render();
             break;
           case 'toll-bell': {
             const res = this.engine?.activatePenitenceBell('X');
@@ -2209,8 +2969,7 @@ export class AppController {
             this.render();
             break;
           case 'toggle-minigrid':
-            this.showMiniTacticalGrid = !this.showMiniTacticalGrid;
-            this.render();
+            this.toggle2DView();
             break;
           case 'toggle-intel':
             this.showTacticalIntel = !this.showTacticalIntel;

@@ -4,7 +4,7 @@
  */
 
 import { previewPlacementScoring, cellMatchesSymbol } from './pattern-detector.js';
-import { getArcanaCardById, GAME_CONFIG } from '../data/gothic-config.js';
+import { getArcanaCardById, getWarlordDoctrineByTier, GAME_CONFIG } from '../data/gothic-config.js';
 
 const DIRS = [
   [0, 1],
@@ -13,12 +13,18 @@ const DIRS = [
   [1, -1],
 ];
 
+export function formatCoordLabel(r, c) {
+  const rowChar = String.fromCharCode(65 + Number(r));
+  return `${rowChar}${Number(c) + 1}`;
+}
+
 /**
- * Fast heuristic evaluation of a candidate move `(r, c)` for move-ordering and 1-ply scoring
+ * Fast heuristic evaluation of a candidate move `(r, c)` for move-ordering and Doctrine-aware 1-ply scoring
  */
 function scoreCandidateMove(engine, board, boardSize, scoredRegistry, r, c, sym, enemySym, scores, tier) {
   let score = 0;
-  let moveReason = 'Altar Positioning';
+  const doctrine = getWarlordDoctrineByTier(tier);
+  let moveReason = `${doctrine.name}: Altar Positioning`;
   const targetScore = engine.targetScore || 6;
 
   // 1. Immediate scoring patterns created by placing `sym` at `(r, c)`
@@ -29,61 +35,81 @@ function scoreCandidateMove(engine, board, boardSize, scoredRegistry, r, c, sym,
     const totalGain = myPts + comboBonus;
     score += totalGain * 145;
     const grandShape = myPatterns.find((p) => p.type === 'SHAPE');
-    moveReason = grandShape ? `Sacred Geometry: ${grandShape.name}` : `Complete +${totalGain} VP Alignment`;
+    moveReason = grandShape
+      ? `${doctrine.name}: ${grandShape.name} (+${totalGain} VP)`
+      : `${doctrine.name}: Complete +${totalGain} VP Line`;
     if ((scores[sym] || 0) + totalGain >= targetScore) {
       score += 15000;
-      moveReason = 'Sanctum Lethal Alignment';
+      moveReason = `${doctrine.name}: Lethal Alignment`;
     }
   }
 
   // 2. Blocking opponent immediate scoring at `(r, c)`
-  if (tier >= 2) {
-    const oppPatterns = previewPlacementScoring(board, boardSize, r, c, enemySym, scoredRegistry);
-    const oppPts = oppPatterns.reduce((s, p) => s + p.points, 0);
-    if (oppPts > 0) {
-      const oppCombo = oppPatterns.length >= 2 ? oppPatterns.length - 1 : 0;
-      const oppGain = oppPts + oppCombo;
-      const blockWeight = tier >= 4 ? 138 : 108;
-      score += oppGain * blockWeight;
-      if (myPts === 0) {
-        moveReason = `Deny Enemy +${oppGain} VP Threat`;
-      }
-      if ((scores[enemySym] || 0) + oppGain >= targetScore) {
-        score += 11500;
-        moveReason = 'Counter Lethal Heresy';
-      }
+  // Scout (tier 1) prioritizes own lines and leaves obvious counterplay; Siege Captain (tier 3) heavily blocks!
+  const oppPatterns = previewPlacementScoring(board, boardSize, r, c, enemySym, scoredRegistry);
+  const oppPts = oppPatterns.reduce((s, p) => s + p.points, 0);
+  if (oppPts > 0) {
+    const oppCombo = oppPatterns.length >= 2 ? oppPatterns.length - 1 : 0;
+    const oppGain = oppPts + oppCombo;
+    const blockWeight =
+      tier === 1
+        ? 42 // Scout leaves counterplay open
+        : tier === 3
+        ? 152 // Siege Captain aggressively locks down player routes
+        : tier >= 4
+        ? 138
+        : 108;
+    score += oppGain * blockWeight;
+    if (myPts === 0 && tier >= 2) {
+      moveReason = `${doctrine.name}: Block Enemy +${oppGain} VP Line`;
+    }
+    if (tier >= 2 && (scores[enemySym] || 0) + oppGain >= targetScore) {
+      score += 11500;
+      moveReason = `${doctrine.name}: Deny Lethal Threat`;
     }
   }
 
-  // 3. Line-building potential (2-in-a-row open-ended rays)
-  if (tier >= 3) {
-    for (const [dr, dc] of DIRS) {
-      let friendlyRun = 1;
-      let openEnds = 0;
-      // Forward ray
-      let nr = r + dr;
-      let nc = c + dc;
-      while (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && cellMatchesSymbol(board[nr][nc], sym)) {
-        friendlyRun++;
-        nr += dr;
-        nc += dc;
+  // 3. Line-building potential (2-in-a-row open-ended rays) & Doctrine specialization
+  let bestRayCells = [[r, c]];
+  for (const [dr, dc] of DIRS) {
+    let friendlyRun = 1;
+    let openEnds = 0;
+    const rayCells = [[r, c]];
+    // Forward ray
+    let nr = r + dr;
+    let nc = c + dc;
+    while (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && cellMatchesSymbol(board[nr][nc], sym)) {
+      friendlyRun++;
+      rayCells.push([nr, nc]);
+      nr += dr;
+      nc += dc;
+    }
+    if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && !board[nr][nc].symbol && !board[nr][nc].obstacle && board[nr][nc].locked === 0) {
+      openEnds++;
+    }
+    // Backward ray
+    nr = r - dr;
+    nc = c - dc;
+    while (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && cellMatchesSymbol(board[nr][nc], sym)) {
+      friendlyRun++;
+      rayCells.unshift([nr, nc]);
+      nr -= dr;
+      nc -= dc;
+    }
+    if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && !board[nr][nc].symbol && !board[nr][nc].obstacle && board[nr][nc].locked === 0) {
+      openEnds++;
+    }
+    if (friendlyRun >= 2 && openEnds >= 1) {
+      const isDiag = dr !== 0 && dc !== 0;
+      // Scout loves greedy straight lines; Lich Scholar loves open-ended diagonal setups
+      const runWeight = tier === 1 ? 18 : 14;
+      const openWeight = tier === 2 && isDiag ? 15 : 9;
+      score += friendlyRun * runWeight + openEnds * openWeight;
+      if (rayCells.length > bestRayCells.length) {
+        bestRayCells = rayCells;
       }
-      if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && !board[nr][nc].symbol && !board[nr][nc].obstacle && board[nr][nc].locked === 0) {
-        openEnds++;
-      }
-      // Backward ray
-      nr = r - dr;
-      nc = c - dc;
-      while (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && cellMatchesSymbol(board[nr][nc], sym)) {
-        friendlyRun++;
-        nr -= dr;
-        nc -= dc;
-      }
-      if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize && !board[nr][nc].symbol && !board[nr][nc].obstacle && board[nr][nc].locked === 0) {
-        openEnds++;
-      }
-      if (friendlyRun >= 2 && openEnds >= 1) {
-        score += friendlyRun * 14 + openEnds * 9;
+      if (myPts === 0 && oppPts === 0) {
+        moveReason = `${doctrine.name}: Extend ${friendlyRun}-Stone Line`;
       }
     }
   }
@@ -92,7 +118,7 @@ function scoreCandidateMove(engine, board, boardSize, scoredRegistry, r, c, sym,
   const cell = board[r][c];
   if (cell.anomaly === 'sanctified_mosaic') score += 36;
   if (cell.anomaly === 'blood_chalice') score += 28;
-  if (cell.anomaly === 'cursed_censer') score -= 55;
+  if (cell.anomaly === 'cursed_censer') score -= tier === 4 ? 25 : 55;
 
   // If player/AI can disrupt or capitalize on a telegraphed boss ritual
   if (engine.pendingBossRitual && engine.pendingBossRitual.r === r && engine.pendingBossRitual.c === c) {
@@ -109,7 +135,7 @@ function scoreCandidateMove(engine, board, boardSize, scoredRegistry, r, c, sym,
       const nc = c + dc;
       if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize) {
         if (board[nr][nc].obstacle === 'reliquary_coffer') {
-          score += 24;
+          score += tier === 2 ? 32 : 24;
         }
         const nSym = board[nr][nc].symbol;
         if (nSym === sym || nSym === 'W') friendlyNeighbors++;
@@ -118,13 +144,13 @@ function scoreCandidateMove(engine, board, boardSize, scoredRegistry, r, c, sym,
     }
   }
   score += friendlyNeighbors * (tier >= 3 ? 13 : 7);
-  score += enemyNeighbors * (tier >= 4 ? 8 : 4);
+  score += enemyNeighbors * (tier === 3 ? 11 : tier >= 4 ? 8 : 4);
 
   const center = (boardSize - 1) / 2;
   const distFromCenter = Math.abs(r - center) + Math.abs(c - center);
   score += Math.max(0, (boardSize - distFromCenter) * 3.4);
 
-  return { score, reason: moveReason, myPatterns, myPts };
+  return { score, reason: moveReason, myPatterns, myPts, oppPatterns, oppPts, bestRayCells };
 }
 
 /**
@@ -626,7 +652,9 @@ export function selectBestAICardAction(engine, tier = 3) {
 }
 
 /**
- * Scan all cells where `enemySymbol` would immediately score next turn if unblocked
+ * Scan all cells where `enemySymbol` would immediately score next turn if unblocked,
+ * plus the constituent enemy stones (`threatLineCells`) so the Threat Overlay can paint
+ * enemy scoring lines in amber and guaranteed blocks in red.
  */
 export function scanEnemyThreatCells(engine, enemySymbol = 'O') {
   const { board, boardSize, scoredRegistry } = engine;
@@ -638,10 +666,172 @@ export function scanEnemyThreatCells(engine, enemySymbol = 'O') {
         const patterns = previewPlacementScoring(board, boardSize, r, c, enemySymbol, scoredRegistry);
         if (patterns.length > 0) {
           const pts = patterns.reduce((s, p) => s + p.points, 0);
-          threats.push({ r, c, points: pts, patterns });
+          const threatLineCells = [];
+          for (const pat of patterns) {
+            for (const [pr, pc] of pat.cells || []) {
+              if (pr !== r || pc !== c) {
+                threatLineCells.push([pr, pc]);
+              }
+            }
+          }
+          threats.push({ r, c, points: pts, patterns, threatLineCells });
         }
       }
     }
   }
   return threats;
+}
+
+/**
+ * Compute full Threat Overlay data (Amber enemy threat lines + Red guaranteed block tiles).
+ * If enemy has not yet formed a 2-stone immediate scoring threat (e.g., Turn 1 after first enemy placement),
+ * projects the enemy's primary open ray so early-stage learners can see what the enemy threatens next.
+ */
+export function getThreatOverlayData(engine, enemySymbol = 'O') {
+  const immediate = scanEnemyThreatCells(engine, enemySymbol);
+  const blockCells = [];
+  const lineCells = [];
+  const seenBlocks = new Set();
+  const seenLines = new Set();
+
+  for (const t of immediate) {
+    const bKey = `${t.r},${t.c}`;
+    if (!seenBlocks.has(bKey)) {
+      seenBlocks.add(bKey);
+      blockCells.push({ r: t.r, c: t.c, points: t.points });
+    }
+    for (const [lr, lc] of t.threatLineCells || []) {
+      const lKey = `${lr},${lc}`;
+      if (!seenLines.has(lKey)) {
+        seenLines.add(lKey);
+        lineCells.push({ r: lr, c: lc });
+      }
+    }
+  }
+
+  // If no immediate 3-stone completion exists yet, project from any existing enemy stone toward center/open ray
+  if (blockCells.length === 0 && engine?.board) {
+    const { board, boardSize } = engine;
+    for (let r = 0; r < boardSize; r++) {
+      for (let c = 0; c < boardSize; c++) {
+        if (board[r][c].symbol === enemySymbol) {
+          const lKey = `${r},${c}`;
+          if (!seenLines.has(lKey)) {
+            seenLines.add(lKey);
+            lineCells.push({ r, c });
+          }
+          for (const [dr, dc] of DIRS) {
+            const nr = r + dr;
+            const nc = c + dc;
+            const nnr = r + dr * 2;
+            const nnc = c + dc * 2;
+            if (
+              nr >= 0 &&
+              nr < boardSize &&
+              nc >= 0 &&
+              nc < boardSize &&
+              !board[nr][nc].symbol &&
+              !board[nr][nc].obstacle &&
+              board[nr][nc].locked === 0 &&
+              nnr >= 0 &&
+              nnr < boardSize &&
+              nnc >= 0 &&
+              nnc < boardSize &&
+              !board[nnr][nnc].obstacle
+            ) {
+              const bKey = `${nr},${nc}`;
+              if (!seenBlocks.has(bKey) && blockCells.length < 2) {
+                seenBlocks.add(bKey);
+                blockCells.push({ r: nr, c: nc, points: 1, projected: true });
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return { blockCells, lineCells };
+}
+
+/**
+ * Compute a rich visual + one-sentence Tactical Hint for `playerSymbol`:
+ * Points at the recommended tile, pulses its outline, shows the expected line,
+ * and explains the tactical reason in one crisp sentence.
+ */
+export function computeTacticalHint(engine, playerSymbol = 'X') {
+  if (!engine || !engine.board) return null;
+  const enemySymbol = playerSymbol === 'X' ? 'O' : 'X';
+  const best = selectBestAIMove(engine, playerSymbol, 5);
+  if (!best) return null;
+
+  const { board, boardSize, scoredRegistry } = engine;
+  const coordLabel = formatCoordLabel(best.r, best.c);
+  const myPatterns = previewPlacementScoring(board, boardSize, best.r, best.c, playerSymbol, scoredRegistry);
+  const oppPatterns = previewPlacementScoring(board, boardSize, best.r, best.c, enemySymbol, scoredRegistry);
+
+  const evalInfo = scoreCandidateMove(
+    engine,
+    board,
+    boardSize,
+    scoredRegistry,
+    best.r,
+    best.c,
+    playerSymbol,
+    enemySymbol,
+    engine.scores || { X: 0, O: 0 },
+    5
+  );
+
+  let expectedLineCells = [[best.r, best.c]];
+  let expectedPoints = 0;
+  let patternName = 'Tactical Positioning';
+  let isBlock = false;
+  let sentence = '';
+
+  if (myPatterns.length > 0) {
+    expectedPoints = myPatterns.reduce((s, p) => s + p.points, 0) + (myPatterns.length >= 2 ? myPatterns.length - 1 : 0);
+    patternName = myPatterns.map((p) => p.name).join(' + ');
+    const cellSet = new Set();
+    expectedLineCells = [];
+    for (const pat of myPatterns) {
+      for (const [pr, pc] of pat.cells || []) {
+        const k = `${pr},${pc}`;
+        if (!cellSet.has(k)) {
+          cellSet.add(k);
+          expectedLineCells.push([pr, pc]);
+        }
+      }
+    }
+    sentence = `Place at ${coordLabel} [Row ${best.r + 1}, Col ${best.c + 1}] to complete ${patternName} for +${expectedPoints} VP.`;
+  } else if (oppPatterns.length > 0) {
+    isBlock = true;
+    const deniedPts = oppPatterns.reduce((s, p) => s + p.points, 0);
+    patternName = `Block Enemy +${deniedPts} VP`;
+    expectedLineCells = [[best.r, best.c]];
+    for (const pat of oppPatterns) {
+      for (const [pr, pc] of pat.cells || []) {
+        if (pr !== best.r || pc !== best.c) expectedLineCells.push([pr, pc]);
+      }
+    }
+    sentence = `Place at ${coordLabel} [Row ${best.r + 1}, Col ${best.c + 1}] to block the enemy's ${oppPatterns[0].name} (+${deniedPts} VP threat).`;
+  } else if (evalInfo.bestRayCells && evalInfo.bestRayCells.length >= 2) {
+    expectedLineCells = evalInfo.bestRayCells;
+    patternName = `${evalInfo.bestRayCells.length}-Stone Line Setup`;
+    sentence = `Place at ${coordLabel} [Row ${best.r + 1}, Col ${best.c + 1}] to build a ${evalInfo.bestRayCells.length}-stone line threat toward victory.`;
+  } else {
+    sentence = `Place at ${coordLabel} [Row ${best.r + 1}, Col ${best.c + 1}] to command the central intersection and open four scoring rays.`;
+  }
+
+  return {
+    r: best.r,
+    c: best.c,
+    coordLabel,
+    reason: best.reason,
+    expectedLineCells,
+    expectedPoints,
+    patternName,
+    isBlock,
+    sentence,
+  };
 }

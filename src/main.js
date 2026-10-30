@@ -10,6 +10,7 @@ import { GothicSoundEngine } from './audio/sound-engine.js';
 import { AppController } from './ui/app-controller.js';
 
 export function bootstrapXcardoV3() {
+  const t0 = typeof performance !== 'undefined' ? performance.now() : Date.now();
   const eventBus = new EventBus();
   const saveManager = new SaveManager();
   const soundEngine = new GothicSoundEngine(saveManager);
@@ -27,6 +28,8 @@ export function bootstrapXcardoV3() {
   });
 
   if (typeof window !== 'undefined') {
+    const t1 = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    window.__XCARDO_BOOT_MS__ = Math.max(1, Math.round(t1 - t0));
     window.__XCARDO_V3__ = { eventBus, saveManager, scene3d, soundEngine, app };
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

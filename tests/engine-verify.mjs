@@ -16,15 +16,26 @@ import {
   SCULPTED_PIECES,
   STONE_MATERIALS,
   CAMERA_PRESETS,
+  WARLORD_DOCTRINES,
+  EARLY_STAGE_MICRO_REWARDS,
+  getCardTacticalSpec,
+  getRelicTacticalSpec,
+  BLOOD_OATHS,
 } from '../src/data/gothic-config.js';
 import {
   renderTarotArtSVG,
   renderBossCrestSVG,
   renderRoseWindowSVG,
   renderFantasyHeroPortraitSVG,
+  renderMiniBoardPreviewSVG,
 } from '../src/ui/gothic-svg.js';
 import { scanBoardPatterns } from '../src/engine/pattern-detector.js';
-import { selectBestAIMove, scanEnemyThreatCells } from '../src/engine/ai-brain.js';
+import {
+  selectBestAIMove,
+  scanEnemyThreatCells,
+  getThreatOverlayData,
+  computeTacticalHint,
+} from '../src/engine/ai-brain.js';
 import { BattleEngine } from '../src/engine/game-state.js';
 import {
   createPieceSculpture3D,
@@ -285,17 +296,29 @@ runSuite('10. AppController Screen Navigation, 6 Fantasy Hero Portraits & V1 Bat
   assert.ok(mockRoot.innerHTML.includes('aria-live="polite"'), 'Toast banner must expose aria-live="polite"');
 
   app.navigate('campaign');
-  assert.ok(mockRoot.innerHTML.includes('Story Chapters'));
-  assert.ok(mockRoot.innerHTML.includes('The Story So Far'));
+  assert.ok(mockRoot.innerHTML.includes('Campaign Strongholds, Doctrines & Rewards'));
+  assert.ok(mockRoot.innerHTML.includes('story-lore-drawer'), 'Campaign Map must put prose inside collapsible Read Story drawer');
+  assert.ok(mockRoot.innerHTML.includes('node-scannable-grid'), 'Campaign Map must render scannable stage cards');
   assert.ok(mockRoot.innerHTML.includes('roguelike-boons-bar'), 'Campaign Map must include Roguelike Expedition Boons');
   app.navigate('reliquary');
   assert.ok(mockRoot.innerHTML.includes('Playable Fantasy War Heroes'));
+  assert.ok(mockRoot.innerHTML.includes('hero-comparison-tray'), 'Heroes screen must include the Hero Comparison Tray');
 
-  // Level 1 Battle HUD must display the v1 Sealed War-Scroll Banner (No Cards until Level 3) + Turn-1 Hero Skill [Q]
+  // Level 1 Battle HUD must display the Parallel Accessible DOM Board Grid, Guided "Place Aurelius here" callout, Micro-Rewards & Turn-1 Hero Skill [Q]
   app.startCampaignLevel(1);
-  assert.ok(mockRoot.innerHTML.includes('WAR-SCROLL SHOP & CARDS UNLOCK AT LEVEL 3'));
+  assert.ok(mockRoot.innerHTML.includes('id="parallel-board-grid"'), 'Battle HUD must expose the Parallel Accessible DOM Board Grid');
+  assert.ok(mockRoot.innerHTML.includes('role="gridcell"'), 'Each tile must be exposed as an accessible role="gridcell" button');
+  assert.ok(mockRoot.innerHTML.includes('Place Aurelius here'), 'Stage 1 Turn 1 must guide the player with "Place Aurelius here" on the recommended tile');
+  assert.ok(mockRoot.innerHTML.includes('early-stage-mastery-bar'), 'Levels 1-2 must display the compact Stage Mastery Micro-Rewards & Scroll Preview bar');
   assert.ok(mockRoot.innerHTML.includes('hero-skill-btn'), 'Level 1 HUD must display the Turn-1 Hero Active Skill button');
   assert.ok(mockRoot.innerHTML.includes('tactical-action-prompt'), 'Battle HUD must display the contextual Tactical Action Prompt');
+
+  // Toggle 2D View -> button label must change to "3D View" and mode badge to "2D TACTICAL BOARD"
+  app.toggle2DView();
+  assert.ok(mockRoot.innerHTML.includes('2D TACTICAL BOARD'), '2D View must show unambiguous 2D TACTICAL BOARD badge');
+  assert.ok(mockRoot.innerHTML.includes('<span>3D View</span>'), '2D View button label must switch to 3D View');
+  app.toggle2DView();
+  assert.ok(mockRoot.innerHTML.includes('3D WAR-TABLE'), 'Switching back must restore 3D WAR-TABLE badge');
 
   // Level 3 Battle HUD must display the 3-Slot War-Scroll Shop with mini Tarot SVG art
   app.startCampaignLevel(3);
@@ -434,4 +457,45 @@ runSuite('13. Depth-3 Alpha-Beta AI, Telegraphed Boss Rituals, Turn-1 Hero Skill
   assert.equal(landscapeMult, 1.0);
 });
 
-console.log(`\nALL ${passed}/13 XCARDO VERIFICATION SUITES PASSED!`);
+// 14. AAA Enhancement Package: Doctrines, Threat Overlay (Amber/Red), Tactical Hint, Move History, Micro-Rewards & Card/Relic Specs
+runSuite('14. AAA Enhancement Package: Doctrines, Amber/Red Threat Overlay, Tactical Hint, Move History & Card/Relic Previews', () => {
+  assert.equal(Object.keys(WARLORD_DOCTRINES).length, 6, 'All 6 AI Tiers must have distinct Warlord Doctrines');
+  assert.equal(EARLY_STAGE_MICRO_REWARDS.length, 3, 'Levels 1-2 must define 3 escalating micro-rewards');
+
+  // Verify Card & Relic Tactical Specs + Mini Board Preview SVG
+  for (const card of ARCANA_CARDS) {
+    const spec = getCardTacticalSpec(card);
+    assert.ok(spec.rarity && spec.timing && spec.targetRule && spec.counterplay);
+    const svg = renderMiniBoardPreviewSVG(spec.previewCells, spec.previewMode);
+    assert.ok(svg.includes('mini-board-preview-svg'));
+  }
+  for (const oath of BLOOD_OATHS) {
+    const spec = getRelicTacticalSpec(oath);
+    assert.ok(spec.rarity && spec.timing && spec.targetRule && spec.counterplay);
+  }
+
+  // Verify Tactical Hint & Threat Overlay (Amber enemy scoring lines + Red guaranteed blocks)
+  const bus = new EventBus();
+  const eng = new BattleEngine(bus, { mode: 'campaign', levelNumber: 1 });
+  const hint1 = computeTacticalHint(eng, 'X');
+  assert.ok(hint1, 'computeTacticalHint must return a recommendation');
+  assert.ok(hint1.sentence.length > 10, 'Hint must explain the tactical reason in one crisp sentence');
+
+  eng.placePiece(2, 2); // X @ C3
+  eng.placePiece(0, 0); // O @ A1
+  eng.placePiece(2, 1); // X @ C2
+  eng.placePiece(0, 1); // O @ A2 (now O threatens A3!)
+
+  const overlay = getThreatOverlayData(eng, 'O');
+  assert.ok(overlay.blockCells.some((b) => b.r === 0 && b.c === 2), 'Red blockCells must include (0,2)');
+  assert.ok(overlay.lineCells.some((l) => l.r === 0 && l.c === 0), 'Amber lineCells must include enemy line stones');
+
+  // Blocking O's imminent line at (0,2) must trigger the Tactical Block micro-reward and record in moveHistory
+  eng.placePiece(0, 2);
+  assert.equal(eng.microRewards.counterBlock, true, 'Blocking enemy threat must unlock Tactical Block micro-reward');
+  assert.ok(eng.moveHistory.length >= 5, 'Move history strip must record every placement');
+  assert.equal(eng.moveHistory[0].coord, 'A3');
+  assert.equal(eng.moveHistory[0].blockedThreat, true);
+});
+
+console.log(`\nALL ${passed}/14 XCARDO VERIFICATION SUITES PASSED!`);
