@@ -79,12 +79,16 @@ export class AppController {
     const currentBoss =
       INQUISITOR_BOSSES.find((b) => b.id === currentAct.bossId) || INQUISITOR_BOSSES[0];
 
+    this.scene3d.idleOrbitActive = true;
     this.scene3d.rebuildAltar(5, state.equippedHall || 'obsidian_nave', currentBoss);
+    this.scene3d.playCinematicFlyIn?.(state.cameraPreset || 'commander_angle', 2.65);
+
     // Strictly 2 stone types on the War-Table: Your Golden Champion (X) vs Enemy Crimson Warlord (O)
-    this.scene3d.placePieceImmediate(2, 2, 'X', 0);
-    this.scene3d.placePieceImmediate(1, 2, 'O', 0);
-    this.scene3d.placePieceImmediate(2, 1, 'O', 0);
-    this.scene3d.placePieceImmediate(3, 3, 'X', 0);
+    // Slam down cinematically onto the board as the camera sweeps in!
+    this.scene3d.animatePieceSlam(2, 2, 'X');
+    this.scene3d.animatePieceSlam(1, 2, 'O');
+    this.scene3d.animatePieceSlam(2, 1, 'O');
+    this.scene3d.animatePieceSlam(3, 3, 'X');
   }
 
   _bindEvents() {
@@ -219,6 +223,10 @@ export class AppController {
       customDeckIds: state.customDeck,
     });
     this.currentScreen = 'battle';
+    if (this.scene3d) {
+      this.scene3d.idleOrbitActive = false;
+      this.scene3d.playBattleZoomIn?.(state.cameraPreset || 'commander_angle', 1.85);
+    }
     this.sound?.startMusic(levelNumber % 13);
     if (levelNumber < GAME_CONFIG.CARDS_UNLOCK_LEVEL) {
       this.showToast(
@@ -242,6 +250,10 @@ export class AppController {
       upgradedCards: state.upgradedCards,
     });
     this.currentScreen = 'battle';
+    if (this.scene3d) {
+      this.scene3d.idleOrbitActive = false;
+      this.scene3d.playBattleZoomIn?.(state.cameraPreset || 'commander_angle', 1.85);
+    }
     this.sound?.startMusic(3);
     this.render();
   }
@@ -261,6 +273,10 @@ export class AppController {
       customDeckIds: state.customDeck,
     });
     this.currentScreen = 'battle';
+    if (this.scene3d) {
+      this.scene3d.idleOrbitActive = false;
+      this.scene3d.playBattleZoomIn?.(state.cameraPreset || 'commander_angle', 1.85);
+    }
     this.sound?.startMusic(1);
     this.render();
   }
@@ -525,7 +541,7 @@ export class AppController {
     return `
       <header class="sanctum-topbar">
         <div class="brand-cluster" data-action="nav" data-screen="hub" title="XcardO Home">
-          <img src="assets/logo-xcardo-nav.jpg" alt="XCARDO" class="brand-logo-nav" />
+          <img src="assets/logo-xcardo-nav.png" alt="XCARDO" class="brand-logo-nav" />
           <span class="sr-only">XCARDO</span>
         </div>
 
@@ -575,7 +591,7 @@ export class AppController {
         <!-- TOP-CENTER FLOATING NANO BANANA MASTER LOGO CREST & VISUAL STORY TRIGGER -->
         <section class="hub-logo-centerpiece">
           <div class="master-logo-crest-frame">
-            <img src="assets/logo-xcardo-crest.jpg" alt="XcardO Master Crest" class="master-logo-crest-img" />
+            <img src="assets/logo-xcardo-crest.png" alt="XcardO Master Crest" class="master-logo-crest-img" />
           </div>
           <div class="chapter-visual-ribbon">
             <span class="ribbon-chapter-tag" style="--act-color:${currentAct.themeColor}">

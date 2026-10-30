@@ -38,6 +38,8 @@ export class GothicScene3D {
 
     this.cameraShake = 0;
     this.cinematicFocusTimer = 0;
+    this.idleOrbitActive = true;
+    this.cinematicFlyIn = null;
 
     this.boardSize = 5;
     this.altarData = null;
@@ -495,6 +497,7 @@ export class GothicScene3D {
     const preset = CAMERA_PRESETS.find((p) => p.id === presetId) || CAMERA_PRESETS[0];
     const scaleFactor = this.boardSize >= 6 ? 1.18 : 1.0;
 
+    this.cinematicFlyIn = null;
     this.camSpherical.targetTheta = preset.theta;
     this.camSpherical.targetPhi = preset.phi;
     this.camSpherical.targetRadius = preset.radius * scaleFactor;
@@ -505,8 +508,90 @@ export class GothicScene3D {
       this.camSpherical.phi = this.camSpherical.targetPhi;
       this.camSpherical.radius = this.camSpherical.targetRadius;
       this.camSpherical.lookAt.copy(this.camSpherical.targetLookAt);
-      this._updateCameraTransform(0);
+      this._updateCameraTransform(0, 0);
     }
+  }
+
+  /**
+   * AAA Cinematic Camera Fly-In toward the 3D War-Table (sweeps down from high cathedral rafters to the board)
+   */
+  playCinematicFlyIn(presetId = 'commander_angle', duration = 2.65) {
+    const preset = CAMERA_PRESETS.find((p) => p.id === presetId) || CAMERA_PRESETS[0];
+    const scaleFactor = this.boardSize >= 6 ? 1.18 : 1.0;
+
+    const endTheta = preset.theta;
+    const endPhi = preset.phi;
+    const endRadius = preset.radius * scaleFactor;
+    const endLookY = preset.targetY || 0.15;
+
+    // Start high and wide with a dramatic sweeping arc toward the 3D War-Table
+    const startTheta = endTheta - 1.25;
+    const startPhi = 0.34;
+    const startRadius = 22.8 * scaleFactor;
+    const startLookY = 2.45;
+
+    this.camSpherical.theta = startTheta;
+    this.camSpherical.phi = startPhi;
+    this.camSpherical.radius = startRadius;
+    this.camSpherical.lookAt.set(0, startLookY, -1.35);
+
+    this.camSpherical.targetTheta = endTheta;
+    this.camSpherical.targetPhi = endPhi;
+    this.camSpherical.targetRadius = endRadius;
+    this.camSpherical.targetLookAt.set(0, endLookY, 0);
+
+    this.cinematicFlyIn = {
+      elapsed: 0,
+      duration,
+      startTheta,
+      startPhi,
+      startRadius,
+      startLookAt: new THREE.Vector3(0, startLookY, -1.35),
+      endTheta,
+      endPhi,
+      endRadius,
+      endLookAt: new THREE.Vector3(0, endLookY, 0),
+    };
+  }
+
+  /**
+   * Dramatic Battle-Start Camera Swoop from the Enemy Warlord down to the Commander's perspective
+   */
+  playBattleZoomIn(presetId = 'commander_angle', duration = 1.85) {
+    const preset = CAMERA_PRESETS.find((p) => p.id === presetId) || CAMERA_PRESETS[0];
+    const scaleFactor = this.boardSize >= 6 ? 1.18 : 1.0;
+
+    const endTheta = preset.theta;
+    const endPhi = preset.phi;
+    const endRadius = preset.radius * scaleFactor;
+    const endLookY = preset.targetY || 0.15;
+
+    const startTheta = endTheta + 0.72;
+    const startPhi = 1.14;
+    const startRadius = 15.6 * scaleFactor;
+
+    this.camSpherical.theta = startTheta;
+    this.camSpherical.phi = startPhi;
+    this.camSpherical.radius = startRadius;
+    this.camSpherical.lookAt.set(0, 1.35, -1.6);
+
+    this.camSpherical.targetTheta = endTheta;
+    this.camSpherical.targetPhi = endPhi;
+    this.camSpherical.targetRadius = endRadius;
+    this.camSpherical.targetLookAt.set(0, endLookY, 0);
+
+    this.cinematicFlyIn = {
+      elapsed: 0,
+      duration,
+      startTheta,
+      startPhi,
+      startRadius,
+      startLookAt: new THREE.Vector3(0, 1.35, -1.6),
+      endTheta,
+      endPhi,
+      endRadius,
+      endLookAt: new THREE.Vector3(0, endLookY, 0),
+    };
   }
 
   focusCameraBrieflyOnTile(r, c, duration = 1.0) {
@@ -611,6 +696,7 @@ export class GothicScene3D {
 
         if (totalDist > 6) {
           this.isDraggingOrbit = true;
+          this.cinematicFlyIn = null;
           this.camSpherical.targetTheta -= dx * 0.0075;
           this.camSpherical.targetPhi = Math.max(
             0.28,
@@ -679,13 +765,38 @@ export class GothicScene3D {
     this.renderer.setSize(width, height, false);
   }
 
-  _updateCameraTransform(dt) {
+  _updateCameraTransform(dt, elapsedSec = 0) {
     const s = this.camSpherical;
-    const damp = Math.min(1, dt * 7.5);
-    s.theta += (s.targetTheta - s.theta) * damp;
-    s.phi += (s.targetPhi - s.phi) * damp;
-    s.radius += (s.targetRadius - s.radius) * damp;
-    s.lookAt.lerp(s.targetLookAt, damp);
+
+    if (this.cinematicFlyIn) {
+      this.cinematicFlyIn.elapsed += dt;
+      const rawT = Math.min(1, this.cinematicFlyIn.elapsed / this.cinematicFlyIn.duration);
+      // Smooth cubic ease-out S-curve toward the 3D War-Table
+      const ease = 1 - Math.pow(1 - rawT, 3.2);
+      s.theta =
+        this.cinematicFlyIn.startTheta +
+        (this.cinematicFlyIn.endTheta - this.cinematicFlyIn.startTheta) * ease;
+      s.phi =
+        this.cinematicFlyIn.startPhi +
+        (this.cinematicFlyIn.endPhi - this.cinematicFlyIn.startPhi) * ease;
+      s.radius =
+        this.cinematicFlyIn.startRadius +
+        (this.cinematicFlyIn.endRadius - this.cinematicFlyIn.startRadius) * ease;
+      s.lookAt.lerpVectors(this.cinematicFlyIn.startLookAt, this.cinematicFlyIn.endLookAt, ease);
+      if (rawT >= 1) {
+        this.cinematicFlyIn = null;
+      }
+    } else {
+      const damp = Math.min(1, dt * 7.5);
+      const idleOffset =
+        this.idleOrbitActive && !this.isDraggingOrbit && elapsedSec > 0
+          ? Math.sin(elapsedSec * 0.35) * 0.085
+          : 0;
+      s.theta += (s.targetTheta + idleOffset - s.theta) * damp;
+      s.phi += (s.targetPhi - s.phi) * damp;
+      s.radius += (s.targetRadius - s.radius) * damp;
+      s.lookAt.lerp(s.targetLookAt, damp);
+    }
 
     if (this.cinematicFocusTimer > 0) {
       this.cinematicFocusTimer -= dt;
@@ -714,8 +825,8 @@ export class GothicScene3D {
    * Step all 3D animations, flickering fire braziers, piece slam arcs, and rigid-body stone shatter physics
    */
   stepFrame(dt, elapsedSec = 0) {
-    // 1. Update Camera Orbit & Shake
-    this._updateCameraTransform(dt);
+    // 1. Update Camera Orbit, Cinematic Fly-In & Shake
+    this._updateCameraTransform(dt, elapsedSec);
 
     // 2. Step Rigid-Body Stone Shatter Physics
     this.shatterPhysics.step(dt);
