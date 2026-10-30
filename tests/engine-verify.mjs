@@ -52,7 +52,7 @@ runSuite('1. Master Configuration (Brand Title XcardO, Isometric Default Camera,
   assert.equal(GAME_CONFIG.CARDS_UNLOCK_LEVEL, 3);
   assert.equal(CAMERA_PRESETS[0].id, 'high_cathedral', 'First camera preset must be Isometric View (high_cathedral)');
   assert.equal(CATHEDRAL_LEVELS.length, 36);
-  assert.equal(ARCANA_CARDS.length, 20);
+  assert.equal(ARCANA_CARDS.length, 40, 'Grimoire must contain 40 War-Scroll cards (I through XL)');
   assert.equal(CRYPT_TRIALS.length, 5);
   assert.equal(FANTASY_HEROES.length, 6);
   assert.equal(INQUISITOR_BOSSES.length, 6);
@@ -285,14 +285,16 @@ runSuite('10. AppController Screen Navigation, 6 Fantasy Hero Portraits & V1 Bat
   assert.ok(mockRoot.innerHTML.includes('aria-live="polite"'), 'Toast banner must expose aria-live="polite"');
 
   app.navigate('campaign');
-  assert.ok(mockRoot.innerHTML.includes('Story Chapters & Strongholds'));
+  assert.ok(mockRoot.innerHTML.includes('Story Chapters'));
   assert.ok(mockRoot.innerHTML.includes('The Story So Far'));
+  assert.ok(mockRoot.innerHTML.includes('roguelike-boons-bar'), 'Campaign Map must include Roguelike Expedition Boons');
   app.navigate('reliquary');
   assert.ok(mockRoot.innerHTML.includes('Playable Fantasy War Heroes'));
 
-  // Level 1 Battle HUD must display the v1 Sealed War-Scroll Banner (No Cards until Level 3)
+  // Level 1 Battle HUD must display the v1 Sealed War-Scroll Banner (No Cards until Level 3) + Turn-1 Hero Skill [Q]
   app.startCampaignLevel(1);
   assert.ok(mockRoot.innerHTML.includes('WAR-SCROLL SHOP & CARDS UNLOCK AT LEVEL 3'));
+  assert.ok(mockRoot.innerHTML.includes('hero-skill-btn'), 'Level 1 HUD must display the Turn-1 Hero Active Skill button');
   assert.ok(mockRoot.innerHTML.includes('tactical-action-prompt'), 'Battle HUD must display the contextual Tactical Action Prompt');
 
   // Level 3 Battle HUD must display the 3-Slot War-Scroll Shop with mini Tarot SVG art
@@ -309,14 +311,14 @@ runSuite('10. AppController Screen Navigation, 6 Fantasy Hero Portraits & V1 Bat
   }
   assert.equal(heroSVGs.size, 6, 'All 6 Playable Fantasy War Heroes must have unique SVG portraits');
 
-  // Verify all 20 War-Scroll Cards & 6 Warlord Boss Portraits render unique bespoke SVG art
+  // Verify all 40 War-Scroll Cards & 6 Warlord Boss Portraits render unique bespoke SVG art
   const tarotSVGs = new Set();
   for (const card of ARCANA_CARDS) {
     const svg = renderTarotArtSVG(card).replace(/tarot_[a-z0-9_]+/g, 'ID');
     assert.ok(svg.includes('<svg'), `Card ${card.id} must render SVG`);
     tarotSVGs.add(svg);
   }
-  assert.equal(tarotSVGs.size, 20, 'All 20 War-Scroll cards must have unique bespoke vector artwork');
+  assert.equal(tarotSVGs.size, 40, 'All 40 War-Scroll cards must have unique bespoke vector artwork');
 
   const bossSVGs = new Set();
   for (const boss of INQUISITOR_BOSSES) {
@@ -328,4 +330,108 @@ runSuite('10. AppController Screen Navigation, 6 Fantasy Hero Portraits & V1 Bat
   assert.ok(renderRoseWindowSVG().includes('rose-window-svg'));
 });
 
-console.log(`\nALL ${passed}/10 XCARDO VERIFICATION SUITES PASSED!`);
+// 11. Longest-Run Only Line Scoring & First-Move Komi Balance
+runSuite('11. Longest-Run Only Line Scoring (No Sub-Run Snowball) & Second-Player Komi Counter-Initiative', () => {
+  const size = 5;
+  const board = Array.from({ length: size }, () =>
+    Array.from({ length: size }, () => ({ symbol: null, locked: 0, anomaly: null }))
+  );
+  // Place 5 contiguous X stones along Row 0
+  for (let c = 0; c < 5; c++) {
+    board[0][c].symbol = 'X';
+  }
+  const patterns = scanBoardPatterns(board, size, new Set());
+  const linePatterns = patterns.filter((p) => p.type === 'LINE');
+  assert.equal(linePatterns.length, 1, 'A 5-stone line must emit ONLY the single longest run (no 3-run/4-run sub-segments)');
+  assert.equal(linePatterns[0].length, 5);
+  assert.equal(linePatterns[0].points, 3);
+
+  // Verify Second-Player Komi Counter-Initiative on O's first stone
+  const bus = new EventBus();
+  const eng = new BattleEngine(bus, { mode: 'campaign', levelNumber: 1 });
+  eng.placePiece(2, 2); // X moves first
+  assert.equal(eng.activePlayer, 'O');
+  eng.placePiece(1, 1); // O moves second and receives +1 Komi VP
+  assert.equal(eng.scores.O, 1, 'Second player (O) must receive +1 Komi VP on first placement');
+});
+
+// 12. Deterministic Undo (PRNG State Saved & 3-Undo Cap) & Position-Independent Crater Lock Timing
+runSuite('12. Deterministic Undo (PRNG State Restored, Capped at 3) & Position-Independent Bomb Crater Locks', () => {
+  const bus = new EventBus();
+  const eng = new BattleEngine(bus, { mode: 'campaign', levelNumber: 3, seed: 'UNDO-TEST-SEED' });
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 5; c++) {
+      eng.board[r][c].obstacle = null;
+      eng.board[r][c].anomaly = null;
+    }
+  }
+  eng.board[2][2].obstacle = 'reliquary_coffer';
+
+  // Crack the chest at (2,2) by placing at (2,1)
+  eng.placePiece(2, 1);
+  const titheAfterFirst = eng.tithe.X;
+  const boardJsonFirst = JSON.stringify(eng.board);
+
+  // Undo and replay the exact same move -> must produce the exact same chest outcome!
+  const undoRes = eng.undoLastAction();
+  assert.equal(undoRes.ok, true);
+  assert.equal(eng.undosRemaining, 2, 'Undos remaining must decrement from 3 to 2');
+
+  eng.placePiece(2, 1);
+  assert.equal(eng.tithe.X, titheAfterFirst, 'Replaying after Undo must yield identical RNG chest outcome');
+  assert.equal(JSON.stringify(eng.board), boardJsonFirst, 'Board state after Undo + replay must be 100% deterministic');
+
+  // Verify two-phase bomb crater lock timing is identical whether stone is above (0,2) or below (4,2) the bomb (2,2)
+  const bombEng = new BattleEngine(bus, { mode: 'skirmish', boardSize: 5 });
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 5; c++) {
+      bombEng.board[r][c].obstacle = null;
+      bombEng.board[r][c].anomaly = null;
+    }
+  }
+  bombEng.board[1][2].symbol = 'X';
+  bombEng.board[3][2].symbol = 'X';
+  bombEng.board[2][2].anomaly = 'cursed_censer';
+  bombEng.board[2][2].bombTimer = 1;
+  bombEng.endTurn();
+  assert.equal(bombEng.board[1][2].locked, 1, 'Crater above bomb must have locked === 1');
+  assert.equal(bombEng.board[3][2].locked, 1, 'Crater below bomb must ALSO have locked === 1 (position-independent)');
+});
+
+// 13. Depth-3 Alpha-Beta AI, Telegraphed Boss Rituals, Turn-1 Hero Active Skills & Mobile 375x812 Camera
+runSuite('13. Depth-3 Alpha-Beta AI, Telegraphed Boss Rituals, Turn-1 Hero Skills & Mobile 375x812 Portrait Camera', () => {
+  const bus = new EventBus();
+  const eng = new BattleEngine(bus, { mode: 'campaign', levelNumber: 1, heroId: 'hero_paladin' });
+  eng.placePiece(2, 2); // X places at (2,2), ending turn -> O's turn
+  eng.placePiece(0, 0); // O places at (0,0), ending turn -> X's turn
+
+  // Use Paladin's Turn-1 Active Ability (Solar Bulwark) on friendly stone (2,2) on Level 1!
+  assert.equal(eng.canUseHeroAbility('X'), true, 'Hero Active Skill must be usable on Level 1');
+  const abRes = eng.activateHeroAbility('X', [[2, 2]]);
+  assert.equal(abRes.ok, true);
+  assert.equal(eng.board[2][2].shield, 2, 'Solar Bulwark must grant 2T Aegis Shield to (2,2)');
+  assert.equal(eng.heroAbilityCooldown.X, 3);
+
+  // Verify Telegraphed Boss Rituals on Level 3+
+  const bossEng = new BattleEngine(bus, { mode: 'campaign', levelNumber: 3 });
+  bossEng._telegraphBossRitual([]);
+  assert.ok(bossEng.pendingBossRitual, 'Boss must telegraph ritual target 1 turn ahead into pendingBossRitual');
+  assert.equal(typeof bossEng.pendingBossRitual.r, 'number');
+  assert.equal(typeof bossEng.pendingBossRitual.c, 'number');
+
+  // Verify Depth-3 Alpha-Beta AI executes quickly and returns a valid tactical move
+  const t0 = Date.now();
+  const d3Move = selectBestAIMove(bossEng, 'O', 6);
+  const elapsedMs = Date.now() - t0;
+  assert.ok(d3Move, 'Tier 6 Depth-3 Alpha-Beta AI must return a move');
+  assert.ok(elapsedMs < 500, `Tier 6 Depth-3 move took ${elapsedMs}ms (must be fast)`);
+
+  // Verify Mobile 375x812 Portrait Camera Zoom Multiplier in GothicScene3D
+  const scene3d = new GothicScene3D(null, bus, new SaveManager());
+  const portraitMult = scene3d._getPortraitZoomMultiplier(375 / 812);
+  const landscapeMult = scene3d._getPortraitZoomMultiplier(1920 / 1080);
+  assert.ok(portraitMult > 1.7, `375x812 portrait zoom multiplier (${portraitMult}) must pull camera back to fit 100% of board`);
+  assert.equal(landscapeMult, 1.0);
+});
+
+console.log(`\nALL ${passed}/13 XCARDO VERIFICATION SUITES PASSED!`);

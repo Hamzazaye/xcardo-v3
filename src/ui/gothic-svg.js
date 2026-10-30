@@ -189,6 +189,168 @@ export function renderTarotArtSVG(card) {
       `;
       break;
 
+    case 'sunspear_volley':
+      motif = `
+        <line x1="26" y1="78" x2="88" y2="18" stroke="${pal.secondary}" stroke-width="3.5" stroke-linecap="round"/>
+        <polygon points="94,12 72,20 84,32" fill="#ffffff" stroke="${pal.secondary}" stroke-width="1.6"/>
+        <circle cx="60" cy="48" r="18" fill="${pal.primary}" fill-opacity="0.35" stroke="${pal.secondary}" stroke-width="1.8"/>
+      `;
+      break;
+
+    case 'phalanx_wall':
+      motif = `
+        <rect x="20" y="34" width="24" height="30" rx="5" fill="${pal.primary}" fill-opacity="0.6" stroke="${pal.secondary}" stroke-width="2"/>
+        <rect x="48" y="30" width="24" height="34" rx="5" fill="${pal.primary}" fill-opacity="0.8" stroke="#ffffff" stroke-width="2.2"/>
+        <rect x="76" y="34" width="24" height="30" rx="5" fill="${pal.primary}" fill-opacity="0.6" stroke="${pal.secondary}" stroke-width="2"/>
+      `;
+      break;
+
+    case 'column_phalanx':
+      motif = `
+        <rect x="46" y="14" width="28" height="20" rx="4" fill="${pal.primary}" fill-opacity="0.6" stroke="${pal.secondary}" stroke-width="2"/>
+        <rect x="44" y="38" width="32" height="22" rx="4" fill="${pal.primary}" fill-opacity="0.85" stroke="#ffffff" stroke-width="2.2"/>
+        <rect x="46" y="64" width="28" height="20" rx="4" fill="${pal.primary}" fill-opacity="0.6" stroke="${pal.secondary}" stroke-width="2"/>
+      `;
+      break;
+
+    case 'diagonal_scythe':
+      motif = `
+        <path d="M24,74 Q54,20 94,22 Q66,42 52,74 Z" fill="${pal.primary}" fill-opacity="0.65" stroke="#ffffff" stroke-width="2"/>
+        <line x1="22" y1="78" x2="96" y2="18" stroke="${pal.secondary}" stroke-width="2.2" stroke-dasharray="5 3"/>
+      `;
+      break;
+
+    case 'soul_harvest':
+      motif = `
+        <circle cx="42" cy="42" r="12" fill="${pal.primary}" stroke="${pal.secondary}" stroke-width="2"/>
+        <circle cx="78" cy="42" r="12" fill="${pal.primary}" stroke="${pal.secondary}" stroke-width="2"/>
+        <circle cx="60" cy="62" r="14" fill="${pal.secondary}" fill-opacity="0.75" stroke="#ffffff" stroke-width="2.2"/>
+      `;
+      break;
+
+    case 'chrono_reset':
+      motif = `
+        <polygon points="40,20 80,20 64,48 80,76 40,76 56,48" fill="${pal.primary}" fill-opacity="0.55" stroke="#ffffff" stroke-width="2.2"/>
+        <circle cx="60" cy="48" r="5" fill="${pal.secondary}"/>
+      `;
+      break;
+
+    case 'reliquary_summon':
+      motif = `
+        <rect x="34" y="38" width="52" height="36" rx="4" fill="${pal.primary}" fill-opacity="0.68" stroke="${pal.secondary}" stroke-width="2.4"/>
+        <path d="M32,38 Q60,20 88,38 Z" fill="${pal.secondary}" fill-opacity="0.55" stroke="#ffffff" stroke-width="2"/>
+        <rect x="55" y="46" width="10" height="14" rx="2" fill="#ffffff"/>
+      `;
+      break;
+
+    case 'bomb_disposal':
+      motif = `
+        <circle cx="56" cy="54" r="22" fill="${pal.dark}" stroke="${pal.secondary}" stroke-width="2.6"/>
+        <path d="M70,36 Q82,22 92,26" fill="none" stroke="#ffffff" stroke-width="2.5"/>
+        <polygon points="92,16 96,26 104,26 97,32 100,40 92,34 84,40 87,32 80,26 88,26" fill="${pal.secondary}"/>
+      `;
+      break;
+
+    case 'starlight_march':
+      motif = `
+        <polygon points="60,14 72,38 98,42 78,60 84,84 60,70 36,84 42,60 22,42 48,38" fill="${pal.primary}" fill-opacity="0.6" stroke="#ffffff" stroke-width="2"/>
+        <circle cx="60" cy="50" r="10" fill="${pal.secondary}"/>
+      `;
+      break;
+
+    case 'arcane_refinery':
+      motif = `
+        <circle cx="48" cy="48" r="16" fill="none" stroke="${pal.secondary}" stroke-width="3"/>
+        <line x1="64" y1="48" x2="94" y2="48" stroke="#ffffff" stroke-width="3.2"/>
+        <line x1="82" y1="48" x2="82" y2="62" stroke="${pal.secondary}" stroke-width="3"/>
+        <line x1="92" y1="48" x2="92" y2="66" stroke="${pal.secondary}" stroke-width="3"/>
+      `;
+      break;
+
+    case 'warhorn_anthem':
+      motif = `
+        <path d="M28,62 Q48,64 78,26 L92,44 Q58,76 28,62 Z" fill="${pal.primary}" fill-opacity="0.7" stroke="#ffffff" stroke-width="2.2"/>
+        <circle cx="85" cy="35" r="11" fill="${pal.secondary}" fill-opacity="0.5" stroke="#ffffff" stroke-width="2"/>
+      `;
+      break;
+
+    case 'obsidian_shatter_2x2':
+      motif = `
+        <rect x="32" y="22" width="24" height="24" fill="${pal.primary}" fill-opacity="0.65" stroke="#ffffff" stroke-width="1.8"/>
+        <rect x="64" y="22" width="24" height="24" fill="${pal.primary}" fill-opacity="0.65" stroke="${pal.secondary}" stroke-width="1.8"/>
+        <rect x="32" y="52" width="24" height="24" fill="${pal.primary}" fill-opacity="0.65" stroke="${pal.secondary}" stroke-width="1.8"/>
+        <rect x="64" y="52" width="24" height="24" fill="${pal.primary}" fill-opacity="0.65" stroke="#ffffff" stroke-width="1.8"/>
+      `;
+      break;
+
+    case 'blood_pact_strike':
+      motif = `
+        <polygon points="60,12 72,56 60,84 48,56" fill="${pal.primary}" stroke="#ffffff" stroke-width="2.2"/>
+        <path d="M36,44 Q60,56 84,44" fill="none" stroke="${pal.secondary}" stroke-width="3"/>
+        <circle cx="60" cy="34" r="6" fill="#ffffff"/>
+      `;
+      break;
+
+    case 'mirror_column':
+      motif = `
+        <line x1="20" y1="48" x2="100" y2="48" stroke="#ffffff" stroke-width="2.5" stroke-dasharray="5 3"/>
+        <polygon points="40,20 60,42 80,20" fill="${pal.primary}" fill-opacity="0.6" stroke="${pal.secondary}" stroke-width="2"/>
+        <polygon points="40,76 60,54 80,76" fill="${pal.secondary}" fill-opacity="0.5" stroke="#ffffff" stroke-width="2"/>
+      `;
+      break;
+
+    case 'corner_citadel':
+      motif = `
+        <rect x="24" y="20" width="16" height="16" fill="${pal.secondary}" stroke="#ffffff" stroke-width="1.5"/>
+        <rect x="80" y="20" width="16" height="16" fill="${pal.secondary}" stroke="#ffffff" stroke-width="1.5"/>
+        <rect x="24" y="60" width="16" height="16" fill="${pal.secondary}" stroke="#ffffff" stroke-width="1.5"/>
+        <rect x="80" y="60" width="16" height="16" fill="${pal.secondary}" stroke="#ffffff" stroke-width="1.5"/>
+        <rect x="40" y="36" width="40" height="24" fill="none" stroke="${pal.primary}" stroke-width="2"/>
+      `;
+      break;
+
+    case 'void_banish_obstacle':
+      motif = `
+        <polygon points="38,76 48,28 72,28 82,76" fill="${pal.primary}" fill-opacity="0.45" stroke="${pal.secondary}" stroke-width="2"/>
+        <polyline points="26,38 58,48 48,58 92,66" fill="none" stroke="#ffffff" stroke-width="3"/>
+      `;
+      break;
+
+    case 'golden_consecration':
+      motif = `
+        <circle cx="60" cy="48" r="26" fill="${pal.primary}" fill-opacity="0.5" stroke="#ffffff" stroke-width="2.4"/>
+        <polygon points="60,18 68,40 90,48 68,56 60,78 52,56 30,48 52,40" fill="${pal.secondary}" stroke="#ffffff" stroke-width="1.6"/>
+        <circle cx="60" cy="48" r="6" fill="#281805"/>
+      `;
+      break;
+
+    case 'temporal_echo':
+      motif = `
+        <circle cx="48" cy="48" r="20" fill="none" stroke="${pal.secondary}" stroke-width="2" stroke-dasharray="3 3"/>
+        <circle cx="70" cy="48" r="20" fill="${pal.primary}" fill-opacity="0.55" stroke="#ffffff" stroke-width="2.4"/>
+        <polyline points="70,36 70,48 80,54" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round"/>
+      `;
+      break;
+
+    case 'inquisitor_edict':
+      motif = `
+        <line x1="18" y1="36" x2="102" y2="36" stroke="${pal.secondary}" stroke-width="3"/>
+        <line x1="18" y1="60" x2="102" y2="60" stroke="${pal.secondary}" stroke-width="3"/>
+        <circle cx="36" cy="48" r="7" fill="${pal.primary}" stroke="#ffffff" stroke-width="1.8"/>
+        <circle cx="60" cy="48" r="7" fill="${pal.primary}" stroke="#ffffff" stroke-width="1.8"/>
+        <circle cx="84" cy="48" r="7" fill="${pal.primary}" stroke="#ffffff" stroke-width="1.8"/>
+      `;
+      break;
+
+    case 'apocrypha_omni':
+      motif = `
+        <polygon points="60,12 92,30 92,66 60,84 28,66 28,30" fill="${pal.primary}" fill-opacity="0.52" stroke="#ffffff" stroke-width="2.2"/>
+        <polygon points="60,22 82,58 38,58" fill="none" stroke="${pal.secondary}" stroke-width="2"/>
+        <polygon points="60,74 82,38 38,38" fill="none" stroke="#ffffff" stroke-width="2"/>
+        <circle cx="60" cy="48" r="7" fill="${pal.secondary}"/>
+      `;
+      break;
+
     case 'cathedral_judgment':
     default:
       motif = `

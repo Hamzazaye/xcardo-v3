@@ -117,6 +117,11 @@ body {
   top: 74px;
   left: 50%;
   transform: translateX(-50%);
+  width: max-content;
+  max-width: min(92vw, 560px);
+  text-align: center;
+  line-height: 1.35;
+  white-space: normal;
   background: linear-gradient(180deg, rgba(32, 19, 44, 0.97), rgba(14, 9, 22, 0.98));
   border: 1px solid var(--gold-bright);
   box-shadow: 0 12px 34px rgba(0, 0, 0, 0.88), 0 0 22px rgba(212, 168, 83, 0.42);
@@ -2864,5 +2869,478 @@ button:active:not(:disabled),
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================================
+   PHASE 1–3 EXPANSION: HERO SKILLS, ROGUELIKE BOONS, DAILY SEED, TUTORIAL,
+   40-SCROLL DECKBUILDER, ARABIC RTL & 375×812 MOBILE RESPONSIVE FIX
+   ============================================================================ */
+
+.btn-badge-txt {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--gold-bright);
+  letter-spacing: 0.04em;
+}
+
+.penitence-bell-dock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hero-skill-btn {
+  border-color: rgba(56, 189, 248, 0.52);
+}
+
+.hero-skill-btn.ready {
+  border-color: #38bdf8;
+  color: #e0f2fe;
+  background: linear-gradient(180deg, rgba(14, 116, 144, 0.78), rgba(12, 34, 62, 0.94));
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.48);
+}
+
+.hero-skill-btn.selected-skill {
+  border-color: #fbbf24;
+  box-shadow: 0 0 22px rgba(251, 191, 36, 0.78);
+}
+
+@keyframes scorePop {
+  0% {
+    transform: scale(1);
+    color: #ffffff;
+  }
+  40% {
+    transform: scale(1.38);
+    color: #fde68a;
+    text-shadow: 0 0 18px rgba(251, 191, 36, 0.95);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.score-pulse {
+  display: inline-block;
+  animation: scorePop 0.55s var(--ease-out-expo);
+}
+
+/* Roguelike Expedition Boon Bar */
+.roguelike-boons-bar {
+  margin: 10px 0 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(16, 12, 28, 0.88);
+  border: 1px solid rgba(212, 168, 83, 0.35);
+}
+
+.roguelike-boons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.roguelike-boon-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: rgba(26, 19, 42, 0.88);
+  border: 1px solid rgba(212, 168, 83, 0.25);
+  color: var(--text-parchment);
+  text-align: left;
+  cursor: pointer;
+}
+
+.roguelike-boon-card.active,
+.roguelike-boon-card:hover {
+  border-color: var(--gold-bright);
+  background: linear-gradient(135deg, rgba(180, 83, 9, 0.42), rgba(32, 20, 48, 0.95));
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.32);
+}
+
+.boon-icon {
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.boon-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.boon-copy strong {
+  font-family: var(--font-display);
+  font-size: 0.76rem;
+  color: var(--gold-bright);
+}
+
+.boon-copy small {
+  font-size: 0.66rem;
+  color: var(--text-muted);
+  line-height: 1.25;
+}
+
+/* 40-Card Custom Deckbuilder Actions */
+.codex-tarot-card.in-custom-deck {
+  border-color: #38bdf8;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.26);
+}
+
+.codex-card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.codex-card-actions .btn-gothic-small {
+  flex: 1;
+}
+
+.btn-gothic-small.deck-active {
+  background: linear-gradient(180deg, rgba(14, 116, 144, 0.82), rgba(12, 34, 62, 0.95));
+  border-color: #38bdf8;
+  color: #e0f2fe;
+}
+
+/* Daily Seed Challenge Showcase */
+.daily-seed-showcase {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  border-color: rgba(251, 191, 36, 0.55);
+  background: linear-gradient(135deg, rgba(44, 24, 14, 0.92), rgba(18, 12, 32, 0.95));
+}
+
+.daily-seed-info {
+  flex: 1;
+  min-width: 240px;
+}
+
+.daily-seed-info h3 {
+  font-family: var(--font-display);
+  font-size: 0.96rem;
+  color: var(--gold-bright);
+  margin: 3px 0 5px;
+}
+
+.daily-seed-info p {
+  font-size: 0.76rem;
+  color: var(--text-parchment);
+  margin-bottom: 8px;
+}
+
+.daily-record-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Interactive Tutorial Modal */
+.tutorial-modal {
+  max-width: 580px;
+}
+
+.tutorial-step-body {
+  padding: 14px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tutorial-step-body h3 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--gold-bright);
+}
+
+.tutorial-step-body p {
+  font-size: 0.84rem;
+  line-height: 1.55;
+  color: var(--text-parchment);
+}
+
+.tutorial-kbd-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: rgba(10, 7, 18, 0.85);
+  border: 1px solid rgba(212, 168, 83, 0.28);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.tutorial-kbd-strip kbd {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(28, 20, 44, 0.95);
+  border: 1px solid var(--gold-reliquary);
+  color: var(--gold-bright);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+.tutorial-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+/* Arabic Right-to-Left (RTL) Support */
+[dir='rtl'] .roguelike-boon-card,
+[dir='rtl'] .visual-char-info,
+[dir='rtl'] .act-story-narrative-box,
+[dir='rtl'] .act-boss-info {
+  text-align: right;
+}
+
+[dir='rtl'] .enemy-commander-row {
+  flex-direction: row-reverse;
+}
+
+/* ============================================================================
+   MOBILE PORTRAIT (375×812 & <= 768px) ZERO-OVERFLOW RESPONSIVE LAYOUT
+   ============================================================================ */
+@media (max-width: 768px) {
+  .gothic-ui-frame {
+    padding: max(6px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right))
+      max(6px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+    overflow-x: hidden;
+  }
+
+  .gothic-toast {
+    top: 58px;
+    max-width: 92vw;
+    font-size: 0.76rem;
+    padding: 7px 14px;
+  }
+
+  .sanctum-topbar {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 6px 8px;
+  }
+
+  .brand-logo-nav {
+    height: 26px;
+  }
+
+  .sanctum-nav-tabs {
+    order: 3;
+    width: 100%;
+    justify-content: space-between;
+    gap: 4px;
+  }
+
+  .nav-tab-btn {
+    flex: 1 1 auto;
+    min-height: 32px;
+    padding: 4px 6px;
+    font-size: 0.64rem;
+    justify-content: center;
+  }
+
+  .sanctum-currencies {
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .currency-pill {
+    padding: 3px 7px;
+    font-size: 0.66rem;
+  }
+
+  .icon-btn {
+    min-width: 30px;
+    min-height: 30px;
+    width: 30px;
+    height: 30px;
+  }
+
+  /* Hub Main Menu on Mobile 375×812 */
+  .hub-logo-centerpiece {
+    margin-top: 2px;
+  }
+
+  .master-logo-crest-img {
+    max-width: min(210px, 56vw);
+    height: auto;
+  }
+
+  .hub-bottom-visual-dock {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 58vh;
+    overflow-y: auto;
+    width: 100%;
+  }
+
+  .visual-hero-card,
+  .visual-boss-card {
+    padding: 8px 10px !important;
+  }
+
+  .visual-portrait-big {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .btn-play-monumental {
+    padding: 10px 16px !important;
+    font-size: 0.92rem !important;
+    width: 100%;
+  }
+
+  .hub-mini-tiles-row {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .hub-camera-bar {
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 100%;
+  }
+
+  /* Battle HUD on Mobile 375×812 — Compact Topbar & Bottom Dock with Zero Horizontal Overflow */
+  .battle-hud-topbar {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+    width: 100%;
+  }
+
+  .hud-wing {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    padding: 6px 8px !important;
+  }
+
+  .hud-commander-avatar {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .score-big {
+    font-size: 1.1rem !important;
+  }
+
+  .wing-sub-row {
+    font-size: 0.6rem !important;
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+
+  .hud-center-medallion {
+    grid-column: 1 / -1;
+    order: 3;
+    padding: 6px 8px !important;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .hud-utility-strip {
+    gap: 3px;
+  }
+
+  .hud-tool-btn {
+    padding: 3px 6px;
+    font-size: 0.62rem;
+  }
+
+  .hud-kbd {
+    display: none;
+  }
+
+  .tactical-action-prompt {
+    font-size: 0.64rem;
+    padding: 4px 10px;
+    max-width: 100%;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .battle-hud-bottom {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .penitence-bell-dock {
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .bell-ultimate-btn {
+    flex: 1;
+    padding: 6px 8px;
+    font-size: 0.64rem;
+    justify-content: center;
+  }
+
+  .v1-sealed-scrolls-banner {
+    padding: 7px 10px;
+    gap: 8px;
+    max-width: 100%;
+  }
+
+  .sealed-copy h4 {
+    font-size: 0.72rem;
+  }
+
+  .sealed-copy p {
+    font-size: 0.62rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .v1-battle-cards-zone {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .v1-shop-strip {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    width: 100%;
+    padding: 6px 8px;
+  }
+
+  .dark-tarot-hand {
+    width: 100%;
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding-bottom: 2px;
+  }
+
+  .tarot-hand-card {
+    width: 104px;
+    flex-shrink: 0;
+  }
+
+  .camera-quick-dock {
+    display: none;
   }
 }

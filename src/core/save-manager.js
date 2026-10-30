@@ -50,6 +50,15 @@ export class SaveManager {
       upgradedCards: [],
       customDeck: [],
 
+      // Roguelike Expedition Boon & Daily Seed Leaderboard
+      selectedBoon: 'boon_shrine_aegis',
+      dailyBestScores: {}, // { [seedStr]: { score, turns, heroId, timestamp } }
+
+      // Accessibility, Quality Presets & Localization
+      qualityPreset: 'high', // 'low' | 'high' | 'ultra'
+      language: 'en', // 'en' | 'ar'
+      tutorialCompleted: false,
+
       // Audio
       sfxVolume: 0.85,
       musicVolume: 0.45,
@@ -187,5 +196,64 @@ export class SaveManager {
     this.state.upgradedCards.push(cardId);
     this.save();
     return { ok: true };
+  }
+
+  toggleCustomDeckCard(cardId) {
+    if (!Array.isArray(this.state.customDeck)) {
+      this.state.customDeck = [];
+    }
+    const idx = this.state.customDeck.indexOf(cardId);
+    if (idx >= 0) {
+      this.state.customDeck.splice(idx, 1);
+    } else {
+      this.state.customDeck.push(cardId);
+    }
+    this.save();
+    return { inDeck: idx < 0, count: this.state.customDeck.length };
+  }
+
+  selectBoon(boonId) {
+    this.state.selectedBoon = boonId;
+    this.save();
+  }
+
+  setQualityPreset(preset) {
+    if (['low', 'high', 'ultra'].includes(preset)) {
+      this.state.qualityPreset = preset;
+      this.save();
+    }
+  }
+
+  setLanguage(lang) {
+    if (['en', 'ar'].includes(lang)) {
+      this.state.language = lang;
+      this.save();
+    }
+  }
+
+  setTutorialCompleted(done = true) {
+    this.state.tutorialCompleted = Boolean(done);
+    this.save();
+  }
+
+  recordDailySeedScore(seedStr, score, turns, heroId = 'hero_paladin') {
+    if (!this.state.dailyBestScores || typeof this.state.dailyBestScores !== 'object') {
+      this.state.dailyBestScores = {};
+    }
+    const prev = this.state.dailyBestScores[seedStr];
+    const composite = score * 100 - turns;
+    const prevComposite = prev ? prev.score * 100 - prev.turns : -9999;
+    if (!prev || composite > prevComposite) {
+      this.state.dailyBestScores[seedStr] = {
+        score,
+        turns,
+        heroId,
+        composite,
+        timestamp: Date.now(),
+      };
+      this.save();
+      return { isNewRecord: true, record: this.state.dailyBestScores[seedStr] };
+    }
+    return { isNewRecord: false, record: prev };
   }
 }

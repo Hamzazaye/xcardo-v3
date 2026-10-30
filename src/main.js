@@ -28,6 +28,11 @@ export function bootstrapXcardoV3() {
 
   if (typeof window !== 'undefined') {
     window.__XCARDO_V3__ = { eventBus, saveManager, scene3d, soundEngine, app };
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
   }
 
   return { eventBus, saveManager, scene3d, soundEngine, app };

@@ -215,6 +215,74 @@ export class GothicSoundEngine {
     osc.stop(now + 0.05);
   }
 
+  playHeroAbility() {
+    const ctx = this._ensureContext();
+    const vol = this.getSfxVolume();
+    if (!ctx || vol <= 0) return;
+
+    const now = ctx.currentTime;
+    const notes = [293.66, 440, 587.33, 880];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + i * 0.045);
+      gain.gain.setValueAtTime(0.16 * vol, now + i * 0.045);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.045 + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + i * 0.045);
+      osc.stop(now + i * 0.045 + 0.36);
+    });
+  }
+
+  playBossWarning() {
+    const ctx = this._ensureContext();
+    const vol = this.getSfxVolume();
+    if (!ctx || vol <= 0) return;
+
+    const now = ctx.currentTime;
+    const freqs = [110, 116.54]; // Dissonant tritone/semitone horn warning
+    freqs.forEach((f) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(f, now);
+      osc.frequency.linearRampToValueAtTime(f * 0.92, now + 0.55);
+
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(620, now);
+
+      gain.gain.setValueAtTime(0.18 * vol, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.58);
+      osc.connect(lp);
+      lp.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.6);
+    });
+  }
+
+  playScoreTick() {
+    const ctx = this._ensureContext();
+    const vol = this.getSfxVolume();
+    if (!ctx || vol <= 0) return;
+
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(660, now);
+    osc.frequency.exponentialRampToValueAtTime(880, now + 0.06);
+    gain.gain.setValueAtTime(0.08 * vol, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.08);
+  }
+
   startMusic(trackIndex = 0) {
     if (typeof window === 'undefined' || typeof Audio === 'undefined') return;
     this.currentTrackIndex = ((trackIndex % SOUNDTRACKS.length) + SOUNDTRACKS.length) % SOUNDTRACKS.length;

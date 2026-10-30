@@ -13,6 +13,7 @@ import {
   CAMERA_PRESETS,
   BLOOD_OATHS,
   PENITENCE_BELLS,
+  ROGUELIKE_BOONS,
   ARCANA_CARDS,
   CATHEDRAL_ACTS,
   CATHEDRAL_LEVELS,
@@ -25,6 +26,7 @@ import {
   getLevelByNumber,
   getFantasyHeroById,
 } from '../data/gothic-config.js';
+import { SeededRNG } from '../core/rng.js';
 import { BattleEngine } from '../engine/game-state.js';
 import { selectBestAIMove, scanEnemyThreatCells } from '../engine/ai-brain.js';
 import { SACRED_GEOMETRY_SHAPES } from '../engine/pattern-detector.js';
@@ -55,6 +57,12 @@ export class AppController {
     this.showMiniTacticalGrid = false;
     this.showTacticalIntel = true;
     this.showStoryModal = false;
+    this.showTutorialModal = false;
+    this.tutorialStep = 0;
+    this.kbCursor = { r: 2, c: 2 };
+    this.kbActive = false;
+    this.lastScores = { X: 0, O: 0 };
+    this.scorePulse = { X: false, O: false };
     this.toastMessage = null;
     this.toastTimer = null;
 
@@ -66,9 +74,33 @@ export class AppController {
       mode: 'skirmish',
     };
 
+    this._syncDocumentDirection();
     this._bindEvents();
     this._setupDemoAltar();
     this.render();
+  }
+
+  t(enText, arText) {
+    const lang = this.save?.getState()?.language || 'en';
+    return lang === 'ar' ? arText : enText;
+  }
+
+  _syncDocumentDirection() {
+    if (typeof document === 'undefined') return;
+    const lang = this.save?.getState()?.language || 'en';
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+  }
+
+  announceToScreenReader(message) {
+    if (typeof document === 'undefined') return;
+    const el = document.getElementById('sr-announcer');
+    if (el) {
+      el.textContent = '';
+      setTimeout(() => {
+        el.textContent = message;
+      }, 20);
+    }
   }
 
   _setupDemoAltar() {
@@ -110,10 +142,11 @@ export class AppController {
 
     this.bus.on('3d:cancelSelection', () => {
       if (this.currentScreen !== 'battle' || !this.engine) return;
-      if (this.engine.selectedCardIndex !== null) {
+      if (this.engine.selectedCardIndex !== null || this.engine.selectedHeroAbility) {
         this.engine.selectedCardIndex = null;
+        this.engine.selectedHeroAbility = false;
         this.engine.pendingTargets = [];
-        this.showToast('War-Scroll selection cancelled.');
+        this.showToast(this.t('Selection cancelled.', 'تم إلغاء التحديد.'));
         this.render();
       }
     });
@@ -130,7 +163,7 @@ export class AppController {
       }
     });
 
-    this.bus.on('3d:patternAligned', ({ patterns = [] }) => {
+    this.bus.on('3d:patternAligned', ({ patterns = [], scores }) => {
       if (patterns.length > 0) {
         const topTier = patterns.some((p) => p.tier === 'grand')
           ? 'grand'
@@ -138,8 +171,15 @@ export class AppController {
           ? 'major'
           : 'minor';
         this.sound?.playSacredChord(topTier);
+        this.sound?.playScoreTick?.();
+        if (scores) {
+          this.scorePulse.X = scores.X > (this.lastScores.X || 0);
+          this.scorePulse.O = scores.O > (this.lastScores.O || 0);
+          this.lastScores = { ...scores };
+        }
         const names = patterns.map((p) => `${p.name} (+${p.points} VP)`).join(' • ');
         this.showToast(names);
+        this.announceToScreenReader(names);
       }
     });
 
@@ -148,12 +188,26 @@ export class AppController {
       this.showToast(`${bell.name} Sounded Across the War-Table!`);
     });
 
+    this.bus.on('battle:heroAbilityUsed', ({ ability }) => {
+      this.sound?.playHeroAbility?.();
+      this.showToast(`⚡ ${ability.name}: ${ability.desc}`);
+    });
+
+    this.bus.on('battle:bossTelegraph', (telegraph) => {
+      this.sound?.playBossWarning?.();
+      if (telegraph?.warningText) {
+        this.showToast(telegraph.warningText, 3800);
+        this.announceToScreenReader(telegraph.warningText);
+      }
+    });
+
     this.bus.on('battle:turnStarted', ({ activePlayer, bossEvents }) => {
       this.seerHintCoord = null;
       if (bossEvents && bossEvents.length > 0) {
         this.showToast(bossEvents[0].text);
       }
       this.render();
+      this._handleTileHover(this.kbActive ? this.kbCursor : null);
       if (activePlayer === 'O' && this.engine && this.engine.mode !== 'local2p') {
         this._scheduleAITurn();
       }
@@ -171,16 +225,23 @@ export class AppController {
     if (typeof window !== 'undefined') {
       window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
+          if (this.showTutorialModal) {
+            this.showTutorialModal = false;
+            this.save.setTutorialCompleted(true);
+            this.render();
+            return;
+          }
           if (this.showStoryModal) {
             this.showStoryModal = false;
             this.render();
             return;
           }
           if (this.currentScreen === 'battle' && this.engine) {
-            if (this.engine.selectedCardIndex !== null) {
+            if (this.engine.selectedCardIndex !== null || this.engine.selectedHeroAbility) {
               this.engine.selectedCardIndex = null;
+              this.engine.selectedHeroAbility = false;
               this.engine.pendingTargets = [];
-              this.showToast('War-Scroll selection cancelled.');
+              this.showToast(this.t('Selection cancelled.', 'تم إلغاء التحديد.'));
               this.render();
             }
             return;
@@ -195,7 +256,50 @@ export class AppController {
           return;
         }
         if (this.currentScreen !== 'battle' || !this.engine) return;
-        if (['1', '2', '3', '4', '5'].includes(e.key)) {
+
+        // Full Keyboard Board Play (Arrow Keys + Enter/Space) with Screen-Reader Announcements!
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+          e.preventDefault();
+          this.kbActive = true;
+          const sz = this.engine.boardSize;
+          if (e.key === 'ArrowUp') this.kbCursor.r = (this.kbCursor.r - 1 + sz) % sz;
+          if (e.key === 'ArrowDown') this.kbCursor.r = (this.kbCursor.r + 1) % sz;
+          if (e.key === 'ArrowLeft') this.kbCursor.c = (this.kbCursor.c - 1 + sz) % sz;
+          if (e.key === 'ArrowRight') this.kbCursor.c = (this.kbCursor.c + 1) % sz;
+
+          this._handleTileHover(this.kbCursor);
+          const cell = this.engine.board[this.kbCursor.r]?.[this.kbCursor.c];
+          const cellStatus = cell?.symbol
+            ? cell.symbol === 'X'
+              ? 'Your Champion'
+              : cell.symbol === 'O'
+              ? 'Enemy Warlord'
+              : 'Wild Joker'
+            : cell?.obstacle === 'reliquary_coffer'
+            ? 'Mystery Bone-Chest'
+            : cell?.obstacle
+            ? 'Obstacle'
+            : cell?.locked > 0
+            ? 'Locked Tile'
+            : 'Empty Playable Tile';
+          this.announceToScreenReader(
+            `Row ${this.kbCursor.r + 1}, Column ${this.kbCursor.c + 1}: ${cellStatus}`
+          );
+          return;
+        }
+
+        if ((e.key === 'Enter' || e.key === ' ') && this.kbActive) {
+          const activeTag = document?.activeElement?.tagName?.toLowerCase();
+          if (activeTag !== 'button') {
+            e.preventDefault();
+            this.handleBoardCellClick(this.kbCursor.r, this.kbCursor.c);
+            return;
+          }
+        }
+
+        if (e.key === 'q' || e.key === 'Q') {
+          this.triggerHeroAbility();
+        } else if (['1', '2', '3', '4', '5'].includes(e.key)) {
           const idx = Number(e.key) - 1;
           if (this.engine.hands.X[idx]) {
             this.selectHandCard(idx);
@@ -253,6 +357,11 @@ export class AppController {
   startCampaignLevel(levelNumber) {
     const state = this.save.getState();
     const level = getLevelByNumber(levelNumber);
+    this.lastScores = { X: 0, O: 0 };
+    this.kbCursor = {
+      r: Math.floor((level?.boardSize || 5) / 2),
+      c: Math.floor((level?.boardSize || 5) / 2),
+    };
     this.engine = new BattleEngine(this.bus, {
       mode: 'campaign',
       levelNumber,
@@ -260,18 +369,27 @@ export class AppController {
       cathedralHallId: level?.hallId || state.equippedHall,
       activeOaths: state.equippedOaths,
       penitenceBellId: state.equippedBell,
+      roguelikeBoon: state.selectedBoon || 'boon_shrine_aegis',
       upgradedCards: state.upgradedCards,
       customDeckIds: state.customDeck,
     });
     this.currentScreen = 'battle';
+    if (levelNumber === 1 && !state.tutorialCompleted) {
+      this.showTutorialModal = true;
+      this.tutorialStep = 0;
+    }
     if (this.scene3d) {
       this.scene3d.idleOrbitActive = false;
-      this.scene3d.playBattleZoomIn?.(state.cameraPreset || 'high_cathedral', 1.65);
+      if (level?.isBossLevel) {
+        this.scene3d.playBossEntranceCinematic?.(state.cameraPreset || 'high_cathedral', 2.45);
+      } else {
+        this.scene3d.playBattleZoomIn?.(state.cameraPreset || 'high_cathedral', 1.65);
+      }
     }
     this.sound?.startMusic(levelNumber % 13);
     if (levelNumber < GAME_CONFIG.CARDS_UNLOCK_LEVEL) {
       this.showToast(
-        `⚔️ Level ${levelNumber}: Pure Tactical Combat — War-Scroll Shop & Cards Unlock at Level ${GAME_CONFIG.CARDS_UNLOCK_LEVEL}!`
+        `⚔️ Level ${levelNumber}: Pure Tactical Combat + Hero Skill [Q] — War-Scroll Shop Unlocks at Level ${GAME_CONFIG.CARDS_UNLOCK_LEVEL}!`
       );
     } else if (level?.cardUnlock) {
       this.showToast(`🔓 Level ${levelNumber}: War-Scroll Shop Open! New Scroll: ${level.cardUnlock}`);
@@ -281,6 +399,7 @@ export class AppController {
 
   startCryptTrial(cryptId) {
     const state = this.save.getState();
+    this.lastScores = { X: 0, O: 0 };
     this.engine = new BattleEngine(this.bus, {
       mode: 'crypt',
       cryptId,
@@ -301,6 +420,7 @@ export class AppController {
 
   startSkirmishMatch() {
     const state = this.save.getState();
+    this.lastScores = { X: 0, O: 0 };
     this.engine = new BattleEngine(this.bus, {
       mode: this.skirmishConfig.mode,
       boardSize: this.skirmishConfig.boardSize,
@@ -310,6 +430,7 @@ export class AppController {
       cathedralHallId: this.skirmishConfig.cathedralHallId,
       activeOaths: state.equippedOaths,
       penitenceBellId: state.equippedBell,
+      roguelikeBoon: state.selectedBoon || 'boon_shrine_aegis',
       upgradedCards: state.upgradedCards,
       customDeckIds: state.customDeck,
     });
@@ -319,6 +440,34 @@ export class AppController {
       this.scene3d.playBattleZoomIn?.(state.cameraPreset || 'high_cathedral', 1.65);
     }
     this.sound?.startMusic(1);
+    this.render();
+  }
+
+  startDailyChallenge() {
+    const state = this.save.getState();
+    const dailySeed = SeededRNG.dailySeedString();
+    this.lastScores = { X: 0, O: 0 };
+    this.engine = new BattleEngine(this.bus, {
+      mode: 'daily',
+      seed: dailySeed,
+      boardSize: 5,
+      targetScore: 8,
+      aiTier: 4,
+      heroId: state.selectedHeroId || 'hero_paladin',
+      cathedralHallId: 'crimson_sanctuary',
+      activeOaths: state.equippedOaths,
+      penitenceBellId: state.equippedBell,
+      roguelikeBoon: state.selectedBoon || 'boon_shrine_aegis',
+      upgradedCards: state.upgradedCards,
+      customDeckIds: state.customDeck,
+    });
+    this.currentScreen = 'battle';
+    if (this.scene3d) {
+      this.scene3d.idleOrbitActive = false;
+      this.scene3d.playBossEntranceCinematic?.(state.cameraPreset || 'high_cathedral', 2.2);
+    }
+    this.sound?.startMusic(5);
+    this.showToast(`🏆 Daily Seed Challenge Started (${dailySeed})!`);
     this.render();
   }
 
@@ -354,6 +503,15 @@ export class AppController {
       } else if (this.engine.mode === 'crypt') {
         const trial = CRYPT_TRIALS.find((t) => t.id === this.engine.cryptId);
         this.save.recordCryptVictory(this.engine.cryptId, trial?.rewardSigils || 140);
+      } else if (this.engine.mode === 'daily') {
+        const dailySeed = SeededRNG.dailySeedString();
+        this.save.recordDailySeedScore(
+          dailySeed,
+          this.engine.scores.X,
+          this.engine.turnNumber,
+          this.engine.hero?.id || 'hero_paladin'
+        );
+        this.save.addReliquarySigils(125);
       } else {
         this.save.addReliquarySigils(70);
       }
@@ -370,6 +528,24 @@ export class AppController {
 
     const previewCells = [];
 
+    // Highlight Telegraphed Boss Ritual Target Tile 1 Turn Ahead!
+    if (this.engine.pendingBossRitual) {
+      previewCells.push({
+        r: this.engine.pendingBossRitual.r,
+        c: this.engine.pendingBossRitual.c,
+        mode: 'boss_telegraph',
+      });
+    }
+
+    // Highlight Keyboard Focus Cursor if active
+    if (this.kbActive && this.kbCursor) {
+      previewCells.push({
+        r: this.kbCursor.r,
+        c: this.kbCursor.c,
+        mode: 'kb_cursor',
+      });
+    }
+
     // Include Seer Hint or Threat cells if active
     if (this.seerHintCoord) {
       previewCells.push({ r: this.seerHintCoord.r, c: this.seerHintCoord.c, mode: 'hint' });
@@ -383,6 +559,31 @@ export class AppController {
 
     if (!coord || !isPlayerTurn) {
       this.scene3d.setHoverAndPreview(null, previewCells, this.engine.activePlayer, false);
+      return;
+    }
+
+    // If Hero Active Skill is selected, highlight target tile
+    if (this.engine.selectedHeroAbility) {
+      const ability = this.engine.hero?.activeAbility;
+      if (ability) {
+        previewCells.push({ r: coord.r, c: coord.c, mode: 'target' });
+        if (ability.id === 'permafrost_rune') {
+          const dirs = [
+            [-1, 0],
+            [1, 0],
+            [0, -1],
+            [0, 1],
+          ];
+          for (const [dr, dc] of dirs) {
+            const nr = coord.r + dr;
+            const nc = coord.c + dc;
+            if (nr >= 0 && nr < this.engine.boardSize && nc >= 0 && nc < this.engine.boardSize) {
+              previewCells.push({ r: nr, c: nc, mode: 'target' });
+            }
+          }
+        }
+      }
+      this.scene3d.setHoverAndPreview(coord, previewCells, null, false);
       return;
     }
 
@@ -413,11 +614,64 @@ export class AppController {
     this.scene3d.setHoverAndPreview(coord, previewCells, this.engine.activePlayer, canPlace);
   }
 
+  triggerHeroAbility() {
+    if (!this.engine || this.engine.status !== 'playing') return;
+    const actor = this.engine.activePlayer;
+    if (actor !== 'X' && this.engine.mode !== 'local2p') return;
+
+    if (this.engine.selectedHeroAbility) {
+      this.engine.selectedHeroAbility = false;
+      this.render();
+      return;
+    }
+
+    const ability = this.engine.hero?.activeAbility;
+    if (!ability) return;
+
+    if (this.engine.heroAbilityUsedThisTurn) {
+      this.showToast('Hero skill already used this turn.');
+      return;
+    }
+    const cd = this.engine.heroAbilityCooldown?.[actor] || 0;
+    if (cd > 0) {
+      this.showToast(`${ability.name} is on cooldown (${cd}T remaining).`);
+      return;
+    }
+    if (!this.engine.hasValidTargetsForHeroAbility(actor)) {
+      this.showToast(`No valid targets on the War-Table for ${ability.name} right now!`);
+      return;
+    }
+
+    if (ability.targetType === 'none') {
+      const res = this.engine.activateHeroAbility(actor, []);
+      if (!res.ok) this.showToast(res.reason);
+      this.render();
+      return;
+    }
+
+    this.engine.selectedCardIndex = null;
+    this.engine.pendingTargets = [];
+    this.engine.selectedHeroAbility = true;
+    this.showToast(`⚡ ${ability.name}: Click a target tile on the 3D War-Table (Esc to cancel).`);
+    this.render();
+  }
+
   handleBoardCellClick(r, c) {
     if (!this.engine || this.engine.status !== 'playing') return;
     if (this.engine.activePlayer !== 'X' && this.engine.mode !== 'local2p') return;
 
     const actor = this.engine.activePlayer;
+
+    // 0. If Hero Active Skill is selected, apply target
+    if (this.engine.selectedHeroAbility) {
+      const res = this.engine.activateHeroAbility(actor, [[r, c]]);
+      if (!res.ok) {
+        this.engine.selectedHeroAbility = false;
+        this.showToast(`${res.reason} (Skill selection cancelled)`);
+      }
+      this.render();
+      return;
+    }
 
     // 1. If a War-Scroll card is selected, apply target
     if (this.engine.selectedCardIndex !== null) {
@@ -559,6 +813,7 @@ export class AppController {
 
   render() {
     if (!this.rootEl) return;
+    this._syncDocumentDirection();
 
     let screenHTML = '';
     switch (this.currentScreen) {
@@ -593,10 +848,79 @@ export class AppController {
           ${this.toastMessage || ''}
         </div>
         ${screenHTML}
+        ${this.showTutorialModal ? this._renderTutorialModal() : ''}
       </div>
     `;
 
     this._attachDOMListeners();
+  }
+
+  _renderTutorialModal() {
+    const steps = [
+      {
+        title: this.t('I. The 3D War-Table & Longest-Run Scoring', '١. طاولة الحرب ثلاثية الأبعاد وقواعد التسجيل'),
+        body: this.t(
+          'Deploy your sculpted Champion onto any empty stone tile (Mouse Click or Arrow Keys + Enter/Space). Align 3, 4, or 5 stones in a contiguous line or Sacred Geometry shape (Cross, Diamond, Corner Fortress) to score Victory Points. Only the longest contiguous run along each line direction scores—preventing runaway snowballs!',
+          'ضع بطلك المنحوت على أي بلاطة حجرية فارغة (بالماوس أو الأسهم + Enter/Space). شكّل صفاً من ٣ أو ٤ أو ٥ أحجار أو تشكيلات هندسية مقدسة لكسب نقاط النصر. يتم احتساب أطول خط متصل فقط في كل اتجاه لضمان توازن عادل!'
+        ),
+      },
+      {
+        title: this.t('II. Turn-1 Hero Active Skill [Q] & War-Horn Ultimate', '٢. المهارة الفعالة للبطل [Q] وبوق الحرب'),
+        body: this.t(
+          'Every Fantasy Hero commands a unique Turn-1 Active Tactical Skill [Q] usable on ALL stages (including Levels 1–2!) on a 3-turn cooldown, plus a passive trait. Dealing and taking blows charges your War-Horn Ultimate (100%) for a match-turning cataclysm!',
+          'يمتلك كل بطل مهارة تكتيكية فعالة منذ الدور الأول [Q] متاحة في جميع المراحل (بما فيها المرحلة ١ و٢!) مع فترة تهدئة ٣ أدوار، بالإضافة إلى قدرة بوق الحرب القصوى عند اكتمال الشحن!'
+        ),
+      },
+      {
+        title: this.t('III. Mystery Bone-Chests & Telegraphed Boss Rituals', '٣. صناديق الغنائم وإنذار طقوس القائد'),
+        body: this.t(
+          'Place a stone adjacent to a Mystery Bone-Chest (📦) to crack it open for deterministic rewards (42% Gold/Aegis, 24% Wild Joker, 15% Siege Bomb, 7% Sanctified Mosaic, 12% Scroll/Horn). Watch for Crimson Telegraph Warnings—enemy Commanders telegraph their ritual target 1 full turn ahead so you can block or shield it!',
+          'ضع حجراً بجانب صندوق الغنائم (📦) لفتحه وكسب مكافآت فورية. انتبه للتحذيرات القرمزية: يكشف قادة الأعداء عن هدف طقوسهم قبل دور كامل لتتمكن من صده أو حمايته بالدرع!'
+        ),
+      },
+      {
+        title: this.t('IV. Level 3+ War-Scroll Shop, Deckbuilder & Daily Seed', '٤. متجر المخطوطات وبناء المجموعة والتحدي اليومي'),
+        body: this.t(
+          'Levels 1 & 2 are pure tactical board warmups. Starting at Level 3, earn Gold Coins to buy from the 3-Slot War-Scroll Shop (bought scrolls cast for FREE!). Customize your 40-Scroll Deck in the Cards Grimoire and compete in the Daily Seed Challenge!',
+          'المرحلتان ١ و٢ مخصصتان للتكتيك الصافي. ابتداءً من المرحلة ٣، يفتح متجر المخطوطات ذو الـ ٣ خانات (المخطوطات المشتراة تُفعّل مجاناً!). خصّص مجموعتك من بين ٤٠ مخطوطة ونافس في التحدي اليومي!'
+        ),
+      },
+    ];
+    const step = steps[this.tutorialStep] || steps[0];
+    return `
+      <div class="story-modal-backdrop" role="dialog" aria-modal="true" aria-label="Interactive Tutorial" data-action="close-tutorial">
+        <div class="story-storyboard-modal tutorial-modal gothic-card-panel" onclick="event.stopPropagation()">
+          <div class="storyboard-header">
+            <span class="gothic-eyebrow">${renderGothicIconSVG('book')} ${this.t('TACTICAL COMMANDER TUTORIAL', 'دليل القائد التكتيكي')} (${this.tutorialStep + 1}/${steps.length})</span>
+            <button class="icon-btn" data-action="close-tutorial" aria-label="Close Tutorial">${renderGothicIconSVG('close')}</button>
+          </div>
+          <div class="tutorial-step-body">
+            <h3>${step.title}</h3>
+            <p>${step.body}</p>
+            <div class="tutorial-kbd-strip">
+              <span><kbd>Arrow Keys</kbd> + <kbd>Enter</kbd> ${this.t('Keyboard Play', 'اللعب بلوحة المفاتيح')}</span>
+              <span><kbd>Q</kbd> ${this.t('Hero Skill', 'مهارة البطل')}</span>
+              <span><kbd>1-5</kbd> ${this.t('War-Scrolls', 'المخطوطات')}</span>
+              <span><kbd>Z</kbd> ${this.t('Undo (3/Match)', 'تراجع (٣/مباراة)')}</span>
+              <span><kbd>C</kbd> ${this.t('Camera View', 'زاوية الكاميرا')}</span>
+            </div>
+          </div>
+          <div class="tutorial-footer-actions">
+            <button class="btn-gothic-secondary" ${this.tutorialStep === 0 ? 'disabled' : ''} data-action="tutorial-prev">
+              ${this.t('Previous', 'السابق')}
+            </button>
+            <div class="boss-progress-dots">
+              ${steps.map((_, idx) => `<span class="chapter-dot ${idx === this.tutorialStep ? 'current' : idx < this.tutorialStep ? 'done' : ''}"></span>`).join('')}
+            </div>
+            ${
+              this.tutorialStep < steps.length - 1
+                ? `<button class="btn-gothic-primary" data-action="tutorial-next">${this.t('Next Tip', 'التالي')}</button>`
+                : `<button class="btn-gothic-primary" data-action="close-tutorial">${this.t('Enter the War-Table', 'ابدأ المعركة')}</button>`
+            }
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   _renderTopNav(activeTab) {
@@ -604,6 +928,8 @@ export class AppController {
     const hero = getFantasyHeroById(state.selectedHeroId);
     const nextLvlNum = state.highestUnlockedLevel || 1;
     const totalStars = Object.values(state.completedLevels || {}).reduce((a, b) => a + b, 0);
+    const qPreset = (state.qualityPreset || 'high').toUpperCase();
+    const langLabel = state.language === 'ar' ? 'EN' : 'عربي';
     return `
       <header class="sanctum-topbar">
         <div class="brand-cluster" data-action="nav" data-screen="hub" role="button" tabindex="0" aria-label="XcardO Home" title="XcardO Home">
@@ -614,27 +940,27 @@ export class AppController {
         <nav class="sanctum-nav-tabs" aria-label="Main Navigation">
           <button class="nav-tab-btn nav-play-cta" data-action="start-level" data-level="${nextLvlNum}" title="Start Battle Stage #${nextLvlNum}">
             ${renderGothicIconSVG('sword')}
-            <span>Play</span>
+            <span>${this.t('Play', 'العب')}</span>
           </button>
           <button class="nav-tab-btn ${activeTab === 'hub' ? 'active' : ''}" ${activeTab === 'hub' ? 'aria-current="page"' : ''} data-action="nav" data-screen="hub">
             ${renderGothicIconSVG('castle')}
-            <span>Home</span>
+            <span>${this.t('Home', 'الرئيسية')}</span>
           </button>
           <button class="nav-tab-btn ${activeTab === 'campaign' ? 'active' : ''}" ${activeTab === 'campaign' ? 'aria-current="page"' : ''} data-action="nav" data-screen="campaign">
             ${renderGothicIconSVG('map')}
-            <span>Map</span>
+            <span>${this.t('Map', 'الخريطة')}</span>
           </button>
           <button class="nav-tab-btn ${activeTab === 'reliquary' ? 'active' : ''}" ${activeTab === 'reliquary' ? 'aria-current="page"' : ''} data-action="nav" data-screen="reliquary">
             ${renderGothicIconSVG('crown')}
-            <span>Heroes</span>
+            <span>${this.t('Heroes', 'الأبطال')}</span>
           </button>
           <button class="nav-tab-btn ${activeTab === 'codex' ? 'active' : ''}" ${activeTab === 'codex' ? 'aria-current="page"' : ''} data-action="nav" data-screen="codex">
             ${renderGothicIconSVG('scroll')}
-            <span>Cards</span>
+            <span>${this.t('Cards', 'البطاقات')}</span>
           </button>
           <button class="nav-tab-btn ${activeTab === 'skirmish' || activeTab === 'crypt' ? 'active' : ''}" ${activeTab === 'skirmish' || activeTab === 'crypt' ? 'aria-current="page"' : ''} data-action="nav" data-screen="skirmish">
             ${renderGothicIconSVG('dice')}
-            <span>Modes</span>
+            <span>${this.t('Modes', 'الأطوار')}</span>
           </button>
         </nav>
 
@@ -651,6 +977,15 @@ export class AppController {
             ${renderGothicIconSVG('sigil')}
             <span class="tabular-num">${state.reliquarySigils}</span>
           </div>
+          <button class="icon-btn" data-action="cycle-quality" aria-label="Graphics Quality: ${qPreset}" title="Graphics Quality: ${qPreset}">
+            <span class="btn-badge-txt">${qPreset[0]}</span>
+          </button>
+          <button class="icon-btn" data-action="toggle-lang" aria-label="Switch Language (Arabic / English)" title="Switch Language (AR / EN)">
+            <span class="btn-badge-txt">${langLabel}</span>
+          </button>
+          <button class="icon-btn" data-action="toggle-tutorial" aria-label="Open Tactical Tutorial" title="Tactical Tutorial (?)">
+            <span class="btn-badge-txt">?</span>
+          </button>
           <button class="icon-btn" data-action="cycle-camera" aria-label="Switch 3D Camera (Shortcut: C)" title="Switch 3D Camera (C)">
             ${renderGothicIconSVG('camera')}
           </button>
@@ -680,11 +1015,11 @@ export class AppController {
           </div>
           <div class="chapter-visual-ribbon">
             <span class="ribbon-chapter-tag" style="--act-color:${currentAct.themeColor}">
-              CHAPTER ${currentAct.roman} • ${shortActTitle.toUpperCase()}
+              ${this.t(`CHAPTER ${currentAct.roman} • ${shortActTitle.toUpperCase()}`, `الفصل ${currentAct.roman} • ${shortActTitle.toUpperCase()}`)}
             </span>
             <button class="ribbon-story-btn" data-action="toggle-story-modal" title="View Chapter Storyboard">
               ${renderGothicIconSVG('book')}
-              <span>Story</span>
+              <span>${this.t('Story', 'القصة')}</span>
             </button>
           </div>
         </section>
@@ -698,16 +1033,16 @@ export class AppController {
                 ${renderFantasyHeroPortraitSVG(hero.id, hero.color)}
               </div>
               <div class="visual-char-info">
-                <span class="visual-role-pill" style="color:${hero.accent}">YOUR CHAMPION</span>
+                <span class="visual-role-pill" style="color:${hero.accent}">${this.t('YOUR CHAMPION', 'بطلك المختار')}</span>
                 <h2 class="visual-char-name">${hero.shortName}</h2>
-                <span class="visual-passive-chip">${hero.shortPassive || '+1 Start Gold'}</span>
+                <span class="visual-passive-chip">⚡ ${hero.activeAbility?.name || hero.shortPassive}</span>
               </div>
             </div>
 
             <div class="visual-avatar-strip" role="radiogroup" aria-label="Switch Champion">
               ${FANTASY_HEROES.map(
                 (h) => `
-                  <button class="visual-avatar-btn ${h.id === hero.id ? 'active' : ''}" role="radio" aria-checked="${h.id === hero.id}" aria-label="${h.name}" data-action="select-hero" data-hero="${h.id}" title="${h.name} — ${h.shortPassive || h.passiveDesc}" style="--char-color:${h.color}">
+                  <button class="visual-avatar-btn ${h.id === hero.id ? 'active' : ''}" role="radio" aria-checked="${h.id === hero.id}" aria-label="${h.name}" data-action="select-hero" data-hero="${h.id}" title="${h.name} — ${h.activeAbility?.name}: ${h.activeAbility?.desc}" style="--char-color:${h.color}">
                     ${renderFantasyHeroPortraitSVG(h.id, h.color)}
                   </button>
                 `
@@ -718,39 +1053,39 @@ export class AppController {
           <!-- CENTER: ICONIC PLAY STAGE BUTTON, CAMERA PILLS & 4 QUICK TILES -->
           <div class="hub-center-action-pod">
             <div class="stage-visual-chips">
-              <span class="stage-chip">STAGE #${nextLevel.level}</span>
+              <span class="stage-chip">${this.t(`STAGE #${nextLevel.level}`, `المرحلة #${nextLevel.level}`)}</span>
               <span class="stage-chip">${nextLevel.boardSize}×${nextLevel.boardSize}</span>
               <span class="stage-chip ${nextLevel.cardsEnabled ? 'chip-shop' : 'chip-pure'}">
-                ${nextLevel.cardsEnabled ? `${renderGothicIconSVG('shop')} <span>Shop Open</span>` : `${renderGothicIconSVG('leaf')} <span>Pure Board</span>`}
+                ${nextLevel.cardsEnabled ? `${renderGothicIconSVG('shop')} <span>${this.t('Shop Open', 'المتجر مفتوح')}</span>` : `${renderGothicIconSVG('leaf')} <span>${this.t('Pure Board', 'تكتيك صافي')}</span>`}
               </span>
             </div>
 
             <button class="btn-gothic-primary btn-play-monumental" data-action="start-level" data-level="${nextLevel.level}">
               ${renderGothicIconSVG('sword')}
-              <span>PLAY STAGE #${nextLevel.level}</span>
+              <span>${this.t(`PLAY STAGE #${nextLevel.level}`, `العب المرحلة #${nextLevel.level}`)}</span>
             </button>
 
             <div class="hub-mini-tiles-row">
               <button class="mini-visual-tile" data-action="nav" data-screen="campaign" title="Campaign Map">
                 <span class="tile-svg-icon">${renderGothicIconSVG('map')}</span>
-                <small>Map</small>
+                <small>${this.t('Map', 'الخريطة')}</small>
               </button>
-              <button class="mini-visual-tile" data-action="nav" data-screen="skirmish" title="Game Modes & Puzzles">
+              <button class="mini-visual-tile" data-action="nav" data-screen="skirmish" title="Game Modes & Daily Seed">
                 <span class="tile-svg-icon">${renderGothicIconSVG('dice')}</span>
-                <small>Modes</small>
+                <small>${this.t('Modes', 'الأطوار')}</small>
               </button>
               <button class="mini-visual-tile" data-action="nav" data-screen="reliquary" title="Heroes & 3D Relics">
                 <span class="tile-svg-icon">${renderGothicIconSVG('crown')}</span>
-                <small>Forge</small>
+                <small>${this.t('Forge', 'الحدادة')}</small>
               </button>
               <button class="mini-visual-tile" data-action="demo-shatter" title="Test 3D Stone Shatter Physics">
                 <span class="tile-svg-icon">${renderGothicIconSVG('spark')}</span>
-                <small>Shatter</small>
+                <small>${this.t('Shatter', 'تحطيم')}</small>
               </button>
             </div>
 
             <div class="hub-camera-bar" role="group" aria-label="3D Camera Presets">
-              <span class="hub-cam-label">${renderGothicIconSVG('camera')} View:</span>
+              <span class="hub-cam-label">${renderGothicIconSVG('camera')} ${this.t('View:', 'الكاميرا:')}</span>
               ${CAMERA_PRESETS.map(
                 (p) => `
                   <button class="hub-cam-pill ${state.cameraPreset === p.id ? 'active' : ''}" data-action="set-camera" data-cam="${p.id}" title="${p.name}">
@@ -765,7 +1100,7 @@ export class AppController {
           <div class="gothic-card-panel hub-journey-card visual-boss-card">
             <div class="visual-duel-row boss-duel-row">
               <div class="visual-char-info boss-char-info">
-                <span class="visual-role-pill enemy-pill">CHAPTER RIVAL</span>
+                <span class="visual-role-pill enemy-pill">${this.t('CHAPTER RIVAL', 'خصم الفصل')}</span>
                 <h2 class="visual-char-name">${currentBoss.name}</h2>
                 <span class="visual-passive-chip enemy-chip">${renderGothicIconSVG('sword')} <span>${nextLevel.name}</span></span>
               </div>
@@ -825,16 +1160,17 @@ export class AppController {
     const act = CATHEDRAL_ACTS.find((a) => a.id === this.selectedActId) || CATHEDRAL_ACTS[0];
     const boss = INQUISITOR_BOSSES.find((b) => b.id === act.bossId) || INQUISITOR_BOSSES[0];
     const actLevels = CATHEDRAL_LEVELS.filter((l) => l.actId === act.id);
+    const selectedBoon = state.selectedBoon || 'boon_shrine_aegis';
 
     return `
       ${this._renderTopNav('campaign')}
       <section class="modal-screen-container gothic-card-panel">
         <div class="screen-header-row">
           <div>
-            <div class="gothic-eyebrow">36-LEVEL STORY CAMPAIGN • THE CHRONICLE OF THE STAR-STONES</div>
-            <h2>Story Chapters & Strongholds</h2>
+            <div class="gothic-eyebrow">36-LEVEL ROGUELIKE EXPEDITION MAP • THE CHRONICLE OF THE STAR-STONES</div>
+            <h2>${this.t('Story Chapters, Expedition Boons & Strongholds', 'فصول القصة وبركات الحملة والقلاع')}</h2>
             <p class="screen-sub-note">
-              <strong>🌱 Levels 1–2:</strong> Relaxed Tactical Warmup (No Cards / No Shop) •
+              <strong>🌱 Levels 1–2:</strong> Pure Tactical Warmup + Hero Active Skill [Q] •
               <strong>🏪 Level 3+:</strong> 3-Slot In-Battle War-Scroll Shop & Gold Economy Unlocked!
             </p>
           </div>
@@ -847,6 +1183,25 @@ export class AppController {
                 </button>
               `
             ).join('')}
+          </div>
+        </div>
+
+        <!-- ROGUELIKE ACT EXPEDITION BOON WAYPOINTS -->
+        <div class="roguelike-boons-bar">
+          <div class="gothic-eyebrow">🏕️ ${this.t('SELECT YOUR CHAPTER EXPEDITION WAYPOINT BOON (ACTIVE IN ALL BATTLES)', 'اختر بركة معسكر الحملة (تعمل في جميع المعارك)')}</div>
+          <div class="roguelike-boons-grid">
+            ${ROGUELIKE_BOONS.map((boon) => {
+              const isSelected = selectedBoon === boon.id;
+              return `
+                <button class="roguelike-boon-card ${isSelected ? 'active' : ''}" data-action="select-boon" data-boon="${boon.id}">
+                  <span class="boon-icon">${boon.icon}</span>
+                  <div class="boon-copy">
+                    <strong>${boon.name}</strong>
+                    <small>${boon.desc}</small>
+                  </div>
+                </button>
+              `;
+            }).join('')}
           </div>
         </div>
 
@@ -869,7 +1224,7 @@ export class AppController {
               <div class="gothic-eyebrow">RIVAL CHAPTER COMMANDER</div>
               <h3>${boss.name} — <span>${boss.title}</span></h3>
               <p class="act-boss-quote">${boss.quote}</p>
-              <div class="act-boss-passive"><strong>Commander Trait:</strong> ${boss.passiveDesc}</div>
+              <div class="act-boss-passive"><strong>Commander Trait (Telegraphed 1T Ahead):</strong> ${boss.passiveDesc}</div>
             </div>
           </div>
         </div>
@@ -892,7 +1247,7 @@ export class AppController {
                   <div class="node-rule-tag ${lvl.cardsEnabled ? 'shop-open' : 'pure-tactical'}">
                     ${
                       !lvl.cardsEnabled
-                        ? '🌱 Warmup Stage (No Cards / No Shop)'
+                        ? '🌱 Warmup Stage (Hero Skill [Q] Active • Shop Lvl 3)'
                         : lvl.cardUnlock
                         ? `🔓 New Scroll in Shop: ${lvl.cardUnlock}`
                         : '🏪 3-Slot Scroll Shop Active'
@@ -958,7 +1313,7 @@ export class AppController {
       ${this._renderTopNav('reliquary')}
       <section class="modal-screen-container gothic-card-panel">
         <div class="gothic-eyebrow">RELIQUARY ATELIER • CHAMPIONS & 3D WAR-FORGE</div>
-        <h2>Playable Fantasy War Heroes, 3D Miniatures & Relics</h2>
+        <h2>Playable Fantasy War Heroes, Turn-1 Active Skills & 3D Relics</h2>
 
         <h3 class="reliquary-section-title">1. Choose Your Playable Fantasy War Hero (6 Champions)</h3>
         <div class="heroes-roster-grid">
@@ -977,7 +1332,10 @@ export class AppController {
                   </div>
                 </div>
                 <p class="hero-lore-text">${hero.lore}</p>
-                <div class="char-passive-box"><strong>Hero Passive:</strong> ${hero.passiveDesc}</div>
+                <div class="char-passive-box">
+                  <strong>Passive:</strong> ${hero.passiveDesc}<br/>
+                  <strong>⚡ Turn-1 Active Skill [Q] (${hero.activeAbility?.cooldown || 3}T CD):</strong> ${hero.activeAbility?.name} — ${hero.activeAbility?.desc}
+                </div>
                 <button class="btn-gothic-secondary" data-action="select-hero" data-hero="${hero.id}">
                   ${selected ? '✓ Active War Champion' : 'Select War Champion'}
                 </button>
@@ -1044,11 +1402,26 @@ export class AppController {
 
   _renderCodexScreen() {
     const state = this.save.getState();
+    const customDeck = state.customDeck || [];
+    const deckActive = customDeck.length >= (GAME_CONFIG.MIN_CUSTOM_DECK_SIZE || 8);
     return `
       ${this._renderTopNav('codex')}
       <section class="modal-screen-container gothic-card-panel">
-        <div class="gothic-eyebrow">20 WAR-SCROLLS & SACRED ALIGNMENT BLUEPRINTS</div>
-        <h2>Grimoire of the War-Table (Shop Unlocks at Campaign Level 3)</h2>
+        <div class="screen-header-row">
+          <div>
+            <div class="gothic-eyebrow">40 WAR-SCROLLS, CUSTOM DECK-BUILDER & SACRED ALIGNMENTS</div>
+            <h2>Grimoire of the War-Table (40 Scrolls • Shop Unlocks at Level 3)</h2>
+            <p class="screen-sub-note">
+              <strong>📜 Custom Deck-Builder:</strong> ${customDeck.length} Scrolls Selected
+              (${deckActive ? '✓ Custom Deck Active in Shop & Draws!' : `Select at least ${GAME_CONFIG.MIN_CUSTOM_DECK_SIZE || 8} Scrolls to activate your custom deck, or leave < 8 to use all unlocked scrolls`})
+            </p>
+          </div>
+          ${
+            customDeck.length > 0
+              ? `<button class="btn-gothic-secondary" data-action="clear-custom-deck">Reset Custom Deck (${customDeck.length})</button>`
+              : ''
+          }
+        </div>
 
         <div class="codex-geometries-strip">
           ${SACRED_GEOMETRY_SHAPES.map(
@@ -1067,8 +1440,9 @@ export class AppController {
         <div class="codex-cards-grid">
           ${ARCANA_CARDS.map((card) => {
             const exalted = state.upgradedCards.includes(card.id);
+            const inDeck = customDeck.includes(card.id);
             return `
-              <div class="codex-tarot-card ${exalted ? 'exalted' : ''}">
+              <div class="codex-tarot-card ${exalted ? 'exalted' : ''} ${inDeck ? 'in-custom-deck' : ''}">
                 <div class="codex-tarot-top">
                   <span class="tarot-num">${card.numeral} · Lvl ${card.unlockLevel || 3}+</span>
                   <span class="tarot-cost">🪙 ${card.cost} Gold</span>
@@ -1076,9 +1450,14 @@ export class AppController {
                 <div class="codex-tarot-art">${renderTarotArtSVG(card)}</div>
                 <h4>${card.name} ${exalted ? '<span class="exalt-badge">[+]</span>' : ''}</h4>
                 <p>${exalted ? card.exaltedDesc : card.desc}</p>
-                <button class="btn-gothic-small" ${exalted ? 'disabled' : ''} data-action="exalt-card" data-card="${card.id}">
-                  ${exalted ? 'Exalted [+]' : 'Exalt Scroll (150 Sigils)'}
-                </button>
+                <div class="codex-card-actions">
+                  <button class="btn-gothic-small ${inDeck ? 'deck-active' : ''}" data-action="toggle-deck-card" data-card="${card.id}">
+                    ${inDeck ? '✓ In Custom Deck' : '+ Add to Deck'}
+                  </button>
+                  <button class="btn-gothic-small" ${exalted ? 'disabled' : ''} data-action="exalt-card" data-card="${card.id}">
+                    ${exalted ? 'Exalted [+]' : 'Exalt (150)'}
+                  </button>
+                </div>
               </div>
             `;
           }).join('')}
@@ -1089,24 +1468,57 @@ export class AppController {
 
   _renderSkirmishScreen() {
     const state = this.save.getState();
+    const dailySeed = SeededRNG.dailySeedString();
+    const dailyRecord = state.dailyBestScores?.[dailySeed] || null;
+    const allDailyEntries = Object.entries(state.dailyBestScores || {})
+      .sort((a, b) => (b[1].composite || 0) - (a[1].composite || 0))
+      .slice(0, 5);
+
     return `
       ${this._renderTopNav('skirmish')}
       <section class="modal-screen-container gothic-card-panel skirmish-panel">
         <div class="screen-header-row">
           <div>
-            <div class="gothic-eyebrow">RELAXED FREE PLAY & TACTICAL PUZZLES</div>
-            <h2>Custom 3D War-Table Duel & 1-Turn Trials</h2>
+            <div class="gothic-eyebrow">DAILY SEED LEADERBOARD, FREE PLAY & TACTICAL PUZZLES</div>
+            <h2>Custom 3D War-Table Duel, Daily Seed & 1-Turn Trials</h2>
           </div>
           <div class="act-selector-tabs">
             <button class="act-tab active" data-action="nav" data-screen="skirmish">
-              <span>🎲 Custom Free Play</span>
-              <small>AI or 2-Player Local</small>
+              <span>🎲 Custom & Daily Seed</span>
+              <small>AI, 2P & Leaderboard</small>
             </button>
             <button class="act-tab" data-action="nav" data-screen="crypt">
               <span>🧩 5 Puzzle Trials</span>
               <small>1-Turn Brainteasers</small>
             </button>
           </div>
+        </div>
+
+        <!-- DAILY SEED CHALLENGE & LEADERBOARD SHOWCASE -->
+        <div class="daily-seed-showcase gothic-card-panel">
+          <div class="daily-seed-info">
+            <div class="gothic-eyebrow">🏆 DETERMINISTIC DAILY SEED CHALLENGE • ${dailySeed}</div>
+            <h3>Today's Seeded War-Table Gauntlet (5×5 • Target 8 VP • Tier 4 Depth-2 AI)</h3>
+            <p>Every Commander worldwide faces the exact same Mystery Chest rolls, Shop offerings, and AI opening under seed <strong>${dailySeed}</strong>.</p>
+            <div class="daily-record-pills">
+              <span class="stage-chip">
+                ${
+                  dailyRecord
+                    ? `★ Today's Personal Best: ${dailyRecord.score} VP in ${dailyRecord.turns} Turns`
+                    : '☆ Not Completed Today — Claim +125 Sigils!'
+                }
+              </span>
+              ${allDailyEntries
+                .map(
+                  ([seed, rec]) =>
+                    `<span class="stage-chip">${seed.replace('DAILY-', '')}: <strong>${rec.score} VP</strong> (${rec.turns}T)</span>`
+                )
+                .join('')}
+            </div>
+          </div>
+          <button class="btn-gothic-primary" data-action="start-daily-seed">
+            ${renderGothicIconSVG('sword')} Play Daily Seed (${dailySeed})
+          </button>
         </div>
 
         <div class="skirmish-options-grid">
@@ -1134,15 +1546,15 @@ export class AppController {
           </div>
 
           <div class="skirmish-field">
-            <label>Enemy Warlord AI Tier</label>
+            <label>Enemy Warlord AI Tier (Depth-3 Alpha-Beta on Tiers 5–6)</label>
             <div class="pill-group">
               ${[
                 [1, '1: Friendly Scout'],
                 [2, '2: Lich Scholar'],
-                [3, '3: Siege Captain'],
-                [4, '4: Pyromancer'],
-                [5, '5: Crimson Duchess'],
-                [6, '6: Grand War-God'],
+                [3, '3: Siege Captain (D2)'],
+                [4, '4: Pyromancer (D2)'],
+                [5, '5: Crimson Duchess (D3)'],
+                [6, '6: Grand War-God (D3)'],
               ]
                 .map(
                   ([tier, label]) => `
@@ -1190,6 +1602,12 @@ export class AppController {
     const xPct = Math.min(100, Math.round((snap.scores.X / snap.targetScore) * 100));
     const oPct = Math.min(100, Math.round((snap.scores.O / snap.targetScore) * 100));
     const bellReady = !snap.bellUsedThisMatch.X && snap.bellCharge.X >= 100;
+    const ability = hero.activeAbility;
+    const abilityCd = snap.heroAbilityCooldown?.X || 0;
+    const abilityReady = snap.canUseHeroAbility;
+    const pulseX = this.scorePulse.X ? 'score-pulse' : '';
+    const pulseO = this.scorePulse.O ? 'score-pulse' : '';
+    this.scorePulse = { X: false, O: false };
 
     const selectedInst =
       this.engine.selectedCardIndex !== null
@@ -1198,7 +1616,15 @@ export class AppController {
     const selectedCard = selectedInst ? selectedInst.card : null;
 
     let actionPromptHTML = '';
-    if (selectedCard) {
+    if (snap.selectedHeroAbility && ability) {
+      actionPromptHTML = `
+        <div class="tactical-action-prompt prompt-targeting">
+          <span class="prompt-pulse-dot targeting-dot"></span>
+          <span><strong>⚡ ${ability.name}:</strong> ${ability.desc} — Click a target tile on the 3D War-Table</span>
+          <button class="prompt-cancel-chip" data-action="cancel-card">Cancel [Esc]</button>
+        </div>
+      `;
+    } else if (selectedCard) {
       actionPromptHTML = `
         <div class="tactical-action-prompt prompt-targeting">
           <span class="prompt-pulse-dot targeting-dot"></span>
@@ -1206,18 +1632,25 @@ export class AppController {
           <button class="prompt-cancel-chip" data-action="cancel-card">Cancel [Esc]</button>
         </div>
       `;
+    } else if (snap.pendingBossRitual && snap.activePlayer === 'X') {
+      actionPromptHTML = `
+        <div class="tactical-action-prompt prompt-targeting">
+          <span class="prompt-pulse-dot enemy-dot"></span>
+          <span><strong>${snap.pendingBossRitual.warningText}</strong></span>
+        </div>
+      `;
     } else if (snap.activePlayer === 'X') {
       actionPromptHTML = `
         <div class="tactical-action-prompt prompt-player">
           <span class="prompt-pulse-dot player-dot"></span>
-          <span><strong>Your Turn:</strong> Click any empty stone tile on the 3D War-Table to deploy your Champion</span>
+          <span><strong>${this.t('Your Turn:', 'دورك:')}</strong> ${this.t('Click any empty stone tile (or use Arrow Keys + Enter) to deploy your Champion', 'انقر على أي بلاطة فارغة (أو استخدم الأسهم + Enter) لنشر بطلك')}</span>
         </div>
       `;
     } else {
       actionPromptHTML = `
         <div class="tactical-action-prompt prompt-enemy">
           <span class="prompt-pulse-dot enemy-dot"></span>
-          <span><strong>${boss.name}</strong> is commanding forces across the War-Table...</span>
+          <span><strong>${boss.name}</strong> ${this.t('is commanding forces across the War-Table...', 'يقود قواته عبر طاولة الحرب...')}</span>
         </div>
       `;
     }
@@ -1233,7 +1666,7 @@ export class AppController {
             <div class="hud-commander-details">
               <div class="wing-faction-tag">${hero.name.toUpperCase()} (${hero.classTitle})</div>
               <div class="wing-score-row">
-                <span class="score-big tabular-num">${snap.scores.X}</span>
+                <span class="score-big tabular-num ${pulseX}">${snap.scores.X}</span>
                 <span class="score-target tabular-num">/ ${snap.targetScore} VP</span>
               </div>
               <div class="gothic-progress-track" role="progressbar" aria-valuenow="${snap.scores.X}" aria-valuemin="0" aria-valuemax="${snap.targetScore}">
@@ -1244,7 +1677,7 @@ export class AppController {
                   ${
                     snap.cardsEnabled
                       ? `${renderGothicIconSVG('coin')} Gold: <strong class="tabular-num">${snap.tithe.X}</strong>/${GAME_CONFIG.MAX_BLOOD_TITHE}`
-                      : `${renderGothicIconSVG('leaf')} Warmup: <strong>Shop Unlocks Lvl 3</strong>`
+                      : `${renderGothicIconSVG('leaf')} Warmup: <strong>Skill [Q] Active • Shop Lvl 3</strong>`
                   }
                 </span>
                 <span class="placements-readout">Moves: <strong class="tabular-num">${snap.placementsRemaining}</strong></span>
@@ -1264,13 +1697,15 @@ export class AppController {
                 ? `${snap.levelData?.chapterName || 'Story Stage'} • Level #${snap.levelNumber}: ${
                     snap.levelData?.name || 'War-Table Clash'
                   }`
+                : snap.mode === 'daily'
+                ? `🏆 Daily Seed Challenge • ${boss.name}`
                 : `${boss.name} (${boss.title})`
             }
           </div>
           <div class="hud-utility-strip" role="toolbar" aria-label="Battle Controls">
             ${
-              this.engine.selectedCardIndex !== null
-                ? `<button class="hud-tool-btn active" data-action="cancel-card" title="Cancel Selected War-Scroll (Esc / Right-Click)">${renderGothicIconSVG('close')} <span>Cancel</span></button>`
+              this.engine.selectedCardIndex !== null || snap.selectedHeroAbility
+                ? `<button class="hud-tool-btn active" data-action="cancel-card" title="Cancel Selection (Esc / Right-Click)">${renderGothicIconSVG('close')} <span>Cancel</span></button>`
                 : ''
             }
             <button class="hud-tool-btn" data-action="cycle-camera" title="Switch 3D Camera Angle (Shortcut: C)">
@@ -1288,8 +1723,11 @@ export class AppController {
             <button class="hud-tool-btn ${this.showTacticalIntel ? 'active' : ''}" data-action="toggle-intel" title="Toggle Tactical Intel & Battle Log">
               ${renderGothicIconSVG('book')} <span>Intel</span>
             </button>
-            <button class="hud-tool-btn" ${snap.canUndo ? '' : 'disabled'} data-action="undo-move" title="Undo Last Action (Shortcut: Z)">
-              ${renderGothicIconSVG('undo')} <kbd class="hud-kbd">Z</kbd>
+            <button class="hud-tool-btn" ${snap.canUndo ? '' : 'disabled'} data-action="undo-move" title="Undo Last Action (${snap.undosRemaining}/${snap.maxUndos} Left • Shortcut: Z)">
+              ${renderGothicIconSVG('undo')} <span>${snap.undosRemaining}</span> <kbd class="hud-kbd">Z</kbd>
+            </button>
+            <button class="hud-tool-btn" data-action="toggle-tutorial" title="Open Tactical Tutorial (?)">
+              <span>?</span>
             </button>
             <button class="hud-tool-btn" data-action="nav" data-screen="hub" title="Return to Sanctuary Menu">
               ${renderGothicIconSVG('castle')} <span>Menu</span>
@@ -1304,14 +1742,14 @@ export class AppController {
             <div class="hud-commander-details enemy-details">
               <div class="wing-faction-tag">${boss.name.toUpperCase()} (${boss.classTitle || 'COMMANDER'})</div>
               <div class="wing-score-row">
-                <span class="score-big tabular-num">${snap.scores.O}</span>
+                <span class="score-big tabular-num ${pulseO}">${snap.scores.O}</span>
                 <span class="score-target tabular-num">/ ${snap.targetScore} VP</span>
               </div>
               <div class="gothic-progress-track" role="progressbar" aria-valuenow="${snap.scores.O}" aria-valuemin="0" aria-valuemax="${snap.targetScore}">
                 <div class="gothic-progress-fill enemy-fill" style="width:${oPct}%"></div>
               </div>
               <div class="wing-sub-row">
-                <span>${snap.cardsEnabled ? `${renderGothicIconSVG('coin')} Enemy Gold: <strong class="tabular-num">${snap.tithe.O}</strong>` : `${renderGothicIconSVG('sword')} Board Tactics AI`}</span>
+                <span>${snap.cardsEnabled ? `${renderGothicIconSVG('coin')} Enemy Gold: <strong class="tabular-num">${snap.tithe.O}</strong>` : `${renderGothicIconSVG('sword')} Komi Counter-Guard`}</span>
                 <span>Shattered: <strong class="tabular-num">${snap.stonesShatteredThisMatch}</strong></span>
               </div>
             </div>
@@ -1398,9 +1836,30 @@ export class AppController {
         }
       </aside>
 
-      <!-- BOTTOM DOCK: V1 LEVEL 1-2 SEALED BANNER OR LEVEL 3+ 3-SLOT SHOP & HAND -->
+      <!-- BOTTOM DOCK: TURN-1 HERO ACTIVE SKILL, WAR-HORN ULTIMATE & LEVEL 3+ 3-SLOT SHOP -->
       <footer class="battle-hud-bottom">
         <div class="penitence-bell-dock">
+          ${
+            ability
+              ? `
+                <button class="bell-ultimate-btn hero-skill-btn ${abilityReady ? 'ready' : ''} ${
+                  snap.selectedHeroAbility ? 'selected-skill' : ''
+                }" ${abilityReady ? '' : 'disabled'} data-action="hero-ability" title="${ability.name}: ${ability.desc} (Hotkey: Q)">
+                  ${renderGothicIconSVG('spark')}
+                  <div>
+                    <div class="bell-label">⚡ ${ability.name.toUpperCase()} [Q]</div>
+                    <div class="bell-pct tabular-num">${
+                      snap.heroAbilityUsedThisTurn
+                        ? 'USED'
+                        : abilityCd > 0
+                        ? `CD: ${abilityCd}T`
+                        : 'READY'
+                    }</div>
+                  </div>
+                </button>
+              `
+              : ''
+          }
           <button class="bell-ultimate-btn ${bellReady ? 'ready' : ''}" ${
       bellReady ? '' : 'disabled'
     } data-action="toll-bell">
@@ -1420,9 +1879,9 @@ export class AppController {
               <div class="v1-sealed-scrolls-banner gothic-card-panel">
                 <div class="sealed-icon">${renderGothicIconSVG('leaf')}</div>
                 <div class="sealed-copy">
-                  <div class="gothic-eyebrow">RELAXED WARMUP STAGE • LEVELS 1 & 2</div>
+                  <div class="gothic-eyebrow">RELAXED WARMUP STAGE • LEVELS 1 & 2 (HERO SKILL [Q] ACTIVE!)</div>
                   <h4>WAR-SCROLL SHOP & CARDS UNLOCK AT LEVEL 3</h4>
-                  <p>Enjoy pure board strategy first! Place your Champions to align 3 in a row. Complete Stage 2 to open the Ancient Scroll Vault & 3-Slot Shop!</p>
+                  <p>Enjoy pure board tactics + your Hero's Turn-1 Active Skill [Q]! Complete Stage 2 to open the Ancient Scroll Vault & 3-Slot Shop!</p>
                 </div>
               </div>
             `
@@ -1599,15 +2058,66 @@ export class AppController {
           case 'start-crypt':
             this.startCryptTrial(el.getAttribute('data-crypt'));
             break;
+          case 'start-daily-seed':
+            this.startDailyChallenge();
+            break;
           case 'select-act':
             this.selectedActId = Number(el.getAttribute('data-act') || 1);
             this.render();
             break;
+          case 'select-boon': {
+            const boonId = el.getAttribute('data-boon');
+            this.save.selectBoon(boonId);
+            const boon = ROGUELIKE_BOONS.find((b) => b.id === boonId);
+            if (boon) this.showToast(`🏕️ Expedition Boon Active: ${boon.name}`);
+            this.render();
+            break;
+          }
           case 'toggle-story-modal':
             this.showStoryModal = !this.showStoryModal;
             this.sound?.playUIHover();
             this.render();
             break;
+          case 'toggle-tutorial':
+            this.showTutorialModal = !this.showTutorialModal;
+            this.tutorialStep = 0;
+            this.sound?.playUIHover();
+            this.render();
+            break;
+          case 'tutorial-next':
+            this.tutorialStep = Math.min(3, this.tutorialStep + 1);
+            this.sound?.playUIHover();
+            this.render();
+            break;
+          case 'tutorial-prev':
+            this.tutorialStep = Math.max(0, this.tutorialStep - 1);
+            this.sound?.playUIHover();
+            this.render();
+            break;
+          case 'close-tutorial':
+            this.showTutorialModal = false;
+            this.save.setTutorialCompleted(true);
+            this.render();
+            break;
+          case 'cycle-quality': {
+            const order = ['low', 'high', 'ultra'];
+            const curr = this.save.getState().qualityPreset || 'high';
+            const next = order[(order.indexOf(curr) + 1) % order.length];
+            this.save.setQualityPreset(next);
+            this.scene3d?.setQualityPreset?.(next);
+            this.showToast(`Graphics Quality: ${next.toUpperCase()}`);
+            this.render();
+            break;
+          }
+          case 'toggle-lang': {
+            const curr = this.save.getState().language || 'en';
+            const next = curr === 'ar' ? 'en' : 'ar';
+            this.save.setLanguage(next);
+            this._syncDocumentDirection();
+            this.showToast(next === 'ar' ? 'تم تفعيل اللغة العربية (RTL)' : 'Language: English (LTR)');
+            this.render();
+            break;
+          }
           case 'select-hero': {
             const heroId = el.getAttribute('data-hero');
             const hero = getFantasyHeroById(heroId);
@@ -1622,6 +2132,9 @@ export class AppController {
             this.render();
             break;
           }
+          case 'hero-ability':
+            this.triggerHeroAbility();
+            break;
           case 'buy-shop-card': {
             if (!this.engine) break;
             const slotIdx = Number(el.getAttribute('data-slot'));
@@ -1669,8 +2182,9 @@ export class AppController {
           case 'cancel-card':
             if (this.engine) {
               this.engine.selectedCardIndex = null;
+              this.engine.selectedHeroAbility = false;
               this.engine.pendingTargets = [];
-              this.showToast('War-Scroll selection cancelled.');
+              this.showToast(this.t('Selection cancelled.', 'تم إلغاء التحديد.'));
               this.render();
             }
             break;
@@ -1779,6 +2293,25 @@ export class AppController {
             const res = this.save.exaltArcanaCard(cardId, 150);
             if (!res.ok) this.showToast(res.reason);
             else this.showToast('War-Scroll Exalted to [+] Mastery!');
+            this.render();
+            break;
+          }
+          case 'toggle-deck-card': {
+            const cardId = el.getAttribute('data-card');
+            const res = this.save.toggleCustomDeckCard(cardId);
+            const card = getArcanaCardById(cardId);
+            this.showToast(
+              res.inDeck
+                ? `Added ${card?.name || cardId} to Custom Deck (${res.count} Scrolls)`
+                : `Removed ${card?.name || cardId} from Custom Deck (${res.count} Scrolls)`
+            );
+            this.render();
+            break;
+          }
+          case 'clear-custom-deck': {
+            this.save.state.customDeck = [];
+            this.save.save();
+            this.showToast('Custom Deck reset — using full unlocked scroll pool.');
             this.render();
             break;
           }

@@ -37,6 +37,8 @@ export class GothicScene3D {
     };
 
     this.cameraShake = 0;
+    this.hitStopTimer = 0;
+    this.qualityPreset = this.save?.getState()?.qualityPreset || 'high';
     this.cinematicFocusTimer = 0;
     this.idleOrbitActive = true;
     this.cinematicFlyIn = null;
@@ -110,15 +112,47 @@ export class GothicScene3D {
         powerPreference: 'high-performance',
         alpha: false,
       });
-      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      this.renderer.shadowMap.enabled = true;
       this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      this.renderer.toneMappingExposure = 1.36;
+      this.setQualityPreset(this.qualityPreset);
       this.resize();
       window.addEventListener('resize', () => this.resize());
     } catch {
       this.renderer = null;
+    }
+  }
+
+  /**
+   * Apply Low / High / Ultra Graphics Quality Presets (pixelRatio, shadows, exposure/bloom)
+   */
+  setQualityPreset(preset = 'high') {
+    this.qualityPreset = preset;
+    if (!this.renderer) return;
+    const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+
+    if (preset === 'low') {
+      this.renderer.setPixelRatio(1);
+      this.renderer.shadowMap.enabled = false;
+      this.renderer.toneMappingExposure = 1.26;
+      if (this.dirLight) this.dirLight.castShadow = false;
+    } else if (preset === 'ultra') {
+      this.renderer.setPixelRatio(Math.min(dpr, 2.25));
+      this.renderer.shadowMap.enabled = true;
+      this.renderer.toneMappingExposure = 1.48;
+      if (this.dirLight) {
+        this.dirLight.castShadow = true;
+        this.dirLight.shadow.mapSize.width = 2048;
+        this.dirLight.shadow.mapSize.height = 2048;
+      }
+    } else {
+      this.renderer.setPixelRatio(Math.min(dpr, 1.85));
+      this.renderer.shadowMap.enabled = true;
+      this.renderer.toneMappingExposure = 1.36;
+      if (this.dirLight) {
+        this.dirLight.castShadow = true;
+        this.dirLight.shadow.mapSize.width = 1024;
+        this.dirLight.shadow.mapSize.height = 1024;
+      }
     }
   }
 
@@ -452,6 +486,7 @@ export class GothicScene3D {
     }
 
     this.addCameraShake(Math.min(0.55, 0.24 * intensity));
+    this.triggerCameraPunch(intensity);
     if (cells.length > 0 && this.save?.getState()?.cinematicCamera !== false) {
       const first = cells[0];
       this.focusCameraBrieflyOnTile(first.r, first.c, 0.95);
@@ -505,8 +540,9 @@ export class GothicScene3D {
       });
     }
 
-    // Cinematic Camera Focus on Major/Grand Sacred Geometry
+    // Cinematic Camera Focus & Hit-Stop Punch on Major/Grand Sacred Geometry
     const grand = patterns.find((p) => p.tier === 'grand' || p.tier === 'major') || patterns[0];
+    this.triggerCameraPunch(grand?.tier === 'grand' ? 1.35 : 0.9);
     if (grand && grand.cells.length > 0 && this.save?.getState()?.cinematicCamera !== false) {
       const mid = grand.cells[Math.floor(grand.cells.length / 2)];
       this.focusCameraBrieflyOnTile(mid[0], mid[1], 1.15);
@@ -662,12 +698,63 @@ export class GothicScene3D {
     this.cinematicFocusTimer = duration;
   }
 
+  /**
+   * Trigger a tactile Hit-Stop freeze & Camera Zoom Punch on major impacts
+   */
+  triggerCameraPunch(intensity = 1.0) {
+    if (this.reducedMotion) return;
+    this.hitStopTimer = Math.max(this.hitStopTimer, Math.min(0.085, 0.052 * intensity));
+    this.radiusPulse = -Math.min(0.65, 0.34 * intensity);
+  }
+
+  /**
+   * Dramatic Boss Entrance Cinematic swooping from the 3D Warlord Commander back to Isometric Duel view
+   */
+  playBossEntranceCinematic(presetId = 'high_cathedral', duration = 2.45) {
+    const preset = CAMERA_PRESETS.find((p) => p.id === presetId) || CAMERA_PRESETS[0];
+    const scaleFactor = this.boardSize >= 6 ? 1.18 : 1.0;
+
+    const endTheta = preset.theta;
+    const endPhi = preset.phi;
+    const endRadius = preset.radius * scaleFactor;
+    const endLookY = preset.targetY ?? 0.14;
+
+    const startTheta = 0.08;
+    const startPhi = 1.12;
+    const startRadius = 6.2;
+
+    this.orbitVelocity.theta = 0;
+    this.orbitVelocity.phi = 0;
+    this.camSpherical.theta = startTheta;
+    this.camSpherical.phi = startPhi;
+    this.camSpherical.radius = startRadius;
+    this.camSpherical.lookAt.set(0, 1.35, -3.2);
+
+    this.camSpherical.targetTheta = endTheta;
+    this.camSpherical.targetPhi = endPhi;
+    this.camSpherical.targetRadius = endRadius;
+    this.camSpherical.targetLookAt.set(0, endLookY, 0);
+
+    this.cinematicFlyIn = {
+      elapsed: 0,
+      duration,
+      startTheta,
+      startPhi,
+      startRadius,
+      startLookAt: new THREE.Vector3(0, 1.35, -3.2),
+      endTheta,
+      endPhi,
+      endRadius,
+      endLookAt: new THREE.Vector3(0, endLookY, 0),
+    };
+  }
+
   addCameraShake(amount = 0.25) {
     this.cameraShake = Math.min(0.65, this.cameraShake + amount);
   }
 
   /**
-   * Highlight hovered tile, show 3D Ghost Sculpture preview, and highlight scoring / Arcana target cells
+   * Highlight hovered tile, show 3D Ghost Sculpture preview, and highlight scoring / Arcana target / Boss Telegraph / Keyboard Cursor cells
    */
   setHoverAndPreview(hoveredCoord, previewCells = [], ghostSymbol = 'X', canPlaceHovered = false) {
     this.hoveredTile = hoveredCoord;
@@ -713,6 +800,12 @@ export class GothicScene3D {
         if (mode === 'target') {
           mat.emissive.setHex(0xe11d48);
           mat.emissiveIntensity = isHovered ? 0.85 : 0.5;
+        } else if (mode === 'boss_telegraph') {
+          mat.emissive.setHex(0xff2a4b);
+          mat.emissiveIntensity = 0.78;
+        } else if (mode === 'kb_cursor') {
+          mat.emissive.setHex(0x38bdf8);
+          mat.emissiveIntensity = 0.72;
         } else if (mode === 'score') {
           mat.emissive.setHex(0xf59e0b);
           mat.emissiveIntensity = 0.65;
@@ -890,11 +983,24 @@ export class GothicScene3D {
     return null;
   }
 
+  /**
+   * Compute portrait aspect zoom multiplier so narrow mobile screens (e.g. 375×812, aspect 0.46)
+   * pull the camera back enough to fit 100% of the 3D War-Table and corner braziers!
+   */
+  _getPortraitZoomMultiplier(aspect = this.camera.aspect) {
+    if (!aspect || aspect >= 1.08) return 1.0;
+    const clampedAspect = Math.max(0.42, aspect);
+    return Math.min(2.02, Math.pow(1.08 / clampedAspect, 0.78));
+  }
+
   resize() {
     if (!this.canvas || !this.renderer) return;
     const width = this.canvas.clientWidth || window.innerWidth || 1280;
     const height = this.canvas.clientHeight || window.innerHeight || 720;
-    this.camera.aspect = width / Math.max(1, height);
+    const aspect = width / Math.max(1, height);
+    this.camera.aspect = aspect;
+    // Widen vertical FOV slightly in portrait aspect ratios so board corners stay comfortably framed
+    this.camera.fov = aspect < 1.0 ? Math.min(54, 42 + (1.0 - aspect) * 18) : 42;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height, false);
   }
@@ -959,10 +1065,12 @@ export class GothicScene3D {
       }
     }
 
+    const portraitMult = this._getPortraitZoomMultiplier(this.camera.aspect);
+    const effectiveRadius = s.radius * portraitMult;
     const sinPhi = Math.sin(s.phi);
-    let cx = s.lookAt.x + s.radius * sinPhi * Math.sin(s.theta);
-    let cy = s.lookAt.y + s.radius * Math.cos(s.phi);
-    let cz = s.lookAt.z + s.radius * sinPhi * Math.cos(s.theta);
+    let cx = s.lookAt.x + effectiveRadius * sinPhi * Math.sin(s.theta);
+    let cy = s.lookAt.y + effectiveRadius * Math.cos(s.phi);
+    let cz = s.lookAt.z + effectiveRadius * sinPhi * Math.cos(s.theta);
 
     if (this.cameraShake > 0.001) {
       cx += (Math.random() - 0.5) * this.cameraShake;
@@ -979,6 +1087,16 @@ export class GothicScene3D {
    * Step all 3D animations, flickering fire braziers, piece slam arcs, and rigid-body stone shatter physics
    */
   stepFrame(dt, elapsedSec = 0) {
+    // Hit-stop micro-freeze on heavy stone shatters / combos (camera shake still ticks for impact feel)
+    if (this.hitStopTimer > 0) {
+      this.hitStopTimer = Math.max(0, this.hitStopTimer - dt);
+      this._updateCameraTransform(dt * 0.15, elapsedSec);
+      if (this.renderer) {
+        this.renderer.render(this.scene, this.camera);
+      }
+      return;
+    }
+
     // 1. Update Camera Orbit, Cinematic Fly-In & Shake
     this._updateCameraTransform(dt, elapsedSec);
 

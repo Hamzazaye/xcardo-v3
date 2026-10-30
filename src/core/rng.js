@@ -9,6 +9,9 @@ export class SeededRNG {
   }
 
   static hashSeed(input) {
+    if (typeof input === 'number' && Number.isInteger(input) && input > 0 && input <= 0xffffffff) {
+      return input >>> 0;
+    }
     const str = String(input);
     let h = 2166136261 >>> 0;
     for (let i = 0; i < str.length; i++) {
@@ -16,6 +19,27 @@ export class SeededRNG {
       h = Math.imul(h, 16777619);
     }
     return h >>> 0 || 0x9e3779b9;
+  }
+
+  static dailySeedString(dateObj = new Date()) {
+    const yyyy = dateObj.getUTCFullYear();
+    const mm = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(dateObj.getUTCDate()).padStart(2, '0');
+    return `XCARDO-DAILY-${yyyy}-${mm}-${dd}`;
+  }
+
+  getState() {
+    return this.seed >>> 0;
+  }
+
+  setState(state) {
+    this.seed = (Number(state) >>> 0) || 0x9e3779b9;
+  }
+
+  clone() {
+    const copy = new SeededRNG(1);
+    copy.seed = this.seed >>> 0;
+    return copy;
   }
 
   next() {

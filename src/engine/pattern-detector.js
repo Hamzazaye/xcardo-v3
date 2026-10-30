@@ -145,27 +145,24 @@ export function scanBoardPatterns(board, size, scoredRegistry, options = {}) {
           }
 
           if (lineCells.length >= 3) {
-            for (let len = 3; len <= Math.min(5, lineCells.length); len++) {
-              for (let start = 0; start <= lineCells.length - len; start++) {
-                const subCells = lineCells.slice(start, start + len);
-                const key = makePatternKey('LINE', symbol, `${dir.name}_${len}`, subCells);
-                if (!scoredRegistry.has(key)) {
-                  const basePts = linePointsTable[len] || (len >= 5 ? 3 : 1);
-                  const hasMosaic = subCells.some(([sr, sc]) => board[sr][sc].anomaly === 'sanctified_mosaic');
-                  results.push({
-                    key,
-                    type: 'LINE',
-                    tier: len >= 5 ? 'grand' : len === 4 ? 'major' : 'minor',
-                    name: `${len}-Stone ${dir.name}`,
-                    symbol,
-                    length: len,
-                    points: basePts + (hasMosaic ? 2 : 0),
-                    hasMosaicBonus: hasMosaic,
-                    color: symbol === 'X' ? '#f59e0b' : '#e11d48',
-                    cells: subCells,
-                  });
-                }
-              }
+            // Score ONLY the longest contiguous run along this line axis (no sub-run snowballing!)
+            const len = Math.min(5, lineCells.length);
+            const key = makePatternKey('LINE', symbol, `${dir.name}_${len}`, lineCells);
+            if (!scoredRegistry.has(key)) {
+              const basePts = linePointsTable[len] || (len >= 5 ? 3 : 1);
+              const hasMosaic = lineCells.some(([sr, sc]) => board[sr][sc].anomaly === 'sanctified_mosaic');
+              results.push({
+                key,
+                type: 'LINE',
+                tier: len >= 5 ? 'grand' : len === 4 ? 'major' : 'minor',
+                name: `${lineCells.length}-Stone ${dir.name}`,
+                symbol,
+                length: lineCells.length,
+                points: basePts + (hasMosaic ? 2 : 0),
+                hasMosaicBonus: hasMosaic,
+                color: symbol === 'X' ? '#f59e0b' : '#e11d48',
+                cells: lineCells,
+              });
             }
           }
         }
