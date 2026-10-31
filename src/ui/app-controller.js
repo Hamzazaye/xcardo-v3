@@ -1375,7 +1375,7 @@ export class AppController {
               <div class="visual-char-info">
                 <span class="visual-role-pill" style="color:${hero.accent}">${this.t('YOUR CHAMPION', 'بطلك المختار')}</span>
                 <h2 class="visual-char-name">${hero.shortName}</h2>
-                <span class="visual-passive-chip">⚡ ${hero.activeAbility?.name || hero.shortPassive}</span>
+                <span class="visual-passive-chip">${renderGothicIconSVG('bolt')} <span>${hero.activeAbility?.name || hero.shortPassive}</span></span>
               </div>
             </div>
 
@@ -1540,13 +1540,13 @@ export class AppController {
 
         <!-- ROGUELIKE ACT EXPEDITION BOON WAYPOINTS -->
         <div class="roguelike-boons-bar">
-          <div class="gothic-eyebrow">🏕️ ${this.t('ACTIVE EXPEDITION WAYPOINT BOON (APPLIES TO ALL STAGES)', 'بركة معسكر الحملة النشطة')}</div>
+          <div class="gothic-eyebrow">${renderGothicIconSVG('compass')} ${this.t('ACTIVE EXPEDITION WAYPOINT BOON (APPLIES TO ALL STAGES)', 'بركة معسكر الحملة النشطة')}</div>
           <div class="roguelike-boons-grid">
             ${ROGUELIKE_BOONS.map((boon) => {
               const isSelected = selectedBoon === boon.id;
               return `
                 <button class="roguelike-boon-card ${isSelected ? 'active' : ''}" data-action="select-boon" data-boon="${boon.id}">
-                  <span class="boon-icon">${boon.icon}</span>
+                  <span class="boon-icon">${renderGothicIconSVG('sigil')}</span>
                   <div class="boon-copy">
                     <strong>${boon.name}</strong>
                     <small>${boon.desc}</small>
@@ -1560,7 +1560,7 @@ export class AppController {
         <!-- COLLAPSIBLE "READ STORY" DRAWER (KEEPS MAP SCANNABLE FIRST) -->
         <details class="story-lore-drawer">
           <summary class="story-lore-summary">
-            <span>📖 <strong>Read Story & Chapter Lore:</strong> Chapter ${act.roman} (${act.name}) — Rival Commander ${boss.name}</span>
+            <span>${renderGothicIconSVG('book')} <strong>Read Story & Chapter Lore:</strong> Chapter ${act.roman} (${act.name}) — Rival Commander ${boss.name}</span>
             <span class="drawer-toggle-hint">Click to Expand / Collapse Chronicle</span>
           </summary>
           <div class="act-story-showcase">
@@ -1568,10 +1568,10 @@ export class AppController {
               <div class="gothic-eyebrow">CHAPTER ${act.roman}: ${act.name.toUpperCase()} — ${act.subtitle.toUpperCase()}</div>
               <p class="act-story-paragraph">${act.storySummary || act.lore}</p>
               <div class="act-story-goal">
-                <span>🎯 <strong>Mission Objective:</strong> ${act.storyGoal || 'Triumph across all 6 stages to reclaim the Chapter Star-Stone.'}</span>
+                <span>${renderGothicIconSVG('target')} <strong>Mission Objective:</strong> ${act.storyGoal || 'Triumph across all 6 stages to reclaim the Chapter Star-Stone.'}</span>
               </div>
               <div class="act-hero-companion-note">
-                <span>👑 <strong>${hero.shortName}:</strong> "${hero.storyCounsel}"</span>
+                <span>${renderGothicIconSVG('crown')} <strong>${hero.shortName}:</strong> "${hero.storyCounsel}"</span>
               </div>
             </div>
 
@@ -2090,7 +2090,7 @@ export class AppController {
       actionPromptHTML = `
         <div class="tactical-action-prompt prompt-targeting">
           <span class="prompt-pulse-dot targeting-dot"></span>
-          <span><strong>⚡ ${ability.name}:</strong> ${ability.desc} — Click a target tile on the board</span>
+          <span>${renderGothicIconSVG('bolt')} <strong>${ability.name}:</strong> ${ability.desc} — Click a target tile on the board</span>
           <button class="prompt-cancel-chip" data-action="cancel-card">Cancel [Esc]</button>
         </div>
       `;
@@ -2113,7 +2113,7 @@ export class AppController {
       actionPromptHTML = `
         <div class="tactical-action-prompt prompt-player">
           <span class="prompt-pulse-dot player-dot"></span>
-          <span><strong>💡 Tactical Hint (${this.seerHintCoord.coordLabel}):</strong> ${this.seerHintCoord.sentence}</span>
+          <span>${renderGothicIconSVG('eye')} <strong>Tactical Hint (${this.seerHintCoord.coordLabel}):</strong> ${this.seerHintCoord.sentence}</span>
         </div>
       `;
     } else if (snap.mode === 'campaign' && snap.levelNumber === 1 && snap.activePlayer === 'X') {
@@ -2126,7 +2126,7 @@ export class AppController {
       actionPromptHTML = `
         <div class="tactical-action-prompt prompt-player">
           <span class="prompt-pulse-dot player-dot"></span>
-          <span><strong>🎯 Guided Battle:</strong> ${stepMessages[this.onboardingStep] || stepMessages[4]}</span>
+          <span>${renderGothicIconSVG('target')} <strong>Guided Battle:</strong> ${stepMessages[this.onboardingStep] || stepMessages[4]}</span>
         </div>
       `;
     } else if (snap.activePlayer === 'X') {
@@ -2174,7 +2174,7 @@ export class AppController {
                   ${
                     snap.cardsEnabled
                       ? `${renderGothicIconSVG('coin')} Gold: <strong class="tabular-num">${snap.tithe.X}</strong>/${GAME_CONFIG.MAX_BLOOD_TITHE}`
-                      : `🌱 <strong>Pure Tactics</strong> · Next: ${snap.levelData?.nextUnlockLabel || 'Lvl 3 Shop'}`
+                      : `${renderGothicIconSVG('leaf')} <strong>Pure Tactics</strong> · Next: ${snap.levelData?.nextUnlockLabel || 'Lvl 3 Shop'}`
                   }
                 </span>
                 <span class="placements-readout">Moves: <strong class="tabular-num">${snap.placementsRemaining}</strong></span>
@@ -2193,7 +2193,7 @@ export class AppController {
               ${this.showMiniTacticalGrid ? '2D TACTICAL BOARD' : '3D WAR-TABLE'}
             </span>
             <span class="doctrine-mode-badge" title="${doctrine.summary}">
-              ⚔️ ${doctrine.badge}
+              ${renderGothicIconSVG('sword')} ${doctrine.badge}
             </span>
           </div>
 
@@ -2216,7 +2216,7 @@ export class AppController {
               ${renderGothicIconSVG('target')} <span>Threats</span>
             </button>
             <button class="hud-tool-btn ${this.confirmPlacementMode ? 'active' : ''}" aria-pressed="${this.confirmPlacementMode}" data-action="toggle-confirm-mode" title="Toggle 2-Step Confirm Placement vs Instant Placement">
-              <span>${this.confirmPlacementMode ? '✓ Confirm: ON' : '⚡ Instant'}</span>
+              ${renderGothicIconSVG(this.confirmPlacementMode ? 'check' : 'bolt')} <span>${this.confirmPlacementMode ? 'Confirm: ON' : 'Instant'}</span>
             </button>
             <button class="hud-tool-btn ${this.showTacticalIntel ? 'active' : ''}" aria-pressed="${this.showTacticalIntel}" data-action="toggle-intel" title="Toggle Move History Strip, Micro-Rewards & Intel Drawer">
               ${renderGothicIconSVG('book')} <span>History (${snap.moveHistory?.length || 0})</span>
@@ -2247,7 +2247,7 @@ export class AppController {
                 <div class="gothic-progress-fill enemy-fill" style="width:${oPct}%"></div>
               </div>
               <div class="wing-sub-row">
-                <span title="${doctrine.summary}">${snap.cardsEnabled ? `${renderGothicIconSVG('coin')} Gold: <strong class="tabular-num">${snap.tithe.O}</strong>` : `🎯 ${doctrine.rule}`}</span>
+                <span title="${doctrine.summary}">${snap.cardsEnabled ? `${renderGothicIconSVG('coin')} Gold: <strong class="tabular-num">${snap.tithe.O}</strong>` : `${renderGothicIconSVG('target')} ${doctrine.rule}`}</span>
                 <span>Shattered: <strong class="tabular-num">${snap.stonesShatteredThisMatch}</strong></span>
               </div>
             </div>
@@ -2329,13 +2329,13 @@ export class AppController {
                     if (isBossRitual) statusDesc += ' — Telegraphed Boss Ritual Target';
 
                     let centerBadge = '';
-                    if (cell.symbol === 'X') centerBadge = '⚔️';
-                    else if (cell.symbol === 'O') centerBadge = '💀';
-                    else if (cell.obstacle === 'reliquary_coffer') centerBadge = '📦';
-                    else if (cell.anomaly === 'cursed_censer') centerBadge = `💣${cell.bombTimer || ''}`;
-                    else if (cell.anomaly === 'sanctified_mosaic') centerBadge = '✨';
-                    else if (cell.locked > 0) centerBadge = `🔒${cell.locked}`;
-                    else if (isThreatBlock) centerBadge = '🛡️';
+                    if (cell.symbol === 'X') centerBadge = renderGothicIconSVG('crown');
+                    else if (cell.symbol === 'O') centerBadge = renderGothicIconSVG('skull');
+                    else if (cell.obstacle === 'reliquary_coffer') centerBadge = renderGothicIconSVG('chest');
+                    else if (cell.anomaly === 'cursed_censer') centerBadge = `${renderGothicIconSVG('bomb')}<small>${cell.bombTimer || ''}</small>`;
+                    else if (cell.anomaly === 'sanctified_mosaic') centerBadge = renderGothicIconSVG('spark');
+                    else if (cell.locked > 0) centerBadge = `${renderGothicIconSVG('lock')}<small>${cell.locked}</small>`;
+                    else if (isThreatBlock) centerBadge = renderGothicIconSVG('shield');
 
                     const showHeroCallout =
                       isRecommended &&
@@ -2355,7 +2355,7 @@ export class AppController {
                       >
                         <span class="tile-coord-tag">${coordLabel}</span>
                         <span class="tile-center-glyph">${centerBadge}</span>
-                        ${cell.shield > 0 ? '<span class="tile-shield-badge" title="Shielded">🛡️</span>' : ''}
+                        ${cell.shield > 0 ? `<span class="tile-shield-badge" title="Shielded">${renderGothicIconSVG('shield')}</span>` : ''}
                         ${
                           showHeroCallout
                             ? `<span class="tile-callout-pill">${
@@ -2376,6 +2376,20 @@ export class AppController {
 
         <!-- LIVE PRE-COMMIT FORMATION & VP DELTA PREVIEW BAR + CONFIRM PLACEMENT CTA -->
         <div class="board-tactical-footer-bar">
+          ${
+            !this.showMiniTacticalGrid && this.seerHintCoord && snap.activePlayer === 'X'
+              ? `
+                <button type="button" class="floating-3d-callout-badge" data-action="board-cell" data-r="${this.seerHintCoord.r}" data-c="${this.seerHintCoord.c}">
+                  ${renderGothicIconSVG('target')}
+                  <span>${
+                    snap.mode === 'campaign' && snap.levelNumber === 1 && this.onboardingStep === 1
+                      ? `Place ${heroCalloutName} here (${this.seerHintCoord.coordLabel || formatCoordLabel(this.seerHintCoord.r, this.seerHintCoord.c)})`
+                      : `Recommended Tile: ${this.seerHintCoord.coordLabel || formatCoordLabel(this.seerHintCoord.r, this.seerHintCoord.c)}`
+                  }</span>
+                </button>
+              `
+              : ''
+          }
           <div id="live-placement-preview-pill" class="live-placement-preview-pill ${previewSummary ? 'visible' : ''}" role="status" aria-live="polite">
             ${
               previewSummary
@@ -2387,7 +2401,7 @@ export class AppController {
             this.stagedCoord && snap.activePlayer === 'X'
               ? `
                 <button class="btn-gothic-primary btn-confirm-placement" data-action="confirm-placement">
-                  ✓ Confirm Placement at ${formatCoordLabel(this.stagedCoord.r, this.stagedCoord.c)} [Enter]
+                  ${renderGothicIconSVG('check')} Confirm Placement at ${formatCoordLabel(this.stagedCoord.r, this.stagedCoord.c)} [Enter]
                 </button>
               `
               : ''
@@ -2401,7 +2415,7 @@ export class AppController {
           this.showTacticalIntel
             ? `
               <div class="chronicle-feed-panel move-history-panel">
-                <div class="gothic-eyebrow">📜 MOVE HISTORY STRIP (TURN · COORD · FORMATION · VP)</div>
+                <div class="gothic-eyebrow">${renderGothicIconSVG('scroll')} MOVE HISTORY STRIP (TURN · COORD · FORMATION · VP)</div>
                 ${
                   !snap.moveHistory || snap.moveHistory.length === 0
                     ? `<p class="war-counsel-text">No placements yet. Claim ${formatCoordLabel(Math.floor(snap.boardSize / 2), Math.floor(snap.boardSize / 2))} to open the battle!</p>`
@@ -2416,7 +2430,7 @@ export class AppController {
                                 <strong class="hist-coord">${m.player}@${m.coord}</strong>
                                 <span class="hist-form">${m.formation}</span>
                                 <span class="hist-vp ${m.vpDelta > 0 ? 'vp-gain' : ''}">${m.vpDelta > 0 ? `+${m.vpDelta} VP` : '0 VP'}</span>
-                                ${m.shattered > 0 ? `<span class="hist-shatter">💥${m.shattered}</span>` : ''}
+                                ${m.shattered > 0 ? `<span class="hist-shatter">${renderGothicIconSVG('spark')}${m.shattered}</span>` : ''}
                               </li>
                             `
                           )
@@ -2427,7 +2441,7 @@ export class AppController {
               </div>
 
               <div class="chronicle-feed-panel doctrine-intel-panel">
-                <div class="gothic-eyebrow">⚔️ ENEMY DOCTRINE • ${doctrine.badge.toUpperCase()}</div>
+                <div class="gothic-eyebrow">${renderGothicIconSVG('sword')} ENEMY DOCTRINE • ${doctrine.badge.toUpperCase()}</div>
                 <p class="war-counsel-text">${doctrine.summary}</p>
               </div>
 
@@ -2463,9 +2477,9 @@ export class AppController {
                 <button class="bell-ultimate-btn hero-skill-btn ${abilityReady ? 'ready' : ''} ${
                   snap.selectedHeroAbility ? 'selected-skill' : ''
                 }" ${abilityReady ? '' : 'disabled'} data-action="hero-ability" title="${ability.name}: ${ability.desc} (Hotkey: Q)">
-                  ${renderGothicIconSVG('spark')}
+                  ${renderGothicIconSVG('bolt')}
                   <div>
-                    <div class="bell-label">⚡ ${ability.name.toUpperCase()} [Q]</div>
+                    <div class="bell-label">${ability.name.toUpperCase()} [Q]</div>
                     <div class="bell-pct tabular-num">${
                       snap.heroAbilityUsedThisTurn
                         ? 'USED'
@@ -2496,12 +2510,12 @@ export class AppController {
             ? `
               <div class="early-stage-mastery-bar gothic-card-panel">
                 <div class="mastery-rewards-strip" role="group" aria-label="Stage Mastery Micro-Rewards">
-                  <span class="mastery-eyebrow">🏆 STAGE REWARDS:</span>
+                  <span class="mastery-eyebrow">${renderGothicIconSVG('trophy')} STAGE REWARDS:</span>
                   ${EARLY_STAGE_MICRO_REWARDS.map((r) => {
                     const done = Boolean(snap.microRewards?.[r.id]);
                     return `
                       <span class="micro-reward-pill ${done ? 'claimed' : ''}" title="${r.condition} → ${r.rewardLabel}">
-                        ${done ? '✓' : r.icon} <strong>${r.title}</strong> <small>(${r.rewardLabel})</small>
+                        ${done ? renderGothicIconSVG('check') : renderGothicIconSVG('star')} <strong>${r.title}</strong> <small>(${r.rewardLabel})</small>
                       </span>
                     `;
                   }).join('')}
@@ -2513,13 +2527,13 @@ export class AppController {
                       const active = (this.earlyModifierId || 'mod_standard') === mod.id;
                       return `
                         <button class="modifier-pill-btn ${active ? 'active' : ''}" data-action="set-early-modifier" data-mod="${mod.id}" title="${mod.desc}">
-                          ${mod.icon} ${mod.name}
+                          ${renderGothicIconSVG('sigil')} <span>${mod.name}</span>
                         </button>
                       `;
                     }).join('')}
                   </div>
                   <button class="btn-gothic-small preview-scrolls-btn ${this.showScrollPreviewDrawer ? 'deck-active' : ''}" data-action="toggle-scroll-preview">
-                    📜 ${this.showScrollPreviewDrawer ? 'Hide Lvl 3 Scrolls' : 'Preview Lvl 3 Scrolls'}
+                    ${renderGothicIconSVG('scroll')} <span>${this.showScrollPreviewDrawer ? 'Hide Lvl 3 Scrolls' : 'Preview Lvl 3 Scrolls'}</span>
                   </button>
                 </div>
 
@@ -2528,7 +2542,7 @@ export class AppController {
                     ? `
                       <div class="scroll-preview-popover" role="region" aria-label="Level 3 War-Scroll Vault Preview">
                         <div class="popover-head">
-                          <strong>🔓 UNLOCKING AT STAGE #3: 3-SLOT WAR-SCROLL SHOP & GOLD ECONOMY</strong>
+                          <strong>${renderGothicIconSVG('unlock')} UNLOCKING AT STAGE #3: 3-SLOT WAR-SCROLL SHOP & GOLD ECONOMY</strong>
                           <button class="prompt-cancel-chip" data-action="toggle-scroll-preview">Close</button>
                         </div>
                         <div class="scroll-preview-cards-row">

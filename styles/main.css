@@ -4255,3 +4255,381 @@ summary:focus-visible {
     padding: 5px 10px;
   }
 }
+
+/* ============================================================================
+   AAA DARK-FANTASY ROYAL RELIQUARY & FORGED BRONZE UI OVERHAUL
+   (Diablo IV / Baldur's Gate 3 / Gwent Inspired Sculpted Chrome & 3D Board Clarity)
+   ============================================================================ */
+
+:root {
+  --surface-reliquary: radial-gradient(
+      130% 110% at 50% 0%,
+      rgba(64, 42, 96, 0.34) 0%,
+      rgba(15, 11, 26, 0.95) 54%,
+      rgba(7, 5, 13, 0.99) 100%
+    );
+  --surface-reliquary-enemy: radial-gradient(
+      130% 110% at 50% 0%,
+      rgba(112, 22, 46, 0.34) 0%,
+      rgba(18, 10, 22, 0.95) 54%,
+      rgba(8, 5, 12, 0.99) 100%
+    );
+  --bevel-gold-outer: rgba(232, 189, 104, 0.56);
+  --bevel-gold-bright: #fde68a;
+  --shadow-reliquary:
+    0 22px 54px rgba(0, 0, 0, 0.92),
+    0 0 0 1px rgba(6, 4, 12, 0.96),
+    inset 0 1px 0 rgba(255, 245, 209, 0.36),
+    inset 0 0 0 3px rgba(212, 168, 83, 0.11),
+    inset 0 -18px 34px rgba(0, 0, 0, 0.72);
+}
+
+/* 1. Sculpted Obsidian & Double-Bevel Gilded Panels */
+.sanctum-topbar,
+.gothic-card-panel,
+.visual-hero-card,
+.visual-boss-card,
+.hud-wing,
+.hud-center-medallion,
+.v1-shop-strip,
+.early-stage-mastery-bar,
+.chronicle-feed-panel {
+  position: relative;
+  background: var(--surface-reliquary);
+  border: 1.5px solid var(--bevel-gold-outer);
+  box-shadow: var(--shadow-reliquary);
+  backdrop-filter: blur(18px) saturate(160%);
+}
+
+/* Ornamental Corner Brass Filigree Accents on Major Panels */
+.visual-hero-card::before,
+.visual-boss-card::before,
+.hud-wing::before,
+.hud-center-medallion::before,
+.modal-screen-container::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgba(253, 230, 138, 0.16);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* 2. Top Sanctuary Navigation Bar — Recessed Royal Trough & Forged Tabs */
+.sanctum-topbar {
+  padding: 8px 18px;
+  border-radius: 14px;
+  border-bottom: 2px solid rgba(245, 184, 81, 0.68);
+}
+
+.sanctum-nav-tabs {
+  background: rgba(6, 4, 12, 0.72);
+  padding: 4px;
+  border-radius: 11px;
+  border: 1px solid rgba(212, 168, 83, 0.28);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.85);
+  gap: 5px;
+}
+
+.nav-tab-btn {
+  background: linear-gradient(180deg, rgba(34, 25, 50, 0.88) 0%, rgba(16, 12, 26, 0.94) 100%);
+  border: 1px solid rgba(212, 168, 83, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 245, 214, 0.16), 0 3px 8px rgba(0, 0, 0, 0.6);
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.nav-tab-btn.active,
+.nav-tab-btn:hover {
+  background: linear-gradient(180deg, rgba(190, 24, 60, 0.85) 0%, rgba(88, 12, 34, 0.96) 100%);
+  border-color: var(--bevel-gold-bright);
+  color: #fffbeb;
+  box-shadow:
+    0 0 18px rgba(225, 29, 72, 0.5),
+    inset 0 1px 0 rgba(255, 240, 200, 0.48),
+    inset 0 -2px 0 #fde68a;
+}
+
+.nav-tab-btn.nav-play-cta {
+  background: linear-gradient(180deg, #fbbf24 0%, #d97706 48%, #92400e 100%);
+  border: 1.5px solid #fef9c3;
+  color: #1c0f04;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+  font-weight: 900;
+  box-shadow:
+    0 0 20px rgba(245, 158, 11, 0.55),
+    inset 0 1px 0 #ffffff,
+    inset 0 -2px 0 rgba(92, 38, 6, 0.85);
+}
+
+.nav-tab-btn.nav-play-cta:hover {
+  background: linear-gradient(180deg, #fde047 0%, #f59e0b 50%, #b45309 100%);
+  color: #0f0701;
+}
+
+.currency-pill {
+  background: linear-gradient(180deg, rgba(24, 18, 38, 0.95), rgba(10, 7, 18, 0.98));
+  border: 1px solid rgba(232, 189, 104, 0.48);
+  box-shadow: inset 0 1px 0 rgba(255, 244, 206, 0.2), 0 4px 10px rgba(0, 0, 0, 0.7);
+  font-weight: 700;
+}
+
+/* 3. Main Menu Center Action Pedestal & Champion/Boss Portrait Cards */
+.hub-center-action-pod {
+  background: radial-gradient(
+      120% 100% at 50% 0%,
+      rgba(245, 158, 11, 0.18) 0%,
+      rgba(16, 12, 28, 0.93) 58%,
+      rgba(8, 6, 15, 0.98) 100%
+    );
+  border: 1.5px solid rgba(245, 196, 105, 0.58);
+  border-radius: 18px;
+  padding: 14px 18px;
+  box-shadow: var(--shadow-reliquary), 0 0 36px rgba(245, 158, 11, 0.16);
+  backdrop-filter: blur(16px);
+}
+
+.btn-play-monumental {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, #fde047 0%, #f59e0b 45%, #b45309 92%, #78350f 100%);
+  border: 2px solid #fef9c3;
+  color: #1c0d02;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  box-shadow:
+    0 14px 34px rgba(245, 158, 11, 0.55),
+    0 0 0 2px rgba(12, 8, 20, 0.95),
+    inset 0 2px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -3px 0 rgba(92, 36, 6, 0.85);
+}
+
+.btn-play-monumental:hover:not(:disabled) {
+  background: linear-gradient(180deg, #fef08a 0%, #fbbf24 48%, #d97706 100%);
+  color: #090401;
+  box-shadow:
+    0 18px 42px rgba(251, 191, 36, 0.78),
+    0 0 24px rgba(253, 224, 71, 0.65),
+    inset 0 2px 0 #ffffff;
+}
+
+.visual-portrait-big {
+  width: 92px;
+  height: 92px;
+  border-radius: 16px;
+  padding: 3px;
+  background: linear-gradient(145deg, #fde68a 0%, #b45309 50%, #2a1810 100%);
+  border: 2px solid var(--char-color, #fbbf24);
+  box-shadow:
+    0 10px 26px rgba(0, 0, 0, 0.9),
+    0 0 22px color-mix(in srgb, var(--char-color, #f59e0b) 55%, transparent);
+}
+
+.visual-boss-card {
+  background: var(--surface-reliquary-enemy);
+  border-color: rgba(244, 63, 94, 0.58);
+}
+
+.mini-visual-tile {
+  background: linear-gradient(180deg, rgba(32, 24, 48, 0.92), rgba(14, 10, 24, 0.96));
+  border: 1px solid rgba(232, 189, 104, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 244, 206, 0.22), 0 6px 14px rgba(0, 0, 0, 0.75);
+}
+
+.mini-visual-tile:hover {
+  background: linear-gradient(180deg, rgba(180, 83, 9, 0.55), rgba(44, 22, 14, 0.96));
+  border-color: #fef08a;
+  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4), inset 0 1px 0 rgba(255, 250, 220, 0.5);
+}
+
+/* 4. Battle HUD Wings, Jeweled Progress Bars & Sculpted Medallion */
+.hud-wing {
+  border-radius: 14px;
+  padding: 10px 16px;
+}
+
+.hud-wing.enemy-wing {
+  background: var(--surface-reliquary-enemy);
+  border-color: rgba(244, 63, 94, 0.5);
+}
+
+.hud-wing.active-turn {
+  border-color: #fef08a;
+  box-shadow:
+    var(--shadow-reliquary),
+    0 0 26px rgba(251, 191, 36, 0.42);
+}
+
+.hud-commander-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  padding: 2px;
+  background: linear-gradient(145deg, #fde68a, #78350f);
+  border: 2px solid var(--char-color, #fbbf24);
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.88),
+    0 0 18px color-mix(in srgb, var(--char-color, #f59e0b) 50%, transparent);
+}
+
+.gothic-progress-track {
+  height: 9px;
+  border-radius: 99px;
+  background: rgba(6, 4, 12, 0.95);
+  border: 1px solid rgba(212, 168, 83, 0.42);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.9);
+  position: relative;
+}
+
+.gothic-progress-fill {
+  position: relative;
+  border-radius: 99px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.player-fill {
+  background: linear-gradient(90deg, #b45309 0%, #f59e0b 65%, #fef08a 100%);
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.enemy-fill {
+  background: linear-gradient(90deg, #881337 0%, #e11d48 65%, #fda4af 100%);
+  box-shadow: 0 0 12px rgba(244, 63, 94, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.hud-center-medallion {
+  border-radius: 14px;
+  padding: 8px 16px;
+  border-color: rgba(245, 196, 105, 0.62);
+}
+
+.hud-tool-btn {
+  background: linear-gradient(180deg, rgba(36, 27, 54, 0.92), rgba(16, 12, 28, 0.96));
+  border: 1px solid rgba(212, 168, 83, 0.38);
+  border-radius: 7px;
+  padding: 5px 10px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  box-shadow: inset 0 1px 0 rgba(255, 244, 206, 0.18), 0 3px 8px rgba(0, 0, 0, 0.65);
+}
+
+.hud-tool-btn .gothic-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--gold-bright);
+}
+
+.hud-tool-btn.active,
+.hud-tool-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(180, 83, 9, 0.68), rgba(68, 28, 10, 0.95));
+  border-color: #fef08a;
+  color: #fffbeb;
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.45), inset 0 1px 0 rgba(255, 250, 220, 0.45);
+}
+
+/* 5. CRITICAL FIX: Unobstructed 3D War-Table Viewport vs Carved 2D Board Mode */
+.parallel-board-grid.mode-3d-overlay {
+  /* Do NOT draw a flat 25-box dashed rectangle grid over the 3D perspective War-Table
+     and do NOT block mouse raycasting onto the 3D WebGL board! */
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  pointer-events: none !important;
+}
+
+.parallel-board-grid.mode-3d-overlay .board-tile-btn {
+  opacity: 0;
+  pointer-events: none;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Reveal individual 3D overlay cell ONLY when navigated via Keyboard / Screen Reader focus */
+.parallel-board-grid.mode-3d-overlay .board-tile-btn:focus-visible,
+.parallel-board-grid.mode-3d-overlay .board-tile-btn.is-kbd-cursor {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  background: rgba(14, 116, 144, 0.34) !important;
+  border: 2px solid #38bdf8 !important;
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.75) !important;
+}
+
+/* Floating 3D Target Callout Badge for Guided Stage 1 & Tactical Hints */
+.floating-3d-callout-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 99px;
+  background: linear-gradient(180deg, #0284c7 0%, #0c4a6e 100%);
+  border: 1.5px solid #bae6fd;
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  box-shadow:
+    0 10px 26px rgba(0, 0, 0, 0.9),
+    0 0 20px rgba(56, 189, 248, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  animation: recommendedTilePulse 1.6s ease-in-out infinite;
+}
+
+.floating-3d-callout-badge .gothic-icon {
+  width: 15px;
+  height: 15px;
+  color: #fde047;
+}
+
+/* Carved Obsidian & Gold 2D Tactical Board Mode */
+.parallel-board-grid.mode-2d-active {
+  pointer-events: auto !important;
+  padding: 12px;
+  border-radius: 16px;
+  background: radial-gradient(circle at 50% 50%, rgba(28, 20, 46, 0.98), rgba(9, 6, 16, 0.99));
+  border: 2px solid #fde68a;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.95),
+    0 0 34px rgba(245, 158, 11, 0.32),
+    inset 0 0 0 3px rgba(212, 168, 83, 0.18);
+}
+
+.mode-2d-active .board-tile-btn {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(34, 26, 54, 0.95), rgba(16, 12, 28, 0.98));
+  border: 1px solid rgba(212, 168, 83, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 244, 206, 0.16), 0 4px 10px rgba(0, 0, 0, 0.7);
+}
+
+.mode-2d-active .tile-center-glyph .gothic-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.mode-2d-active .board-tile-btn.sym-X .tile-center-glyph {
+  color: #fde047;
+}
+
+.mode-2d-active .board-tile-btn.sym-O .tile-center-glyph {
+  color: #fb7185;
+}
+
+/* 6. Sculpted RPG Action Buttons (Hero Skill [Q] & War-Horn [E]) */
+.bell-ultimate-btn {
+  border-radius: 12px;
+  padding: 10px 15px;
+  background: linear-gradient(180deg, rgba(28, 21, 44, 0.95), rgba(12, 9, 22, 0.98));
+  border: 1.5px solid rgba(212, 168, 83, 0.45);
+  box-shadow: var(--shadow-reliquary);
+}
+
+.bell-ultimate-btn .gothic-icon {
+  width: 20px;
+  height: 20px;
+}
+

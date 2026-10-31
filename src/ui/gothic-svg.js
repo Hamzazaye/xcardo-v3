@@ -615,6 +615,20 @@ export function renderGothicIconSVG(name) {
       return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 11V7A4 4 0 0 1 15.5 5.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
     case 'close':
       return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+    case 'shield':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L20 6V12C20 17 16.5 20.5 12 22C7.5 20.5 4 17 4 12V6L12 2Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><polygon points="12,7 15,12 12,17 9,12" fill="currentColor"/></svg>`;
+    case 'skull':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C7.5 3 4 6.5 4 11C4 13.8 5.5 16.2 7.5 17.5V21H16.5V17.5C18.5 16.2 20 13.8 20 11C20 6.5 16.5 3 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="9" cy="11.5" r="1.8" fill="currentColor"/><circle cx="15" cy="11.5" r="1.8" fill="currentColor"/><line x1="10" y1="18" x2="10" y2="21" stroke="currentColor" stroke-width="1.6"/><line x1="14" y1="18" x2="14" y2="21" stroke="currentColor" stroke-width="1.6"/></svg>`;
+    case 'bomb':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="14" r="7" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 9L19 6M18 4L20 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><polygon points="20,2 21,5 23,5 21,7 22,9 20,7 18,9 19,7 17,5 19,5" fill="currentColor"/></svg>`;
+    case 'bolt':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="13,2 4,14 11,14 10,22 20,10 13,10" fill="currentColor" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
+    case 'trophy':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4H17V10C17 13 14.8 15 12 15C9.2 15 7 13 7 10V4Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7 6H4V9C4 11 5.5 12 7 12M17 6H20V9C20 11 18.5 12 17 12M12 15V20M8 20H16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+    case 'check':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><polyline points="4,12 9.5,17.5 20,6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    case 'compass':
+      return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><polygon points="15.5,8.5 13.5,13.5 8.5,15.5 10.5,10.5" fill="currentColor"/></svg>`;
     case 'sigil':
     default:
       return `<svg class="gothic-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,2 21,12 12,22 3,12" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>`;

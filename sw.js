@@ -3,7 +3,7 @@
  * Offline-First PWA Service Worker
  */
 
-const CACHE_NAME = 'xcardo-v3-cache-v4';
+const CACHE_NAME = 'xcardo-v3-cache-v5';
 const PRECACHE_ASSETS = [
   './',
   './index.html',
