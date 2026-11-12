@@ -36,7 +36,7 @@ export function bootstrapXcardoV3() {
         .keys()
         .then((keys) => {
           for (const key of keys) {
-            if (key !== 'xcardo-v3-cache-v6') {
+            if (key !== 'xcardo-v3-cache-v7') {
               caches.delete(key);
             }
           }
@@ -46,7 +46,7 @@ export function bootstrapXcardoV3() {
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker
-          .register('./sw.js?v=6')
+          .register('./sw.js?v=7')
           .then((reg) => {
             reg.update().catch(() => {});
           })

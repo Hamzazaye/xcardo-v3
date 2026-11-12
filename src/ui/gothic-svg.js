@@ -445,18 +445,22 @@ export function renderFantasyHeroPortraitSVG(heroId = 'hero_paladin', color = '#
         </linearGradient>
       </defs>
       <!-- Backdrop & Nano Banana Painted Character Portrait -->
+      <polygon points="60,3 102,18 117,60 102,102 60,117 18,102 3,60 18,18" fill="#120b1d"/>
       <polygon points="60,5 111,26 111,94 60,115 9,94 9,26" fill="#090610"/>
       <image href="${imgHref}" x="5" y="5" width="110" height="110" preserveAspectRatio="xMidYMid slice" clip-path="url(#${uid}_clip)"/>
       <polygon points="60,5 111,26 111,94 60,115 9,94 9,26" fill="url(#${uid}_vignette)"/>
-      <!-- Ornate Octagonal Royal Medallion Frame -->
-      <polygon points="60,3 113,25 113,95 60,117 7,95 7,25" fill="none" stroke="url(#${uid}_gold)" stroke-width="3.2"/>
-      <polygon points="60,7 109,27 109,93 60,113 11,93 11,27" fill="none" stroke="${color}" stroke-width="1.3" stroke-opacity="0.82"/>
-      <!-- Corner Star Rivets & Bottom Faction Jewel -->
-      <circle cx="60" cy="5" r="2.3" fill="#fef08a"/>
-      <circle cx="10" cy="26" r="2.1" fill="#fef08a"/>
-      <circle cx="110" cy="26" r="2.1" fill="#fef08a"/>
-      <circle cx="10" cy="94" r="2.1" fill="#fef08a"/>
-      <circle cx="110" cy="94" r="2.1" fill="#fef08a"/>
+      <!-- Ornate Double-Bevel Forged Royal Medallion Frame -->
+      <polygon points="60,2 114,24 114,96 60,118 6,96 6,24" fill="none" stroke="#2a1608" stroke-width="5.2"/>
+      <polygon points="60,3 113,25 113,95 60,117 7,95 7,25" fill="none" stroke="url(#${uid}_gold)" stroke-width="3.6"/>
+      <polygon points="60,8 108,28 108,92 60,112 12,92 12,28" fill="none" stroke="${color}" stroke-width="1.6" stroke-opacity="0.9"/>
+      <!-- Corner & Side Filigree Studs + Bottom Faction Jewel -->
+      <polygon points="60,0 65,6 60,11 55,6" fill="#fef08a" stroke="#78350f" stroke-width="1"/>
+      <circle cx="10" cy="26" r="2.8" fill="#fef08a" stroke="#78350f" stroke-width="0.9"/>
+      <circle cx="110" cy="26" r="2.8" fill="#fef08a" stroke="#78350f" stroke-width="0.9"/>
+      <circle cx="10" cy="94" r="2.8" fill="#fef08a" stroke="#78350f" stroke-width="0.9"/>
+      <circle cx="110" cy="94" r="2.8" fill="#fef08a" stroke="#78350f" stroke-width="0.9"/>
+      <circle cx="8" cy="60" r="2.2" fill="${color}"/>
+      <circle cx="112" cy="60" r="2.2" fill="${color}"/>
       ${crestBadge}
     </svg>
   `;
@@ -518,16 +522,20 @@ export function renderBossCrestSVG(bossId = 'boss_malakor', color = '#e11d48') {
           <stop offset="100%" stop-color="#7f1d1d"/>
         </linearGradient>
       </defs>
+      <polygon points="60,3 102,18 117,60 102,102 60,117 18,102 3,60 18,18" fill="#16070d"/>
       <polygon points="60,5 111,26 111,94 60,115 9,94 9,26" fill="#08040b"/>
       <image href="${imgHref}" x="5" y="5" width="110" height="110" preserveAspectRatio="xMidYMid slice" clip-path="url(#${uid}_clip)"/>
       <polygon points="60,5 111,26 111,94 60,115 9,94 9,26" fill="url(#${uid}_vignette)"/>
-      <polygon points="60,3 113,25 113,95 60,117 7,95 7,25" fill="none" stroke="url(#${uid}_gold)" stroke-width="3.2"/>
-      <polygon points="60,7 109,27 109,93 60,113 11,93 11,27" fill="none" stroke="${color}" stroke-width="1.4" stroke-opacity="0.85"/>
-      <circle cx="60" cy="5" r="2.3" fill="#fef08a"/>
-      <circle cx="10" cy="26" r="2" fill="${color}"/>
-      <circle cx="110" cy="26" r="2" fill="${color}"/>
-      <circle cx="10" cy="94" r="2" fill="${color}"/>
-      <circle cx="110" cy="94" r="2" fill="${color}"/>
+      <polygon points="60,2 114,24 114,96 60,118 6,96 6,24" fill="none" stroke="#260710" stroke-width="5.2"/>
+      <polygon points="60,3 113,25 113,95 60,117 7,95 7,25" fill="none" stroke="url(#${uid}_gold)" stroke-width="3.6"/>
+      <polygon points="60,8 108,28 108,92 60,112 12,92 12,28" fill="none" stroke="${color}" stroke-width="1.6" stroke-opacity="0.9"/>
+      <polygon points="60,0 65,6 60,11 55,6" fill="${color}" stroke="#fef08a" stroke-width="1"/>
+      <circle cx="10" cy="26" r="2.8" fill="${color}" stroke="#fef08a" stroke-width="0.8"/>
+      <circle cx="110" cy="26" r="2.8" fill="${color}" stroke="#fef08a" stroke-width="0.8"/>
+      <circle cx="10" cy="94" r="2.8" fill="${color}" stroke="#fef08a" stroke-width="0.8"/>
+      <circle cx="110" cy="94" r="2.8" fill="${color}" stroke="#fef08a" stroke-width="0.8"/>
+      <circle cx="8" cy="60" r="2.2" fill="#fef08a"/>
+      <circle cx="112" cy="60" r="2.2" fill="#fef08a"/>
       ${bossGem}
     </svg>
   `;
@@ -678,4 +686,143 @@ export function renderMiniBoardPreviewSVG(cells = [[1, 1]], mode = 'strike') {
     }
   }
   return `<svg class="mini-board-preview-svg" viewBox="0 0 42 42" aria-hidden="true">${tiles}</svg>`;
+}
+
+/**
+ * Render 4 Forged-Bronze & Gilded Filigree Corner Brackets (`renderOrnateCornerFiligreeSVG`)
+ * Gives HUD wings, Hero/Boss Pedestals, and Reliquary Modals a sculpted Diablo IV / Baldur's Gate 3 metallic frame.
+ */
+export function renderOrnateCornerFiligreeSVG(variant = 'gold') {
+  const strokeMain = variant === 'crimson' ? '#fb7185' : '#fde68a';
+  const strokeSub = variant === 'crimson' ? '#e11d48' : '#d97706';
+  const gemFill = variant === 'crimson' ? '#f43f5e' : '#f59e0b';
+  const cornerPiece = (cls) => `
+    <svg class="ornate-corner-svg ${cls}" viewBox="0 0 36 36" aria-hidden="true">
+      <path d="M2,34 L2,10 L10,2 L34,2" fill="none" stroke="${strokeMain}" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M6,28 L6,13 L13,6 L28,6" fill="none" stroke="${strokeSub}" stroke-width="1.4" stroke-opacity="0.88"/>
+      <polygon points="2,2 12,2 2,12" fill="${strokeSub}" fill-opacity="0.75"/>
+      <polygon points="9,4 14,9 9,14 4,9" fill="${gemFill}" stroke="#ffffff" stroke-width="0.9"/>
+      <circle cx="22" cy="4" r="1.7" fill="${strokeMain}"/>
+      <circle cx="4" cy="22" r="1.7" fill="${strokeMain}"/>
+    </svg>
+  `;
+  return `
+    <div class="ornate-filigree-layer" aria-hidden="true">
+      ${cornerPiece('corner-tl')}
+      ${cornerPiece('corner-tr')}
+      ${cornerPiece('corner-bl')}
+      ${cornerPiece('corner-br')}
+    </div>
+  `;
+}
+
+/**
+ * Render an Ornate Winged Solar Crest & Wyvern Filigree Header Crown (`viewBox="0 0 240 24"`)
+ */
+export function renderHeraldryCrownSVG(variant = 'gold') {
+  const gold = variant === 'crimson' ? '#fda4af' : '#fde68a';
+  const bronze = variant === 'crimson' ? '#e11d48' : '#d97706';
+  const gem = variant === 'crimson' ? '#f43f5e' : '#38bdf8';
+  return `
+    <svg class="heraldry-crown-svg" viewBox="0 0 240 24" aria-hidden="true">
+      <path d="M8,20 L78,20 L94,10 L120,2 L146,10 L162,20 L232,20" fill="none" stroke="${bronze}" stroke-width="1.8" stroke-opacity="0.85"/>
+      <path d="M36,16 L84,16 L102,7 L120,1 L138,7 L156,16 L204,16" fill="none" stroke="${gold}" stroke-width="1.4"/>
+      <polygon points="120,2 132,12 120,22 108,12" fill="#120c1f" stroke="${gold}" stroke-width="1.8"/>
+      <polygon points="120,6 127,12 120,18 113,12" fill="${gem}" stroke="#ffffff" stroke-width="0.9"/>
+      <polygon points="88,14 95,10 92,18" fill="${gold}"/>
+      <polygon points="152,14 145,10 148,18" fill="${gold}"/>
+      <circle cx="64" cy="18" r="2" fill="${gold}"/>
+      <circle cx="176" cy="18" r="2" fill="${gold}"/>
+    </svg>
+  `;
+}
+
+/**
+ * Render a Segmented Faceted Soul-Gem Victory Point Crystal Track (`renderVpCrystalTrackSVG`)
+ * Displays each Victory Point (1..targetVp) as a socketed 3D-styled crystal gem alongside the progress conduit.
+ */
+export function renderVpCrystalTrackSVG(currentVp = 0, targetVp = 4, faction = 'player') {
+  const total = Math.max(3, Math.min(10, Number(targetVp) || 4));
+  const earned = Math.max(0, Math.min(total, Number(currentVp) || 0));
+  const isPlayer = faction === 'player';
+  const activeFill = isPlayer ? '#f59e0b' : '#e11d48';
+  const activeCore = isPlayer ? '#fef08a' : '#fecdd3';
+  const strokeCol = isPlayer ? '#fde68a' : '#fda4af';
+
+  const gems = [];
+  for (let i = 0; i < total; i++) {
+    const lit = i < earned;
+    gems.push(`
+      <span class="vp-crystal-socket ${lit ? 'is-lit' : 'is-empty'} ${isPlayer ? 'player-gem' : 'enemy-gem'}" title="${i + 1} / ${total} Victory Points">
+        <svg viewBox="0 0 22 22" class="vp-gem-svg" aria-hidden="true">
+          <polygon points="11,1 20,8 17,20 5,20 2,8" fill="${lit ? activeFill : '#110c1d'}" stroke="${lit ? strokeCol : 'rgba(212,168,83,0.38)'}" stroke-width="1.6"/>
+          ${
+            lit
+              ? `<polygon points="11,4 16,9 14,17 8,17 6,9" fill="${activeCore}" fill-opacity="0.88"/>
+                 <circle cx="9.5" cy="7.5" r="1.4" fill="#ffffff"/>`
+              : `<polygon points="11,5 15,9 13,16 9,16 7,9" fill="#1d1530" fill-opacity="0.65"/>`
+          }
+        </svg>
+      </span>
+    `);
+  }
+  return `<div class="vp-crystal-track-row" aria-hidden="true">${gems.join('')}</div>`;
+}
+
+/**
+ * Render a Sculpted Liquid-Fire War-Horn Ultimate Orb Vessel (`renderUltimateVesselSVG`)
+ */
+export function renderUltimateVesselSVG(chargePct = 0, isReady = false, isUsed = false) {
+  const pct = Math.max(0, Math.min(100, Math.round(Number(chargePct) || 0)));
+  const fillY = Math.round(86 - (pct / 100) * 72);
+  const uid = `orb_${pct}_${isReady ? 'r' : 'c'}`;
+  const liquidTop = isReady ? '#fef08a' : '#f59e0b';
+  const liquidBot = isReady ? '#d97706' : '#9f1239';
+  const rimStroke = isReady ? '#fef08a' : '#d4a853';
+
+  return `
+    <svg class="ultimate-vessel-svg" viewBox="0 0 96 96" aria-hidden="true">
+      <defs>
+        <clipPath id="${uid}_sphere">
+          <circle cx="48" cy="48" r="35"/>
+        </clipPath>
+        <linearGradient id="${uid}_liq" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stop-color="${liquidTop}"/>
+          <stop offset="48%" stop-color="#ea580c"/>
+          <stop offset="100%" stop-color="${liquidBot}"/>
+        </linearGradient>
+        <radialGradient id="${uid}_glare" cx="35%" cy="28%" r="55%">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.42"/>
+          <stop offset="45%" stop-color="#ffffff" stop-opacity="0.06"/>
+          <stop offset="100%" stop-color="#000000" stop-opacity="0.55"/>
+        </radialGradient>
+      </defs>
+      <!-- Outer Forged Dragon-Bronze Bezel & 8 Rivets -->
+      <polygon points="48,2 81,15 94,48 81,81 48,94 15,81 2,48 15,15" fill="#130d21" stroke="${rimStroke}" stroke-width="2.6"/>
+      <circle cx="48" cy="48" r="39" fill="#090612" stroke="#78350f" stroke-width="3.2"/>
+      <!-- Inner Dark-Obsidian Glass Vessel + Rising Molten Liquid Fill -->
+      <g clip-path="url(#${uid}_sphere)">
+        <rect x="10" y="10" width="76" height="76" fill="#0c0817"/>
+        ${
+          !isUsed && pct > 0
+            ? `
+              <rect x="10" y="${fillY}" width="76" height="${90 - fillY}" fill="url(#${uid}_liq)"/>
+              <path d="M10,${fillY} Q29,${fillY - 4} 48,${fillY} T86,${fillY}" fill="none" stroke="#fef9c3" stroke-width="2" stroke-opacity="0.85"/>
+            `
+            : ''
+        }
+        <circle cx="48" cy="48" r="35" fill="url(#${uid}_glare)"/>
+      </g>
+      <!-- Inner Gilded Ring & 8 Studs -->
+      <circle cx="48" cy="48" r="36" fill="none" stroke="${rimStroke}" stroke-width="2.2"/>
+      <circle cx="48" cy="8" r="2.2" fill="#fef08a"/>
+      <circle cx="48" cy="88" r="2.2" fill="#fef08a"/>
+      <circle cx="8" cy="48" r="2.2" fill="#fef08a"/>
+      <circle cx="88" cy="48" r="2.2" fill="#fef08a"/>
+      <circle cx="20" cy="20" r="1.9" fill="${rimStroke}"/>
+      <circle cx="76" cy="20" r="1.9" fill="${rimStroke}"/>
+      <circle cx="20" cy="76" r="1.9" fill="${rimStroke}"/>
+      <circle cx="76" cy="76" r="1.9" fill="${rimStroke}"/>
+    </svg>
+  `;
 }

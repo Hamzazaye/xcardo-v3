@@ -50,6 +50,10 @@ import {
   renderMiniBoardPreviewSVG,
   renderRoseWindowSVG,
   renderFantasyHeroPortraitSVG,
+  renderOrnateCornerFiligreeSVG,
+  renderHeraldryCrownSVG,
+  renderVpCrystalTrackSVG,
+  renderUltimateVesselSVG,
 } from './gothic-svg.js';
 
 export class AppController {
@@ -1370,6 +1374,7 @@ export class AppController {
         <section class="hub-bottom-visual-dock">
           <!-- LEFT: YOUR CHAMPION VISUAL MEDALLION + 6-AVATAR SWITCHER -->
           <div class="gothic-card-panel story-chronicle-card visual-hero-card">
+            ${renderOrnateCornerFiligreeSVG('gold')}
             <div class="visual-duel-row">
               <div class="visual-portrait-big hero-frame" style="--char-color:${hero.color}">
                 ${renderFantasyHeroPortraitSVG(hero.id, hero.color)}
@@ -1394,6 +1399,8 @@ export class AppController {
 
           <!-- CENTER: ICONIC PLAY STAGE BUTTON, CAMERA PILLS & 4 QUICK TILES -->
           <div class="hub-center-action-pod">
+            ${renderOrnateCornerFiligreeSVG('gold')}
+            ${renderHeraldryCrownSVG('gold')}
             <div class="stage-visual-chips">
               <span class="stage-chip">${this.t(`STAGE #${nextLevel.level}`, `المرحلة #${nextLevel.level}`)}</span>
               <span class="stage-chip">${nextLevel.boardSize}×${nextLevel.boardSize}</span>
@@ -1440,6 +1447,7 @@ export class AppController {
 
           <!-- RIGHT: RIVAL WARLORD VISUAL MEDALLION -->
           <div class="gothic-card-panel hub-journey-card visual-boss-card">
+            ${renderOrnateCornerFiligreeSVG('crimson')}
             <div class="visual-duel-row boss-duel-row">
               <div class="visual-char-info boss-char-info">
                 <span class="visual-role-pill enemy-pill">${this.t('CHAPTER RIVAL', 'خصم الفصل')}</span>
@@ -2158,15 +2166,19 @@ export class AppController {
       <header class="battle-hud-topbar">
         <!-- PLAYER FANTASY WAR HERO WING -->
         <div class="hud-wing player-wing ${snap.activePlayer === 'X' ? 'active-turn' : ''}">
+          ${renderOrnateCornerFiligreeSVG('gold')}
           <div class="hud-commander-row">
             <div class="hud-commander-avatar player-avatar" style="--char-color:${hero.color}">
               ${renderFantasyHeroPortraitSVG(hero.id, hero.color)}
             </div>
             <div class="hud-commander-details">
               <div class="wing-faction-tag" dir="auto">${hero.shortName.toUpperCase()} · ${hero.playstyleTag || hero.classTitle}</div>
-              <div class="wing-score-row" dir="ltr">
-                <span class="score-big tabular-num ${pulseX}">${snap.scores.X}</span>
-                <span class="score-target tabular-num">/ ${snap.targetScore} VP</span>
+              <div class="wing-score-gems-row" dir="ltr">
+                <div class="wing-score-row">
+                  <span class="score-big tabular-num ${pulseX}">${snap.scores.X}</span>
+                  <span class="score-target tabular-num">/ ${snap.targetScore} VP</span>
+                </div>
+                ${renderVpCrystalTrackSVG(snap.scores.X, snap.targetScore, 'player')}
               </div>
               <div class="gothic-progress-track" role="progressbar" aria-label="Player Score Progress" aria-valuenow="${snap.scores.X}" aria-valuemin="0" aria-valuemax="${snap.targetScore}">
                 <div class="gothic-progress-fill player-fill" style="width:${xPct}%"></div>
@@ -2187,9 +2199,12 @@ export class AppController {
 
         <!-- CENTER BATTLE MEDALLION & COMPACT TOOLBAR -->
         <div class="hud-center-medallion">
+          ${renderOrnateCornerFiligreeSVG(snap.activePlayer === 'X' ? 'gold' : 'crimson')}
+          ${renderHeraldryCrownSVG(snap.activePlayer === 'X' ? 'gold' : 'crimson')}
           <div class="medallion-status-row">
             <div class="turn-pill ${snap.activePlayer === 'X' ? 'turn-x' : 'turn-o'}">
-              ${snap.activePlayer === 'X' ? `${hero.shortName.toUpperCase()}'S TURN` : `${boss.name.split(' ')[0].toUpperCase()} MOVING`} • T<span class="tabular-num">${snap.turnNumber}</span>
+              ${renderGothicIconSVG(snap.activePlayer === 'X' ? 'crown' : 'skull')}
+              <span>${snap.activePlayer === 'X' ? `${hero.shortName.toUpperCase()}'S TURN` : `${boss.name.split(' ')[0].toUpperCase()} MOVING`} • T<span class="tabular-num">${snap.turnNumber}</span></span>
             </div>
             <span class="view-mode-badge ${this.showMiniTacticalGrid ? 'badge-2d' : 'badge-3d'}" role="status">
               ${this.showMiniTacticalGrid ? '2D TACTICAL BOARD' : '3D WAR-TABLE'}
@@ -2238,12 +2253,16 @@ export class AppController {
 
         <!-- ENEMY WARLORD COMMANDER WING -->
         <div class="hud-wing enemy-wing ${snap.activePlayer === 'O' ? 'active-turn' : ''}">
+          ${renderOrnateCornerFiligreeSVG('crimson')}
           <div class="hud-commander-row enemy-commander-row">
             <div class="hud-commander-details enemy-details">
               <div class="wing-faction-tag" dir="auto" title="${doctrine.summary}">${boss.name.toUpperCase()} · ${doctrine.title.toUpperCase()}</div>
-              <div class="wing-score-row" dir="ltr">
-                <span class="score-big tabular-num ${pulseO}">${snap.scores.O}</span>
-                <span class="score-target tabular-num">/ ${snap.targetScore} VP</span>
+              <div class="wing-score-gems-row enemy-gems-row" dir="ltr">
+                ${renderVpCrystalTrackSVG(snap.scores.O, snap.targetScore, 'enemy')}
+                <div class="wing-score-row">
+                  <span class="score-big tabular-num ${pulseO}">${snap.scores.O}</span>
+                  <span class="score-target tabular-num">/ ${snap.targetScore} VP</span>
+                </div>
               </div>
               <div class="gothic-progress-track" role="progressbar" aria-label="Enemy Score Progress" aria-valuenow="${snap.scores.O}" aria-valuemin="0" aria-valuemax="${snap.targetScore}">
                 <div class="gothic-progress-fill enemy-fill" style="width:${oPct}%"></div>
@@ -2479,9 +2498,9 @@ export class AppController {
                 <button class="bell-ultimate-btn hero-skill-btn ${abilityReady ? 'ready' : ''} ${
                   snap.selectedHeroAbility ? 'selected-skill' : ''
                 }" ${abilityReady ? '' : 'disabled'} data-action="hero-ability" title="${ability.name}: ${ability.desc} (Hotkey: Q)">
-                  ${renderGothicIconSVG('bolt')}
-                  <div>
-                    <div class="bell-label">${ability.name.toUpperCase()} [Q]</div>
+                  <span class="skill-rune-emblem">${renderGothicIconSVG('bolt')}</span>
+                  <div class="skill-plaque-copy">
+                    <div class="bell-label">${ability.name.toUpperCase()} <kbd class="skill-keycap">Q</kbd></div>
                     <div class="bell-pct tabular-num">${
                       snap.heroAbilityUsedThisTurn
                         ? 'USED'
@@ -2494,12 +2513,15 @@ export class AppController {
               `
               : ''
           }
-          <button class="bell-ultimate-btn ${bellReady ? 'ready' : ''}" ${
+          <button class="bell-ultimate-btn war-horn-vessel-btn ${bellReady ? 'ready' : ''}" ${
       bellReady ? '' : 'disabled'
     } data-action="toll-bell" title="War-Horn Ultimate (Hotkey: E)">
-            ${renderGothicIconSVG('bell')}
-            <div>
-              <div class="bell-label">WAR-HORN [E]</div>
+            <div class="ultimate-orb-wrap">
+              ${renderUltimateVesselSVG(snap.bellCharge.X, bellReady, snap.bellUsedThisMatch.X)}
+              <span class="orb-center-icon">${renderGothicIconSVG('bell')}</span>
+            </div>
+            <div class="skill-plaque-copy">
+              <div class="bell-label">WAR-HORN <kbd class="skill-keycap">E</kbd></div>
               <div class="bell-pct tabular-num">${
                 snap.bellUsedThisMatch.X ? 'UNLEASHED' : `${Math.floor(snap.bellCharge.X)}%`
               }</div>
@@ -2511,6 +2533,7 @@ export class AppController {
           !snap.cardsEnabled
             ? `
               <div class="early-stage-mastery-bar gothic-card-panel">
+                ${renderOrnateCornerFiligreeSVG('gold')}
                 <div class="mastery-rewards-strip" role="group" aria-label="Stage Mastery Micro-Rewards">
                   <span class="mastery-eyebrow">${renderGothicIconSVG('trophy')} STAGE REWARDS:</span>
                   ${EARLY_STAGE_MICRO_REWARDS.map((r) => {
