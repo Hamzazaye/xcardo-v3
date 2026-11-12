@@ -49,6 +49,7 @@ export class GothicScene3D {
     this.boardSize = 5;
     this.altarData = null;
     this.inquisitorMesh = null;
+    this.is2DBoardMode = false;
 
     this.piecesRoot = new THREE.Group();
     this.piecesRoot.name = 'PiecesRoot';
@@ -296,6 +297,29 @@ export class GothicScene3D {
     this.inquisitorMesh.position.set(0, -0.35, -halfWidth - 1.15);
     this.scene.add(this.inquisitorMesh);
     this.inquisitorRimLight.position.set(0, 2.8, -halfWidth - 1.8);
+
+    if (this.is2DBoardMode) {
+      this.set2DBoardMode(true);
+    }
+  }
+
+  /**
+   * Toggle 2D Tactical Board Mode: hides the 3D War-Table, 3D pieces, and 3D Warlord
+   * so the 2D board and 3D board NEVER overlap visually.
+   */
+  set2DBoardMode(is2D = false) {
+    this.is2DBoardMode = Boolean(is2D);
+    const show3D = !this.is2DBoardMode;
+    if (this.altarData && this.altarData.root) {
+      this.altarData.root.visible = show3D;
+    }
+    if (this.piecesRoot) this.piecesRoot.visible = show3D;
+    if (this.entitiesRoot) this.entitiesRoot.visible = show3D;
+    if (this.beamsRoot) this.beamsRoot.visible = show3D;
+    if (this.inquisitorMesh) this.inquisitorMesh.visible = show3D;
+    if (!show3D && this.ghostMesh) {
+      this.ghostMesh.visible = false;
+    }
   }
 
   tileToWorld(r, c) {
@@ -946,7 +970,7 @@ export class GothicScene3D {
   }
 
   _raycastAltarTile() {
-    if (!this.altarData || !this.altarData.tilesGroup) return null;
+    if (this.is2DBoardMode || !this.altarData || !this.altarData.tilesGroup) return null;
     this.raycaster.setFromCamera(this.pointerNDC, this.camera);
 
     // 1. Raycast against 3D Sculpted Pieces, Board Entities, and Stone Tiles (recursively)

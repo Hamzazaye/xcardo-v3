@@ -413,6 +413,7 @@ export class AppController {
   toggle2DView() {
     const state = this.save.getState();
     this.showMiniTacticalGrid = !this.showMiniTacticalGrid;
+    this.scene3d?.set2DBoardMode?.(this.showMiniTacticalGrid);
     if (this.showMiniTacticalGrid) {
       // Save current 3D camera preset before animating into 2D Top-Down Tactical View
       this.saved3DCameraPreset =
@@ -1150,6 +1151,7 @@ export class AppController {
   render() {
     if (!this.rootEl) return;
     this._syncDocumentDirection();
+    this.scene3d?.set2DBoardMode?.(this.currentScreen === 'battle' && Boolean(this.showMiniTacticalGrid));
 
     let screenHTML = '';
     switch (this.currentScreen) {
@@ -2161,20 +2163,20 @@ export class AppController {
               ${renderFantasyHeroPortraitSVG(hero.id, hero.color)}
             </div>
             <div class="hud-commander-details">
-              <div class="wing-faction-tag">${hero.shortName.toUpperCase()} · ${hero.playstyleTag || hero.classTitle}</div>
-              <div class="wing-score-row">
+              <div class="wing-faction-tag" dir="auto">${hero.shortName.toUpperCase()} · ${hero.playstyleTag || hero.classTitle}</div>
+              <div class="wing-score-row" dir="ltr">
                 <span class="score-big tabular-num ${pulseX}">${snap.scores.X}</span>
                 <span class="score-target tabular-num">/ ${snap.targetScore} VP</span>
               </div>
               <div class="gothic-progress-track" role="progressbar" aria-label="Player Score Progress" aria-valuenow="${snap.scores.X}" aria-valuemin="0" aria-valuemax="${snap.targetScore}">
                 <div class="gothic-progress-fill player-fill" style="width:${xPct}%"></div>
               </div>
-              <div class="wing-sub-row">
-                <span class="tithe-readout">
+              <div class="wing-sub-row" dir="auto">
+                <span class="tithe-readout" title="${snap.levelData?.nextUnlockLabel || 'Level 3 War-Scroll Shop'}">
                   ${
                     snap.cardsEnabled
                       ? `${renderGothicIconSVG('coin')} Gold: <strong class="tabular-num">${snap.tithe.X}</strong>/${GAME_CONFIG.MAX_BLOOD_TITHE}`
-                      : `${renderGothicIconSVG('leaf')} <strong>Pure Tactics</strong> · Next: ${snap.levelData?.nextUnlockLabel || 'Lvl 3 Shop'}`
+                      : `${renderGothicIconSVG('leaf')} <strong>Pure Tactics</strong> · Lvl 3 Shop`
                   }
                 </span>
                 <span class="placements-readout">Moves: <strong class="tabular-num">${snap.placementsRemaining}</strong></span>
@@ -2238,17 +2240,17 @@ export class AppController {
         <div class="hud-wing enemy-wing ${snap.activePlayer === 'O' ? 'active-turn' : ''}">
           <div class="hud-commander-row enemy-commander-row">
             <div class="hud-commander-details enemy-details">
-              <div class="wing-faction-tag" title="${doctrine.summary}">${boss.name.toUpperCase()} · ${doctrine.title.toUpperCase()}</div>
-              <div class="wing-score-row">
+              <div class="wing-faction-tag" dir="auto" title="${doctrine.summary}">${boss.name.toUpperCase()} · ${doctrine.title.toUpperCase()}</div>
+              <div class="wing-score-row" dir="ltr">
                 <span class="score-big tabular-num ${pulseO}">${snap.scores.O}</span>
                 <span class="score-target tabular-num">/ ${snap.targetScore} VP</span>
               </div>
               <div class="gothic-progress-track" role="progressbar" aria-label="Enemy Score Progress" aria-valuenow="${snap.scores.O}" aria-valuemin="0" aria-valuemax="${snap.targetScore}">
                 <div class="gothic-progress-fill enemy-fill" style="width:${oPct}%"></div>
               </div>
-              <div class="wing-sub-row">
-                <span title="${doctrine.summary}">${snap.cardsEnabled ? `${renderGothicIconSVG('coin')} Gold: <strong class="tabular-num">${snap.tithe.O}</strong>` : `${renderGothicIconSVG('target')} ${doctrine.rule}`}</span>
-                <span>Shattered: <strong class="tabular-num">${snap.stonesShatteredThisMatch}</strong></span>
+              <div class="wing-sub-row" dir="auto">
+                <span class="tithe-readout" title="${doctrine.summary}">${snap.cardsEnabled ? `${renderGothicIconSVG('coin')} Gold: <strong class="tabular-num">${snap.tithe.O}</strong>` : `${renderGothicIconSVG('target')} ${doctrine.title}`}</span>
+                <span class="placements-readout">Shattered: <strong class="tabular-num">${snap.stonesShatteredThisMatch}</strong></span>
               </div>
             </div>
             <div class="hud-commander-avatar enemy-avatar" style="--char-color:${boss.color}">

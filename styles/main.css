@@ -3513,9 +3513,9 @@ summary:focus-visible {
 }
 
 .board-tile-btn.is-recommended {
-  border: 2px solid #38bdf8 !important;
-  background: rgba(14, 116, 144, 0.28) !important;
-  box-shadow: 0 0 18px rgba(56, 189, 248, 0.65), inset 0 0 10px rgba(56, 189, 248, 0.35) !important;
+  border: 2px solid #38bdf8;
+  background: rgba(14, 116, 144, 0.28);
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.65), inset 0 0 10px rgba(56, 189, 248, 0.35);
   animation: recommendedTilePulse 1.5s ease-in-out infinite;
   z-index: 3;
 }
@@ -3535,9 +3535,9 @@ summary:focus-visible {
 }
 
 .board-tile-btn.is-selected {
-  border: 2px solid #fbbf24 !important;
-  background: rgba(245, 158, 11, 0.34) !important;
-  box-shadow: 0 0 18px rgba(251, 191, 36, 0.75) !important;
+  border: 2px solid #fbbf24;
+  background: rgba(245, 158, 11, 0.34);
+  box-shadow: 0 0 18px rgba(251, 191, 36, 0.75);
 }
 
 /* Threat Overlay: Enemy scoring lines in Amber, Guaranteed Blocks in Red */
@@ -3548,14 +3548,14 @@ summary:focus-visible {
 }
 
 .board-tile-btn.is-threat-block {
-  border: 2px solid var(--threat-red) !important;
-  background: rgba(239, 68, 68, 0.28) !important;
-  box-shadow: 0 0 16px rgba(239, 68, 68, 0.65), inset 0 0 10px rgba(239, 68, 68, 0.4) !important;
+  border: 2px solid var(--threat-red);
+  background: rgba(239, 68, 68, 0.28);
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.65), inset 0 0 10px rgba(239, 68, 68, 0.4);
 }
 
 .board-tile-btn.is-boss-ritual {
-  border: 2px dashed #f43f5e !important;
-  background: rgba(225, 29, 72, 0.28) !important;
+  border: 2px dashed #f43f5e;
+  background: rgba(225, 29, 72, 0.28);
 }
 
 .tile-coord-tag {
@@ -4447,6 +4447,43 @@ summary:focus-visible {
 .hud-wing {
   border-radius: 14px;
   padding: 10px 16px;
+  overflow: hidden;
+}
+
+.wing-faction-tag {
+  unicode-bidi: plaintext;
+}
+
+.wing-sub-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  unicode-bidi: plaintext;
+}
+
+.wing-sub-row .tithe-readout {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wing-sub-row .placements-readout {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.wing-sub-row .gothic-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  color: var(--gold-bright);
 }
 
 .hud-wing.enemy-wing {
@@ -4528,22 +4565,42 @@ summary:focus-visible {
   box-shadow: 0 0 14px rgba(245, 158, 11, 0.45), inset 0 1px 0 rgba(255, 250, 220, 0.45);
 }
 
-/* 5. CRITICAL FIX: Unobstructed 3D War-Table Viewport vs Carved 2D Board Mode */
-.parallel-board-grid.mode-3d-overlay {
-  /* Do NOT draw a flat 25-box dashed rectangle grid over the 3D perspective War-Table
-     and do NOT block mouse raycasting onto the 3D WebGL board! */
+/* 5. CRITICAL FIX: Zero Overlap Between 3D War-Table & 2D Tactical Board */
+.battle-board-safe-area.is-3d-mode {
+  justify-content: flex-end;
+  padding-bottom: 6px;
+}
+
+.battle-board-safe-area.is-2d-mode {
+  justify-content: center;
+}
+
+.parallel-board-grid.mode-3d-overlay:not(:focus-within) {
+  /* Completely clip the 2D DOM grid off-screen in 3D mode so it NEVER visually
+     overlaps the 3D War-Table, while staying in the Accessibility Tree for screen readers! */
+  position: fixed !important;
+  top: -9999px !important;
+  left: -9999px !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  clip-path: inset(50%) !important;
+  border: 0 !important;
   background: transparent !important;
-  border-color: transparent !important;
   box-shadow: none !important;
+  opacity: 0 !important;
   pointer-events: none !important;
 }
 
 .parallel-board-grid.mode-3d-overlay .board-tile-btn {
-  opacity: 0;
-  pointer-events: none;
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 /* Reveal individual 3D overlay cell ONLY when navigated via Keyboard / Screen Reader focus */

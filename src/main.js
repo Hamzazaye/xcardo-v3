@@ -31,9 +31,26 @@ export function bootstrapXcardoV3() {
     const t1 = typeof performance !== 'undefined' ? performance.now() : Date.now();
     window.__XCARDO_BOOT_MS__ = Math.max(1, Math.round(t1 - t0));
     window.__XCARDO_V3__ = { eventBus, saveManager, scene3d, soundEngine, app };
+    if ('caches' in window) {
+      caches
+        .keys()
+        .then((keys) => {
+          for (const key of keys) {
+            if (key !== 'xcardo-v3-cache-v6') {
+              caches.delete(key);
+            }
+          }
+        })
+        .catch(() => {});
+    }
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
+        navigator.serviceWorker
+          .register('./sw.js?v=6')
+          .then((reg) => {
+            reg.update().catch(() => {});
+          })
+          .catch(() => {});
       });
     }
   }

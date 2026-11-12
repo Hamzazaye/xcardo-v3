@@ -3,7 +3,7 @@
  * Offline-First PWA Service Worker
  */
 
-const CACHE_NAME = 'xcardo-v3-cache-v5';
+const CACHE_NAME = 'xcardo-v3-cache-v6';
 const PRECACHE_ASSETS = [
   './',
   './index.html',
@@ -68,18 +68,18 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  // Network-First with Offline Cache Fallback so online players ALWAYS see the latest deployment
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const networkFetch = fetch(event.request)
-        .then((response) => {
-          if (response && response.status === 200 && response.type === 'basic') {
-            const copy = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-          }
-          return response;
-        })
-        .catch(() => cached);
-      return cached || networkFetch;
-    })
+    fetch(event.request)
+      .then((response) => {
+        if (response && response.status === 200 && response.type === 'basic') {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        }
+        return response;
+      })
+      .catch(() =>
+        caches.match(event.request, { ignoreSearch: true }).then((cached) => cached || caches.match('./index.html'))
+      )
   );
 });
